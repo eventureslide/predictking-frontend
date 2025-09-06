@@ -28,21 +28,29 @@ let adminSettings = {
 };
 
 // Initialization
+/* Replace with: */
 document.addEventListener('DOMContentLoaded', function() {
-    showLoadingScreen();
+    // Check if elements exist before using them
+    if (document.getElementById('loading-screen')) {
+        showLoadingScreen();
+    }
+    
     setTimeout(() => {
-        hideLoadingScreen();
+        if (document.getElementById('loading-screen')) {
+            hideLoadingScreen();
+        }
         checkLoginStatus();
         loadEvents();
         loadStats();
         startRealTimeUpdates();
-        
+
         // Fix EVC page login detection
         if (window.location.pathname.includes('evc.html')) {
             const loginRequiredBtn = document.getElementById('login-required');
+            const walletBtn = document.getElementById('wallet-btn');
             if (currentUser && loginRequiredBtn) {
                 loginRequiredBtn.classList.add('hidden');
-                document.getElementById('wallet-btn').classList.remove('hidden');
+                if (walletBtn) walletBtn.classList.remove('hidden');
             }
         }
     }, 3000);
@@ -102,15 +110,19 @@ function showRegister() {
     showModal('register-modal');
 }
 
-document.getElementById('login-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const code = document.getElementById('login-code').value;
-    loginUser(code);
+const loginForm = document.getElementById('login-form');
+if (loginForm) {
+    loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const code = document.getElementById('login-code').value;
+        loginUser(code);
 });
 
-document.getElementById('register-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    registerUser();
+const registerForm = document.getElementById('register-form');
+if (registerForm) {
+    registerForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        registerUser();
 });
 
 async function loginUser(code) {
