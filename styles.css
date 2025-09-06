@@ -105,16 +105,40 @@ body {
     --neon: #ff0a54;
 }
 
+/* WITH: */
+/* Emoji Theming - Apply grayscale filter and theme colors to all emojis */
+.default-theme .crown-icon,
+.default-theme .wallet-icon,
+.default-theme .event-placeholder {
+    filter: grayscale(100%);
+    color: #FFF3DA;
+}
+
 .male-theme .crown-icon,
-.male-theme .logo {
+.male-theme .logo,
+.male-theme .wallet-icon,
+.male-theme .event-placeholder,
+.male-theme .card-icon {
+    filter: grayscale(100%) sepia(1) hue-rotate(65deg) saturate(3) brightness(1.2);
     color: #9ef01a;
     text-shadow: 0 0 10px rgba(158, 240, 26, 0.5);
 }
 
 .female-theme .crown-icon,
-.female-theme .logo {
+.female-theme .logo,
+.female-theme .wallet-icon,
+.female-theme .event-placeholder,
+.female-theme .card-icon {
+    filter: grayscale(100%) sepia(1) hue-rotate(300deg) saturate(3) brightness(1.2);
     color: #ff0a54;
     text-shadow: 0 0 10px rgba(255, 10, 84, 0.5);
+}
+
+/* To remove tint and show original emoji colors, add this class: */
+.emoji-original {
+    filter: none !important;
+    color: initial !important;
+    text-shadow: none !important;
 }
 
 /* Layout */
