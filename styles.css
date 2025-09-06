@@ -1601,3 +1601,13 @@ input:focus, select:focus, textarea:focus {
 .header .wallet-btn #balance {
     display: none !important;
 }
+
+/* Hide wallet balance text completely on homepage */
+#wallet-btn #balance {
+    display: none !important;
+}
+
+/* Also hide it when it gets updated dynamically */
+.header-btn #balance {
+    display: none !important;
+}
