@@ -1328,3 +1328,160 @@ input:focus, select:focus, textarea:focus {
         border-width: 2px;
     }
 }
+
+/*********************************/
+/********************************************************************************/
+/*******************************************************************************/
+/*********************************/
+
+/* Loading screen crown fixes */
+.loading-screen .crown-icon {
+    font-size: 6rem;
+    margin-bottom: 1rem;
+}
+
+.loading-screen .logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+
+/* EVC home button */
+#home-btn {
+    color: white !important;
+    margin-left: 1rem;
+}
+
+.female-theme #home-btn {
+    color: #ff0a54 !important;
+    border-color: #ff0a54 !important;
+}
+
+.male-theme #home-btn {
+    color: #9ef01a !important;
+    border-color: #9ef01a !important;
+}
+
+#login-btn {
+    color: white !important;
+}
+
+/* Profile picture upload button */
+.file-upload-wrapper {
+    margin: 1rem 0;
+}
+
+.file-upload-btn {
+    background: linear-gradient(135deg, #9ef01a, #7acc00);
+    color: #0a0a0a;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    width: 100%;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.file-upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(158, 240, 26, 0.4);
+}
+
+
+/* Theme color fixes */
+.male-theme .logo,
+.male-theme .header-btn,
+.male-theme .crown-icon {
+    color: #9ef01a !important;
+}
+
+.female-theme .logo,
+.female-theme .header-btn,
+.female-theme .crown-icon {
+    color: #ff0a54 !important;
+}
+
+/* Notification popup theme fix */
+.female-theme .notification {
+    border-color: #ff0a54 !important;
+    background: rgba(255, 10, 84, 0.1) !important;
+}
+
+.male-theme .notification {
+    border-color: #9ef01a !important;
+    background: rgba(158, 240, 26, 0.1) !important;
+}
+
+/* Bigger bold emojis */
+.header-btn {
+    font-size: 1.5rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
+}
+
+.wallet-icon {
+    font-size: 1.5rem !important;
+}
+
+
+
+/* Earnings modal styles */
+.earnings-history {
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 1rem 0;
+}
+
+.earning-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+}
+
+.earning-action {
+    font-weight: 700;
+    color: #9ef01a;
+}
+
+.earning-amount {
+    font-weight: 700;
+    color: #9ef01a;
+}
+
+.earning-time {
+    font-size: 0.8rem;
+    color: #ccc;
+}
+
+.total-earnings {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #9ef01a;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(158, 240, 26, 0.1);
+    border-radius: 8px;
+}
+
+.female-theme .earning-action,
+.female-theme .earning-amount,
+.female-theme .total-earnings {
+    color: #ff0a54 !important;
+}
+
+.female-theme .total-earnings {
+    background: rgba(255, 10, 84, 0.1) !important;
+}
+
+
