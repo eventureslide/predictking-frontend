@@ -1611,3 +1611,117 @@ input:focus, select:focus, textarea:focus {
 .header-btn #balance {
     display: none !important;
 }
+
+/* Logged out theme - warm white icons */
+body:not(.male-theme):not(.female-theme) .header-btn {
+    color: #f8f8f8 !important;
+    background: rgba(248, 248, 248, 0.1) !important;
+    border-color: #f8f8f8 !important;
+}
+
+/* Sticky stats bar for logged out mode */
+.sticky-stats-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #333;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+}
+
+.stats-container {
+    display: flex;
+    gap: 2rem;
+}
+
+.stat-item-sticky {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.stat-label-sticky {
+    font-size: 0.8rem;
+    color: #ccc;
+    margin-bottom: 0.2rem;
+}
+
+.stat-value-sticky {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f8f8f8;
+}
+
+/* Adjust main content when sticky bar is visible */
+body:not(.male-theme):not(.female-theme) .main-content {
+    padding-bottom: 100px;
+}
+
+/* Fix modal overflow issues */
+.modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    max-width: 95vw;
+}
+
+.modal-content.large {
+    max-height: 85vh;
+}
+
+/* Specific fixes for common overflow areas */
+.betting-content,
+.tab-content,
+.leaderboard,
+.earnings-history {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* Ensure all popups are translucent */
+.notification {
+    background: rgba(20, 20, 20, 0.9) !important;
+    backdrop-filter: blur(5px) !important;
+}
+
+.female-theme .notification {
+    background: rgba(255, 10, 84, 0.9) !important;
+}
+
+.male-theme .notification {
+    background: rgba(158, 240, 26, 0.9) !important;
+}
+
+/* Profile picture gender borders */
+.profile-image,
+.leaderboard-pic,
+.current-profile-pic {
+    border: 3px solid #9ef01a; /* Default male */
+}
+
+/* Female border */
+.profile-image.female,
+.leaderboard-pic.female,
+.current-profile-pic.female {
+    border-color: #ff0a54 !important;
+}
+
+/* Male border */
+.profile-image.male,
+.leaderboard-pic.male, 
+.current-profile-pic.male {
+    border-color: #9ef01a !important;
+}
+
+.current-profile-pic {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0.5rem 0;
+}
