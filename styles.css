@@ -71,9 +71,10 @@ body {
     overflow: hidden;
 }
 
+/* Replace with: */
 .loading-fill {
     height: 100%;
-    background: linear-gradient(90deg, #9ef01a, #FFF3DA);
+    background: linear-gradient(90deg, #FFF3DA, #ffffff);
     width: 0%;
     animation: loading 3s ease-in-out forwards;
 }
@@ -114,11 +115,13 @@ body {
     color: #FFF3DA;
 }
 
+/* Replace with: */
 .male-theme .crown-icon,
 .male-theme .logo,
 .male-theme .wallet-icon,
 .male-theme .event-placeholder,
-.male-theme .card-icon {
+.male-theme .card-icon,
+.male-theme .header-btn {
     filter: grayscale(100%) sepia(1) hue-rotate(65deg) saturate(3) brightness(1.2);
     color: #9ef01a;
     text-shadow: 0 0 10px rgba(158, 240, 26, 0.5);
@@ -128,7 +131,8 @@ body {
 .female-theme .logo,
 .female-theme .wallet-icon,
 .female-theme .event-placeholder,
-.female-theme .card-icon {
+.female-theme .card-icon,
+.female-theme .header-btn {
     filter: grayscale(100%) sepia(1) hue-rotate(300deg) saturate(3) brightness(1.2);
     color: #ff0a54;
     text-shadow: 0 0 10px rgba(255, 10, 84, 0.5);
@@ -466,6 +470,16 @@ body {
     border: 1px solid #333;
     position: relative;
     animation: modalSlideIn 0.3s ease;
+}
+
+.male-theme .modal-content {
+    border-color: #9ef01a;
+    box-shadow: 0 0 20px rgba(158, 240, 26, 0.2);
+}
+
+.female-theme .modal-content {
+    border-color: #ff0a54;
+    box-shadow: 0 0 20px rgba(255, 10, 84, 0.2);
 }
 
 .modal-content.large {
