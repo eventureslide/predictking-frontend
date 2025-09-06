@@ -1,0 +1,772 @@
+// Firebase Configuration - REPLACE WITH YOUR CONFIG
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Global Variables
+let currentUser = null;
+let currentTheme = 'default';
+let events = [];
+let leaderboard = [];
+let adminSettings = {
+    vigPercentage: 5,
+    dailyBuyinLimit: 1000,
+    perAdReward: 50,
+    activeAds: [
+        'https://www.youtube.com/embed/r9xWOA_S3_g',
+        'https://www.youtube.com/embed/srRdl60cDVw'
+    ]
+};
+
+// Initialization
+document.addEventListener('DOMContentLoaded', function() {
+    showLoadingScreen();
+    setTimeout(() => {
+        hideLoadingScreen();
+        checkLoginStatus();
+        loadEvents();
+        loadStats();
+        startRealTimeUpdates();
+    }, 3000);
+});
+
+// Loading Screen Functions
+function showLoadingScreen() {
+    document.getElementById('loading-screen').style.display = 'flex';
+    document.getElementById('main-app').classList.add('hidden');
+}
+
+function hideLoadingScreen() {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('main-app').classList.remove('hidden');
+}
+
+// Theme Management
+function setTheme(theme) {
+    document.body.className = '';
+    document.body.classList.add(theme + '-theme');
+    currentTheme = theme;
+}
+
+function updateThemeBasedOnUser() {
+    if (!currentUser) {
+        setTheme('default');
+    } else if (currentUser.gender === 'male') {
+        setTheme('male');
+    } else if (currentUser.gender === 'female') {
+        setTheme('female');
+    }
+}
+
+// Authentication Functions
+function showLogin() {
+    showModal('login-modal');
+}
+
+function showRegister() {
+    showModal('register-modal');
+}
+
+document.getElementById('login-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const code = document.getElementById('login-code').value;
+    loginUser(code);
+});
+
+document.getElementById('register-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    registerUser();
+});
+
+async function loginUser(code) {
+    try {
+        showBuffering();
+        const userQuery = await db.collection('users').where('loginCode', '==', code).get();
+        
+        if (userQuery.empty) {
+            showNotification('Invalid login code', 'error');
+            return;
+        }
+
+        const userData = userQuery.docs[0].data();
+        currentUser = { id: userQuery.docs[0].id, ...userData };
+        
+        localStorage.setItem('userCode', code);
+        updateUIForLoggedInUser();
+        updateThemeBasedOnUser();
+        closeModal('login-modal');
+        
+        // Log user activity
+        logActivity('login', { userId: currentUser.id });
+        
+        showNotification('Welcome back!', 'success');
+        hideBuffering();
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification('Login failed', 'error');
+        hideBuffering();
+    }
+}
+
+async function registerUser() {
+    const formData = {
+        nickname: document.getElementById('nickname').value,
+        displayName: document.getElementById('display-name').value,
+        gender: document.getElementById('gender').value,
+        currency: document.getElementById('currency').value,
+        instagram: document.getElementById('instagram').value,
+        profilePic: null, // File upload handling needed
+        registrationDate: firebase.firestore.Timestamp.now(),
+        kycStatus: 'pending',
+        repScore: 'GOOD',
+        balance: 0,
+        debt: 0,
+        totalWinnings: 0,
+        totalBets: 0,
+        dailyBuyinUsed: 0,
+        lastBuyinReset: firebase.firestore.Timestamp.now()
+    };
+
+    try {
+        showBuffering();
+        
+        // Generate SHA256 login code
+        const loginCode = await generateSHA256(formData.nickname + Date.now());
+        formData.loginCode = loginCode;
+
+        // Check if nickname exists
+        const nicknameQuery = await db.collection('users').where('nickname', '==', formData.nickname).get();
+        if (!nicknameQuery.empty) {
+            showNotification('Nickname already exists', 'error');
+            return;
+        }
+
+        // Create user
+        const docRef = await db.collection('users').add(formData);
+        
+        // Show login code
+        document.getElementById('generated-code').value = loginCode;
+        closeModal('register-modal');
+        showModal('code-modal');
+        
+        // Log registration
+        logActivity('registration', { userId: docRef.id, nickname: formData.nickname });
+        
+        hideBuffering();
+    } catch (error) {
+        console.error('Registration error:', error);
+        showNotification('Registration failed', 'error');
+        hideBuffering();
+    }
+}
+
+async function generateSHA256(text) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function checkLoginStatus() {
+    const savedCode = localStorage.getItem('userCode');
+    if (savedCode) {
+        loginUser(savedCode);
+    }
+}
+
+function updateUIForLoggedInUser() {
+    document.getElementById('login-btn').classList.add('hidden');
+    document.getElementById('register-btn').classList.add('hidden');
+    document.getElementById('wallet-btn').classList.remove('hidden');
+    
+    updateBalance();
+}
+
+// Modal Functions
+function showModal(modalId) {
+    document.getElementById(modalId).style.display = 'block';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// Wallet Functions
+function showWallet() {
+    if (!currentUser) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    
+    document.getElementById('wallet-balance').textContent = formatCurrency(currentUser.balance, currentUser.currency);
+    showModal('wallet-modal');
+}
+
+function updateBalance() {
+    if (currentUser) {
+        const balanceText = currentUser.debt > 0 ? 
+            `-${formatCurrency(currentUser.debt, currentUser.currency)}` :
+            formatCurrency(currentUser.balance, currentUser.currency);
+        
+        document.getElementById('balance').textContent = balanceText;
+        if (currentUser.debt > 0) {
+            document.getElementById('balance').style.color = '#ff0a54';
+        }
+    }
+}
+
+function formatCurrency(amount, currency) {
+    const symbols = { INR: '₹', USD: '$', EUR: '€' };
+    return `${symbols[currency] || '₹'}${amount}`;
+}
+
+// Events and Betting Functions
+async function loadEvents() {
+    try {
+        const eventsSnapshot = await db.collection('events').where('status', '==', 'active').get();
+        events = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        displayEvents();
+    } catch (error) {
+        console.error('Error loading events:', error);
+    }
+}
+
+function displayEvents() {
+    const grid = document.getElementById('events-grid');
+    grid.innerHTML = '';
+    
+    events.forEach(event => {
+        const eventCard = createEventCard(event);
+        grid.appendChild(eventCard);
+    });
+}
+
+function createEventCard(event) {
+    const card = document.createElement('div');
+    card.className = 'event-card';
+    card.onclick = () => showEventModal(event);
+    
+    card.innerHTML = `
+        <div class="event-image">
+            <div class="event-placeholder">🎯</div>
+        </div>
+        <div class="event-info">
+            <h3>${event.title}</h3>
+            <div class="event-details">
+                <span class="event-time">${formatEventTime(event.startTime)}</span>
+                <span class="event-participants">${event.totalBets || 0} bets</span>
+            </div>
+            <div class="event-pot">
+                Total Pot: ${formatCurrency(event.totalPot || 0, 'INR')}
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+function showEventModal(event) {
+    if (!currentUser) {
+        showNotification('Please login to bet', 'error');
+        return;
+    }
+    
+    if (currentUser.kycStatus !== 'approved') {
+        showNotification('Account awaiting approval (≤8hrs)', 'warning');
+        return;
+    }
+    
+    if (currentUser.repScore === 'BAD' || currentUser.debt > 0) {
+        showNotification('Clear your debt to start betting', 'error');
+        return;
+    }
+    
+    document.getElementById('event-title').textContent = event.title;
+    document.getElementById('event-time').textContent = formatEventTime(event.startTime);
+    document.getElementById('event-status').textContent = event.status;
+    
+    showBettingTab('pool');
+    showModal('event-modal');
+    
+    // Log event view
+    logActivity('event_view', { userId: currentUser.id, eventId: event.id });
+}
+
+function showBettingTab(type) {
+    const content = document.getElementById('betting-content');
+    
+    if (type === 'pool') {
+        content.innerHTML = createPoolBettingUI();
+    } else {
+        content.innerHTML = create1v1BettingUI();
+    }
+    
+    // Update tab buttons
+    document.querySelectorAll('.betting-tabs .tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+function createPoolBettingUI() {
+    return `
+        <div class="pool-betting">
+            <div class="betting-options">
+                <div class="option-card" onclick="placeBet('team_a', 'pool')">
+                    <h4>Team A</h4>
+                    <div class="odds">2.1</div>
+                    <div class="bet-count">45 bets</div>
+                </div>
+                <div class="option-card" onclick="placeBet('team_b', 'pool')">
+                    <h4>Team B</h4>
+                    <div class="odds">1.8</div>
+                    <div class="bet-count">67 bets</div>
+                </div>
+            </div>
+            <div class="bet-input">
+                <input type="number" id="bet-amount" placeholder="Bet amount" min="1">
+                <button class="primary-btn" onclick="confirmBet()">PLACE BET</button>
+            </div>
+        </div>
+    `;
+}
+
+function create1v1BettingUI() {
+    return `
+        <div class="1v1-betting">
+            <div class="betting-tabs-sub">
+                <button class="tab-btn active" onclick="show1v1Tab('wager')">Wager Ladder</button>
+                <button class="tab-btn" onclick="show1v1Tab('contract')">Contract Ladder</button>
+            </div>
+            <div class="price-ladder" id="price-ladder">
+                ${createPriceLadder()}
+            </div>
+        </div>
+    `;
+}
+
+function createPriceLadder() {
+    return `
+        <div class="ladder-header">
+            <span>Wager</span>
+            <span>Back Team A</span>
+            <span>Back Team B</span>
+        </div>
+        <div class="ladder-row" onclick="placeLadderBet(100, 'team_a')">
+            <span>₹100</span>
+            <span class="back-btn">2.0</span>
+            <span class="lay-btn">2.0</span>
+        </div>
+        <div class="ladder-row" onclick="placeLadderBet(200, 'team_a')">
+            <span>₹200</span>
+            <span class="back-btn">2.0</span>
+            <span class="lay-btn">2.0</span>
+        </div>
+        <div class="ladder-row" onclick="placeLadderBet(500, 'team_a')">
+            <span>₹500</span>
+            <span class="back-btn">2.0</span>
+            <span class="lay-btn">2.0</span>
+        </div>
+    `;
+}
+
+// EVC Functions
+function goToEVC() {
+    window.location.href = 'evc.html';
+}
+
+function goHome() {
+    window.location.href = 'homepage.html';
+}
+
+function watchAd() {
+    if (!currentUser) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    
+    const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
+    document.getElementById('ad-video').src = adUrl + '?autoplay=1';
+    showModal('ad-modal');
+    
+    let timeLeft = 30;
+    const timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('ad-timer').textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            document.getElementById('claim-reward').classList.remove('hidden');
+        }
+    }, 1000);
+    
+    // Log ad view
+    logActivity('ad_view', { userId: currentUser.id, adUrl });
+}
+
+function claimAdReward() {
+    if (!currentUser) return;
+    
+    const reward = adminSettings.perAdReward;
+    currentUser.balance += reward;
+    
+    // Update in Firebase
+    db.collection('users').doc(currentUser.id).update({
+        balance: currentUser.balance
+    });
+    
+    updateBalance();
+    closeModal('ad-modal');
+    showNotification(`Earned ${formatCurrency(reward, currentUser.currency)}!`, 'success');
+    
+    // Log reward claim
+    logActivity('ad_reward_claimed', { 
+        userId: currentUser.id, 
+        reward,
+        newBalance: currentUser.balance 
+    });
+}
+
+// Profile Functions
+function showProfile() {
+    if (!currentUser) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    
+    showModal('profile-modal');
+    showTab('balance');
+}
+
+function showTab(tabName) {
+    const content = document.getElementById('tab-content');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    
+    tabBtns.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    switch(tabName) {
+        case 'balance':
+            content.innerHTML = createBalanceTab();
+            break;
+        case 'history':
+            content.innerHTML = createHistoryTab();
+            break;
+        case 'settings':
+            content.innerHTML = createSettingsTab();
+            break;
+        case 'notifications':
+            content.innerHTML = createNotificationsTab();
+            break;
+        case 'complaints':
+            content.innerHTML = createComplaintsTab();
+            break;
+        case 'slips':
+            content.innerHTML = createSlipsTab();
+            break;
+    }
+}
+
+function createBalanceTab() {
+    const debtDisplay = currentUser.debt > 0 ? 
+        `<div class="debt-warning">Debt: ${formatCurrency(currentUser.debt, currentUser.currency)}</div>` : '';
+    
+    return `
+        <div class="balance-tab">
+            <div class="balance-info">
+                <h3>Current Balance</h3>
+                <div class="balance-amount">${formatCurrency(currentUser.balance, currentUser.currency)}</div>
+                ${debtDisplay}
+                <div class="rep-score ${currentUser.repScore.toLowerCase()}">
+                    Rep Score: ${currentUser.repScore}
+                </div>
+            </div>
+            <div class="balance-stats">
+                <div class="stat">
+                    <label>Total Winnings:</label>
+                    <span>${formatCurrency(currentUser.totalWinnings || 0, currentUser.currency)}</span>
+                </div>
+                <div class="stat">
+                    <label>Total Bets:</label>
+                    <span>${currentUser.totalBets || 0}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function createSettingsTab() {
+    return `
+        <div class="settings-tab">
+            <div class="setting-item">
+                <label for="display-name-change">Display Name:</label>
+                <input type="text" id="display-name-change" value="${currentUser.displayName}">
+                <button onclick="updateDisplayName()">UPDATE</button>
+            </div>
+            <div class="setting-item">
+                <label for="currency-change">Currency:</label>
+                <select id="currency-change">
+                    <option value="INR" ${currentUser.currency === 'INR' ? 'selected' : ''}>₹ INR</option>
+                    <option value="USD" ${currentUser.currency === 'USD' ? 'selected' : ''}>$ USD</option>
+                    <option value="EUR" ${currentUser.currency === 'EUR' ? 'selected' : ''}>€ EUR</option>
+                </select>
+                <button onclick="updateCurrency()">UPDATE</button>
+            </div>
+            <div class="setting-item">
+                <button class="danger-btn" onclick="logout()">LOGOUT</button>
+            </div>
+        </div>
+    `;
+}
+
+function createNotificationsTab() {
+    return `
+        <div class="notifications-tab">
+            <div class="notification-item">
+                <div class="notification-content">
+                    <h4>Welcome to PredictKing!</h4>
+                    <p>Start betting and earning rewards.</p>
+                    <span class="notification-time">2 hours ago</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function createComplaintsTab() {
+    return `
+        <div class="complaints-tab">
+            <p>For complaints and support, contact us via Telegram:</p>
+            <button class="primary-btn" onclick="openTelegram()">CONTACT SUPPORT</button>
+        </div>
+    `;
+}
+
+function createSlipsTab() {
+    return `
+        <div class="slips-tab">
+            <div class="slip-item">
+                <div class="slip-info">
+                    <h4>Event: Sample Match</h4>
+                    <p>Bet: ₹100 on Team A</p>
+                    <span class="slip-status queued">QUEUED</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Leaderboard Functions
+function showLeaderboard() {
+    loadLeaderboard();
+    showModal('leaderboard-modal');
+}
+
+async function loadLeaderboard() {
+    try {
+        const usersSnapshot = await db.collection('users')
+            .orderBy('totalWinnings', 'desc')
+            .limit(50)
+            .get();
+        
+        const leaderboardEl = document.getElementById('leaderboard');
+        leaderboardEl.innerHTML = '';
+        
+        usersSnapshot.docs.forEach((doc, index) => {
+            const user = doc.data();
+            const position = index + 1;
+            
+            const row = document.createElement('div');
+            row.className = 'leaderboard-row';
+            row.innerHTML = `
+                <span class="position">#${position}</span>
+                <span class="name">${user.displayName}</span>
+                <span class="winnings">${formatCurrency(user.totalWinnings || 0, user.currency)}</span>
+                <span class="bets">${user.totalBets || 0}</span>
+                <span class="rep-score ${user.repScore.toLowerCase()}">${user.repScore}</span>
+            `;
+            
+            leaderboardEl.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error loading leaderboard:', error);
+    }
+}
+
+// Buy-in Functions
+function showBuyIn() {
+    showModal('buyin-modal');
+}
+
+function testBuyIn() {
+    const amount = parseInt(document.getElementById('buyin-amount').value);
+    if (!amount || amount <= 0) {
+        showNotification('Enter valid amount', 'error');
+        return;
+    }
+    
+    if (currentUser.dailyBuyinUsed + amount > adminSettings.dailyBuyinLimit) {
+        showNotification('Daily buy-in limit reached. Watch an ad to reset.', 'warning');
+        return;
+    }
+    
+    currentUser.balance += amount;
+    currentUser.dailyBuyinUsed += amount;
+    
+    // Update in Firebase
+    db.collection('users').doc(currentUser.id).update({
+        balance: currentUser.balance,
+        dailyBuyinUsed: currentUser.dailyBuyinUsed
+    });
+    
+    updateBalance();
+    closeModal('buyin-modal');
+    showNotification(`Added ${formatCurrency(amount, currentUser.currency)} to wallet!`, 'success');
+    
+    // Log buy-in
+    logActivity('buyin', { userId: currentUser.id, amount, method: 'test' });
+}
+
+// Stats and Real-time Updates
+async function loadStats() {
+    try {
+        const stats = await db.collection('stats').doc('global').get();
+        if (stats.exists) {
+            const data = stats.data();
+            document.getElementById('active-players').textContent = data.activePlayers || 0;
+            document.getElementById('total-pot').textContent = formatCurrency(data.totalPot || 0, 'INR');
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+function startRealTimeUpdates() {
+    // Update stats every 30 seconds
+    setInterval(loadStats, 30000);
+    
+    // Update events every minute
+    setInterval(loadEvents, 60000);
+}
+
+// Utility Functions
+function showNotification(message, type = 'info') {
+    const notification = document.getElementById('notification');
+    const text = document.getElementById('notification-text');
+    
+    text.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.classList.remove('hidden');
+    
+    setTimeout(() => {
+        notification.classList.add('hidden');
+    }, 3000);
+}
+
+function showBuffering() {
+    // Add buffering indicator
+    document.body.classList.add('loading');
+}
+
+function hideBuffering() {
+    document.body.classList.remove('loading');
+}
+
+function formatEventTime(timestamp) {
+    if (!timestamp) return 'TBD';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleString();
+}
+
+function copyCode() {
+    const codeInput = document.getElementById('generated-code');
+    codeInput.select();
+    document.execCommand('copy');
+    showNotification('Code copied to clipboard!', 'success');
+}
+
+function downloadCode() {
+    const code = document.getElementById('generated-code').value;
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(code));
+    element.setAttribute('download', 'predictking-login-code.txt');
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+}
+
+function logout() {
+    currentUser = null;
+    localStorage.removeItem('userCode');
+    setTheme('default');
+    
+    // Update UI
+    document.getElementById('login-btn').classList.remove('hidden');
+    document.getElementById('register-btn').classList.remove('hidden');
+    document.getElementById('wallet-btn').classList.add('hidden');
+    
+    closeModal('profile-modal');
+    showNotification('Logged out successfully', 'success');
+}
+
+// Activity Logging
+async function logActivity(action, data) {
+    try {
+        await db.collection('activity_logs').add({
+            action,
+            data,
+            timestamp: firebase.firestore.Timestamp.now(),
+            userAgent: navigator.userAgent,
+            ip: 'client-side' // IP will be logged server-side in production
+        });
+    } catch (error) {
+        console.error('Error logging activity:', error);
+    }
+}
+
+// Daily Bonus
+function claimDailyBonus() {
+    if (!currentUser) return;
+    
+    const lastClaim = currentUser.lastDailyBonus;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    if (lastClaim && lastClaim.toDate() >= today) {
+        showNotification('Daily bonus already claimed!', 'warning');
+        return;
+    }
+    
+    const bonus = 100; // Daily bonus amount
+    currentUser.balance += bonus;
+    currentUser.lastDailyBonus = firebase.firestore.Timestamp.now();
+    
+    // Update in Firebase
+    db.collection('users').doc(currentUser.id).update({
+        balance: currentUser.balance,
+        lastDailyBonus: currentUser.lastDailyBonus
+    });
+    
+    updateBalance();
+    showNotification(`Daily bonus claimed: ${formatCurrency(bonus, currentUser.currency)}!`, 'success');
+    
+    // Log daily bonus
+    logActivity('daily_bonus', { userId: currentUser.id, bonus });
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}

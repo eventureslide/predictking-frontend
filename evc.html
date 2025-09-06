@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PredictKing - Earn Virtual Currency</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="main-app" class="main-app evc-page">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="crown-icon" onclick="goHome()">👑</div>
+                <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-buttons">
+                    <button class="header-btn" onclick="goHome()">HOME</button>
+                    <button id="wallet-btn" class="header-btn" onclick="showWallet()">
+                        <span class="wallet-icon">💰</span>
+                        <span id="balance">₹0</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content evc-content">
+            <div class="evc-header">
+                <h2>EARN VIRTUAL CURRENCY</h2>
+                <p>Complete tasks to earn coins and boost your betting power!</p>
+            </div>
+
+            <div class="earning-options">
+                <!-- Watch Ads -->
+                <div class="earning-card active">
+                    <div class="card-icon">📺</div>
+                    <h3>Watch Ads</h3>
+                    <p>Earn <span class="reward-amount" id="ad-reward">50</span> coins per ad</p>
+                    <button class="earn-btn" onclick="watchAd()">WATCH AD</button>
+                </div>
+
+                <!-- Complete Surveys -->
+                <div class="earning-card disabled">
+                    <div class="card-icon">📋</div>
+                    <h3>Complete Surveys</h3>
+                    <p>Earn up to 500 coins</p>
+                    <button class="earn-btn disabled">COMING SOON</button>
+                </div>
+
+                <!-- Referral Program -->
+                <div class="earning-card disabled">
+                    <div class="card-icon">👥</div>
+                    <h3>Refer Friends</h3>
+                    <p>Earn 1000 coins per referral</p>
+                    <button class="earn-btn disabled">COMING SOON</button>
+                </div>
+
+                <!-- Daily Tasks -->
+                <div class="earning-card disabled">
+                    <div class="card-icon">📅</div>
+                    <h3>Daily Tasks</h3>
+                    <p>Complete daily challenges</p>
+                    <button class="earn-btn disabled">COMING SOON</button>
+                </div>
+
+                <!-- Social Media -->
+                <div class="earning-card disabled">
+                    <div class="card-icon">📱</div>
+                    <h3>Social Media Tasks</h3>
+                    <p>Share and earn coins</p>
+                    <button class="earn-btn disabled">COMING SOON</button>
+                </div>
+
+                <!-- Spin Wheel -->
+                <div class="earning-card disabled">
+                    <div class="card-icon">🎯</div>
+                    <h3>Lucky Spin</h3>
+                    <p>Try your luck daily</p>
+                    <button class="earn-btn disabled">COMING SOON</button>
+                </div>
+            </div>
+
+            <!-- Recent Earnings -->
+            <div class="recent-earnings">
+                <h3>Recent Earnings</h3>
+                <div class="earnings-list" id="earnings-list">
+                    <!-- Recent earnings will be displayed here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Ad Modal -->
+    <div id="ad-modal" class="modal">
+        <div class="modal-content">
+            <h2>Watch Advertisement</h2>
+            <div class="ad-container">
+                <iframe id="ad-video" width="100%" height="300" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div class="ad-controls">
+                <div class="ad-progress">
+                    <span id="ad-timer">30</span> seconds remaining
+                </div>
+                <button id="claim-reward" class="primary-btn hidden" onclick="claimAdReward()">CLAIM REWARD</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Modal -->
+    <div id="wallet-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('wallet-modal')">&times;</span>
+            <h2>WALLET</h2>
+            <div class="wallet-balance">
+                <h3>Current Balance</h3>
+                <div class="balance-display" id="wallet-balance">₹0</div>
+            </div>
+            <div class="wallet-actions">
+                <button class="secondary-btn" onclick="goHome()">BACK TO BETTING</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Popup -->
+    <div id="notification" class="notification hidden">
+        <span id="notification-text"></span>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
