@@ -1484,4 +1484,26 @@ input:focus, select:focus, textarea:focus {
     background: rgba(255, 10, 84, 0.1) !important;
 }
 
+/* Loading screen crown position fix */
+.loading-screen .logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem; /* Much smaller gap */
+}
 
+.loading-screen .crown-icon {
+    font-size: 6rem;
+    margin-bottom: 0; /* Remove margin */
+    line-height: 1; /* Tight line height */
+}
+
+.loading-screen .logo {
+    margin-top: -0.5rem; /* Pull text closer to crown */
+}
+
+/* Profile upload button - warm white for logged out theme */
+.file-upload-btn {
+    background: #f8f8f8 !important;
+    color: #333 !important;
+}
