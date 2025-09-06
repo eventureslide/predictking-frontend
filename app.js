@@ -551,6 +551,20 @@ function createComplaintsTab() {
     `;
 }
 
+function createHistoryTab() {
+    return `
+        <div class="history-tab">
+            <h3>Betting History</h3>
+            <div class="history-content">
+                <div class="history-item">
+                    <p>No betting history available yet.</p>
+                    <p>Start placing bets to see your history here!</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function createSlipsTab() {
     return `
         <div class="slips-tab">
