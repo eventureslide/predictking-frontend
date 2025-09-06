@@ -36,6 +36,15 @@ document.addEventListener('DOMContentLoaded', function() {
         loadEvents();
         loadStats();
         startRealTimeUpdates();
+        
+        // Fix EVC page login detection
+        if (window.location.pathname.includes('evc.html')) {
+            const loginRequiredBtn = document.getElementById('login-required');
+            if (currentUser && loginRequiredBtn) {
+                loginRequiredBtn.classList.add('hidden');
+                document.getElementById('wallet-btn').classList.remove('hidden');
+            }
+        }
     }, 3000);
 });
 
@@ -57,18 +66,6 @@ function setTheme(theme) {
     currentTheme = theme;
 }
 
-function updateThemeBasedOnUser() {
-    if (!currentUser) {
-        setTheme('default');
-    } else if (currentUser.gender === 'male') {
-        setTheme('male');
-    } else if (currentUser.gender === 'female') {
-        setTheme('female');
-    }
-}
-
-
-// Add after the updateThemeBasedOnUser function:
 function updateThemeBasedOnUser() {
     if (!currentUser) {
         setTheme('default');
