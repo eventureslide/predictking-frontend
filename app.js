@@ -125,6 +125,7 @@ if (registerForm) {
         registerUser();
 });
 
+// Find the loginUser function and add 'async' before 'function':
 async function loginUser(code) {
     try {
         showBuffering();
@@ -148,6 +149,8 @@ async function loginUser(code) {
         
         showNotification('Welcome back!', 'success');
         hideBuffering();
+        
+        return currentUser; // Add this line
     } catch (error) {
         console.error('Login error:', error);
         showNotification('Login failed', 'error');
@@ -214,10 +217,20 @@ async function generateSHA256(text) {
     return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/* Replace with: */
 function checkLoginStatus() {
     const savedCode = localStorage.getItem('userCode');
     if (savedCode) {
-        loginUser(savedCode);
+        loginUser(savedCode).then(() => {
+            // Update EVC page UI after login
+            if (window.location.pathname.includes('evc.html')) {
+                updateThemeBasedOnUser();
+                const loginRequiredBtn = document.getElementById('login-required');
+                const walletBtn = document.getElementById('wallet-btn');
+                if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
+                if (walletBtn) walletBtn.classList.remove('hidden');
+            }
+        });
     }
 }
 
