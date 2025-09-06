@@ -39,9 +39,31 @@ const defaultProfilePics = {
     ]
 };
 
+// Track used profile pics to avoid repetition
+let usedProfilePics = {
+    male: new Set(),
+    female: new Set()
+};
+
 function getRandomProfilePic(gender) {
     const pics = defaultProfilePics[gender] || defaultProfilePics.male;
-    return pics[Math.floor(Math.random() * pics.length)];
+    const usedSet = usedProfilePics[gender];
+    
+    // If all pics are used, reset the set
+    if (usedSet.size >= pics.length) {
+        usedSet.clear();
+    }
+    
+    // Find unused pics
+    const unusedPics = pics.filter(pic => !usedSet.has(pic));
+    
+    // Select random from unused pics
+    const selectedPic = unusedPics[Math.floor(Math.random() * unusedPics.length)];
+    
+    // Mark as used
+    usedSet.add(selectedPic);
+    
+    return selectedPic;
 }
 
 // Initialization
@@ -94,6 +116,12 @@ function setTheme(theme) {
 function updateThemeBasedOnUser() {
     if (!currentUser) {
         setTheme('default');
+        // Show sticky stats bar for logged out users
+        const stickyBar = document.getElementById('sticky-stats-bar');
+        const originalBtn = document.getElementById('original-evc-btn');
+        if (stickyBar) stickyBar.classList.remove('hidden');
+        if (originalBtn) originalBtn.classList.add('hidden');
+        
         // Hide wallet button when logged out
         const walletBtn = document.getElementById('wallet-btn');
         if (walletBtn) walletBtn.classList.add('hidden');
@@ -102,6 +130,12 @@ function updateThemeBasedOnUser() {
         const loginRequiredBtn = document.getElementById('login-required');
         if (loginRequiredBtn) loginRequiredBtn.classList.remove('hidden');
     } else {
+        // Hide sticky stats bar for logged in users
+        const stickyBar = document.getElementById('sticky-stats-bar');
+        const originalBtn = document.getElementById('original-evc-btn');
+        if (stickyBar) stickyBar.classList.add('hidden');
+        if (originalBtn) originalBtn.classList.remove('hidden');
+        
         if (currentUser.gender === 'male') {
             setTheme('male');
         } else if (currentUser.gender === 'female') {
@@ -147,7 +181,7 @@ if (registerForm) {
 
 
 // Find the loginUser function and add 'async' before 'function':
-async function loginUser(code) {
+async function loginUser(code, silentLogin = false) {
     try {
         showBuffering();
         const userQuery = await db.collection('users').where('loginCode', '==', code).get();
@@ -159,21 +193,21 @@ async function loginUser(code) {
 
         const userData = userQuery.docs[0].data();
         currentUser = { id: userQuery.docs[0].id, ...userData };
-        // Update active players count
-        await updateActivePlayersCount(1);
         
         localStorage.setItem('userCode', code);
         updateUIForLoggedInUser();
         updateThemeBasedOnUser();
         closeModal('login-modal');
         
-        // Log user activity
-        logActivity('login', { userId: currentUser.id });
+        // Only increase active players count for actual login, not refresh
+        if (!silentLogin) {
+            await updateActivePlayersCount(1);
+            logActivity('login', { userId: currentUser.id });
+            showNotification('Welcome back!', 'success');
+        }
         
-        showNotification('Welcome back!', 'success');
         hideBuffering();
-        
-        return currentUser; // Add this line
+        return currentUser;
     } catch (error) {
         console.error('Login error:', error);
         showNotification('Login failed', 'error');
@@ -261,7 +295,7 @@ async function generateSHA256(text) {
 function checkLoginStatus() {
     const savedCode = localStorage.getItem('userCode');
     if (savedCode) {
-        loginUser(savedCode).then(() => {
+        loginUser(savedCode, true).then(() => { // Pass true for silent login
             // Update EVC page UI after login
             if (window.location.pathname.includes('evc.html')) {
                 updateThemeBasedOnUser();
@@ -704,7 +738,7 @@ function createBalanceTab() {
     return `
         <div class="balance-tab">
             <div class="profile-pic-display">
-                <img src="${currentUser.profilePic || getRandomProfilePic(currentUser.gender)}" alt="Profile" class="profile-image">
+                <img src="${currentUser.profilePic || getRandomProfilePic(currentUser.gender)}" alt="Profile" class="profile-image ${currentUser.gender}">
             </div>
             <div class="balance-info">
                 <h3>Current Balance</h3>
@@ -746,10 +780,32 @@ function createSettingsTab() {
                 <button onclick="updateCurrency()">UPDATE</button>
             </div>
             <div class="setting-item">
+                <label>Current Profile Picture:</label>
+                <img src="${currentUser.profilePic}" alt="Profile" class="current-profile-pic">
+                <button onclick="changeProfilePic()">CHANGE PICTURE</button>
+            </div>
+            <div class="setting-item">
                 <button class="danger-btn" onclick="logout()">LOGOUT</button>
             </div>
         </div>
     `;
+}
+
+function changeProfilePic() {
+    const newPic = getRandomProfilePic(currentUser.gender);
+    
+    // Update in Firebase
+    db.collection('users').doc(currentUser.id).update({
+        profilePic: newPic
+    }).then(() => {
+        currentUser.profilePic = newPic;
+        showNotification('Profile picture updated!', 'success');
+        // Refresh settings tab
+        showTab('settings');
+    }).catch(error => {
+        console.error('Error updating profile pic:', error);
+        showNotification('Failed to update profile picture', 'error');
+    });
 }
 
 function createNotificationsTab() {
@@ -827,7 +883,7 @@ async function loadLeaderboard() {
             row.className = 'leaderboard-row';
             row.innerHTML = `
                 <span class="position">#${position}</span>
-                <img src="${user.profilePic || getRandomProfilePic(user.gender)}" alt="Profile" class="leaderboard-pic">
+                <img src="${user.profilePic || getRandomProfilePic(user.gender)}" alt="Profile" class="leaderboard-pic ${user.gender}">
                 <span class="name">${user.displayName}</span>
                 <span class="winnings">${formatCurrency(user.totalWinnings || 0, user.currency)}</span>
                 <span class="bets">${user.totalBets || 0}</span>
@@ -881,10 +937,18 @@ async function loadStats() {
         const stats = await db.collection('stats').doc('global').get();
         if (stats.exists) {
             const data = stats.data();
+            
+            // Update main stats
             const activePlayersEl = document.getElementById('active-players');
             const totalPotEl = document.getElementById('total-pot');
             if (activePlayersEl) activePlayersEl.textContent = data.activePlayers || 0;
             if (totalPotEl) totalPotEl.textContent = formatCurrency(data.totalPot || 0, 'INR');
+            
+            // Update sticky stats for logged out mode
+            const activePlayersStickyEl = document.getElementById('active-players-sticky');
+            const totalPotStickyEl = document.getElementById('total-pot-sticky');
+            if (activePlayersStickyEl) activePlayersStickyEl.textContent = data.activePlayers || 0;
+            if (totalPotStickyEl) totalPotStickyEl.textContent = formatCurrency(data.totalPot || 0, 'INR');
         }
     } catch (error) {
         console.error('Error loading stats:', error);
