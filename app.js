@@ -118,12 +118,16 @@ if (loginForm) {
         loginUser(code);
 });
 
+}
+
 const registerForm = document.getElementById('register-form');
 if (registerForm) {
     registerForm.addEventListener('submit', function(e) {
         e.preventDefault();
         registerUser();
 });
+
+}
 
 // Find the loginUser function and add 'async' before 'function':
 async function loginUser(code) {
