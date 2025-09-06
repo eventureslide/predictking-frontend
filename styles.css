@@ -1507,3 +1507,97 @@ input:focus, select:focus, textarea:focus {
     background: #f8f8f8 !important;
     color: #333 !important;
 }
+
+/* Profile picture display styles */
+.profile-pic-display {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.profile-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #9ef01a;
+    object-fit: cover;
+}
+
+.female-theme .profile-image {
+    border-color: #ff0a54;
+}
+
+.leaderboard-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    object-fit: cover;
+}
+
+/* Force exact theme colors */
+.male-theme .logo,
+.male-theme .crown-icon,
+.male-theme .header-btn,
+.male-theme .wallet-btn,
+.male-theme #balance {
+    color: #9ef01a !important;
+}
+
+.female-theme .logo,
+.female-theme .crown-icon,
+.female-theme .header-btn,
+.female-theme .wallet-btn,
+.female-theme #balance {
+    color: #ff0a54 !important;
+}
+
+/* Header button backgrounds */
+.male-theme .header-btn {
+    background: rgba(158, 240, 26, 0.1) !important;
+    border-color: #9ef01a !important;
+}
+
+.female-theme .header-btn {
+    background: rgba(255, 10, 84, 0.1) !important;
+    border-color: #ff0a54 !important;
+}
+
+/* Notification theme fixes */
+.female-theme .notification {
+    background: rgba(255, 10, 84, 0.9) !important;
+    border: 1px solid #ff0a54 !important;
+    color: white !important;
+}
+
+.female-theme .modal-content {
+    border: 1px solid #ff0a54 !important;
+}
+
+.female-theme .primary-btn {
+    background: #ff0a54 !important;
+}
+
+/* Center emojis in header buttons */
+.header-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+/* Hide balance text overflow */
+.wallet-btn {
+    max-width: 120px;
+    overflow: hidden;
+}
+
+.wallet-btn #balance {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Hide wallet balance text on homepage */
+.header .wallet-btn #balance {
+    display: none !important;
+}
