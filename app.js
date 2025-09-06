@@ -159,6 +159,8 @@ async function loginUser(code) {
 
         const userData = userQuery.docs[0].data();
         currentUser = { id: userQuery.docs[0].id, ...userData };
+        // Update active players count
+        await updateActivePlayersCount(1);
         
         localStorage.setItem('userCode', code);
         updateUIForLoggedInUser();
@@ -178,6 +180,23 @@ async function loginUser(code) {
         hideBuffering();
     }
 }
+
+
+async function updateActivePlayersCount(change) {
+    try {
+        const statsRef = db.collection('stats').doc('global');
+        const stats = await statsRef.get();
+        const currentCount = stats.exists ? (stats.data().activePlayers || 0) : 0;
+        
+        await statsRef.set({
+            activePlayers: Math.max(0, currentCount + change),
+            totalPot: stats.exists ? stats.data().totalPot || 0 : 0
+        }, { merge: true });
+    } catch (error) {
+        console.error('Error updating active players:', error);
+    }
+}
+
 
 async function registerUser() {
     const formData = {
@@ -667,6 +686,9 @@ function createBalanceTab() {
     
     return `
         <div class="balance-tab">
+            <div class="profile-pic-display">
+                <img src="${currentUser.profilePic || getRandomProfilePic(currentUser.gender)}" alt="Profile" class="profile-image">
+            </div>
             <div class="balance-info">
                 <h3>Current Balance</h3>
                 <div class="balance-amount">${formatCurrency(currentUser.balance, currentUser.currency)}</div>
@@ -788,6 +810,7 @@ async function loadLeaderboard() {
             row.className = 'leaderboard-row';
             row.innerHTML = `
                 <span class="position">#${position}</span>
+                <img src="${user.profilePic || getRandomProfilePic(user.gender)}" alt="Profile" class="leaderboard-pic">
                 <span class="name">${user.displayName}</span>
                 <span class="winnings">${formatCurrency(user.totalWinnings || 0, user.currency)}</span>
                 <span class="bets">${user.totalBets || 0}</span>
@@ -907,6 +930,7 @@ function downloadCode() {
 }
 
 function logout() {
+    updateActivePlayersCount(-1); // Decrease count
     currentUser = null;
     localStorage.removeItem('userCode');
     setTheme('default');
