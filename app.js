@@ -128,6 +128,7 @@ if (registerForm) {
 }
 
 
+
 // Find the loginUser function and add 'async' before 'function':
 async function loginUser(code) {
     try {
