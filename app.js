@@ -256,9 +256,13 @@ function checkLoginStatus() {
 }
 
 function updateUIForLoggedInUser() {
-    document.getElementById('login-btn').classList.add('hidden');
-    document.getElementById('register-btn').classList.add('hidden');
-    document.getElementById('wallet-btn').classList.remove('hidden');
+    const loginBtn = document.getElementById('login-btn');
+    const registerBtn = document.getElementById('register-btn');
+    const walletBtn = document.getElementById('wallet-btn');
+    
+    if (loginBtn) loginBtn.classList.add('hidden');
+    if (registerBtn) registerBtn.classList.add('hidden');
+    if (walletBtn) walletBtn.classList.remove('hidden');
     
     updateBalance();
 }
@@ -272,6 +276,18 @@ function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
 
+// Clean up ad timer when modal closes
+function cleanupAdTimer() {
+    if (window.currentAdTimer) {
+        clearInterval(window.currentAdTimer);
+        window.currentAdTimer = null;
+    }
+    const claimBtn = document.getElementById('claim-reward');
+    if (claimBtn) claimBtn.classList.add('hidden');
+    const adVideo = document.getElementById('ad-video');
+    if (adVideo) adVideo.src = '';
+}
+
 // Wallet Functions
 function showWallet() {
     if (!currentUser) {
@@ -281,6 +297,13 @@ function showWallet() {
     
     document.getElementById('wallet-balance').textContent = formatCurrency(currentUser.balance, currentUser.currency);
     showModal('wallet-modal');
+}
+
+function updateEVCWalletBalance() {
+    const evcWalletBalance = document.getElementById('wallet-balance');
+    if (evcWalletBalance && currentUser) {
+        evcWalletBalance.textContent = formatCurrency(currentUser.balance, currentUser.currency);
+    }
 }
 
 function updateBalance() {
@@ -314,6 +337,7 @@ async function loadEvents() {
 
 function displayEvents() {
     const grid = document.getElementById('events-grid');
+    if (!grid) return; // Exit if element doesn't exist
     grid.innerHTML = '';
     
     events.forEach(event => {
@@ -470,16 +494,28 @@ function watchAd() {
     document.getElementById('ad-video').src = adUrl + '?autoplay=1';
     showModal('ad-modal');
     
-    let timeLeft = 30;
-    const timer = setInterval(() => {
-        timeLeft--;
+    let timeLeft = 32; // Video duration + 2 seconds
+    let timerInterval;
+    let videoStarted = false;
+    
+    // Wait 2 seconds before starting timer
+    setTimeout(() => {
+        videoStarted = true;
         document.getElementById('ad-timer').textContent = timeLeft;
         
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            document.getElementById('claim-reward').classList.remove('hidden');
-        }
-    }, 1000);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('ad-timer').textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('claim-reward').classList.remove('hidden');
+            }
+        }, 1000);
+    }, 2000);
+    
+    // Store interval for cleanup
+    window.currentAdTimer = timerInterval;
     
     // Log ad view
     logActivity('ad_view', { userId: currentUser.id, adUrl });
@@ -497,6 +533,7 @@ function claimAdReward() {
     });
     
     updateBalance();
+    updateEVCWalletBalance();
     closeModal('ad-modal');
     showNotification(`Earned ${formatCurrency(reward, currentUser.currency)}!`, 'success');
     
@@ -506,6 +543,82 @@ function claimAdReward() {
         reward,
         newBalance: currentUser.balance 
     });
+}
+
+async function showRecentEarnings() {
+    if (!currentUser) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    
+    try {
+        // Load earnings history from activity logs
+        const earningsSnapshot = await db.collection('activity_logs')
+            .where('data.userId', '==', currentUser.id)
+            .where('action', 'in', ['ad_reward_claimed', 'daily_bonus', 'task_completed'])
+            .orderBy('timestamp', 'desc')
+            .limit(50)
+            .get();
+        
+        let earningsHTML = '<h3>Recent Earnings History</h3><div class="earnings-history">';
+        let totalEarnings = 0;
+        
+        if (earningsSnapshot.empty) {
+            earningsHTML += '<p>No earnings yet. Watch ads to start earning!</p>';
+        } else {
+            earningsSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const timestamp = data.timestamp.toDate().toLocaleString();
+                const amount = data.data.reward || data.data.bonus || data.data.amount || 0;
+                totalEarnings += amount;
+                
+                let actionText = '';
+                switch(data.action) {
+                    case 'ad_reward_claimed': actionText = 'Watched Ad'; break;
+                    case 'daily_bonus': actionText = 'Daily Bonus'; break;
+                    case 'task_completed': actionText = 'Task Completed'; break;
+                    default: actionText = data.action;
+                }
+                
+                earningsHTML += `
+                    <div class="earning-item">
+                        <div class="earning-action">${actionText}</div>
+                        <div class="earning-amount">+${formatCurrency(amount, currentUser.currency)}</div>
+                        <div class="earning-time">${timestamp}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        earningsHTML += `</div><div class="total-earnings">Total Earned: ${formatCurrency(totalEarnings, currentUser.currency)}</div>`;
+        
+        // Create and show modal
+        showEarningsModal(earningsHTML);
+        
+    } catch (error) {
+        console.error('Error loading earnings:', error);
+        showNotification('Error loading earnings history', 'error');
+    }
+}
+
+function showEarningsModal(content) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('earnings-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'earnings-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('earnings-modal')">&times;</span>
+                <div id="earnings-content"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    document.getElementById('earnings-content').innerHTML = content;
+    showModal('earnings-modal');
 }
 
 // Profile Functions
@@ -728,8 +841,10 @@ async function loadStats() {
         const stats = await db.collection('stats').doc('global').get();
         if (stats.exists) {
             const data = stats.data();
-            document.getElementById('active-players').textContent = data.activePlayers || 0;
-            document.getElementById('total-pot').textContent = formatCurrency(data.totalPot || 0, 'INR');
+            const activePlayersEl = document.getElementById('active-players');
+            const totalPotEl = document.getElementById('total-pot');
+            if (activePlayersEl) activePlayersEl.textContent = data.activePlayers || 0;
+            if (totalPotEl) totalPotEl.textContent = formatCurrency(data.totalPot || 0, 'INR');
         }
     } catch (error) {
         console.error('Error loading stats:', error);
