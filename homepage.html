@@ -72,10 +72,13 @@
                 <input type="text" id="login-code" placeholder="Enter your SHA256 code" required>
                 <button type="submit" class="primary-btn">LOGIN</button>
             </form>
+            <div class="modal-footer">
+                <p>Don't have an account? <a onclick="closeModal('login-modal'); showRegister();">Create New Account</a></p>
+            </div>
         </div>
     </div>
 
-    <!-- Register Modal -->
+    <!-- Replace register modal content: -->
     <div id="register-modal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('register-modal')">&times;</span>
@@ -100,8 +103,11 @@
                     <input type="text" id="instagram" placeholder="Instagram ID" required>
                 </div>
                 <p class="kyc-message">Please follow @PredictKing on Instagram for KYC verification</p>
-                <button type="submit" class="primary-btn">REGISTER</button>
+                <button type="submit" class="primary-btn">CREATE ACCOUNT</button>
             </form>
+            <div class="modal-footer">
+                <p>Already have an account? <a onclick="closeModal('register-modal'); showLogin();">Sign In</a></p>
+            </div>
         </div>
     </div>
 
