@@ -30,11 +30,11 @@ let adminSettings = {
 // Profile picture defaults
 const defaultProfilePics = {
     male: [
-        "https://ibb.co/qMY9zgpL", // Add more male profile pic URLs here
+        "https://i.ibb.co/VYvcGYh0/00e3ef3b309ca5bd6280aa9f3eeb3e97.jpg", // Add more male profile pic URLs here
         // Add 50+ more male profile pic URLs
     ],
     female: [
-        "https://ibb.co/8gjLwgRn", // Add more female profile pic URLs here  
+        "https://i.ibb.co/6R0b2tFc/cute-cool-boy-dabbing-pose-cartoon-icon-illustration-people-fashion-icon-concept-isolated-generat-ai.jpg", // Add more female profile pic URLs here  
         // Add 50+ more female profile pic URLs
     ]
 };
