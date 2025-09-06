@@ -67,6 +67,35 @@ function updateThemeBasedOnUser() {
     }
 }
 
+
+// Add after the updateThemeBasedOnUser function:
+function updateThemeBasedOnUser() {
+    if (!currentUser) {
+        setTheme('default');
+        // Hide wallet button when logged out
+        const walletBtn = document.getElementById('wallet-btn');
+        if (walletBtn) walletBtn.classList.add('hidden');
+        
+        // Show login required button on EVC page
+        const loginRequiredBtn = document.getElementById('login-required');
+        if (loginRequiredBtn) loginRequiredBtn.classList.remove('hidden');
+    } else {
+        if (currentUser.gender === 'male') {
+            setTheme('male');
+        } else if (currentUser.gender === 'female') {
+            setTheme('female');
+        }
+        
+        // Show wallet button when logged in
+        const walletBtn = document.getElementById('wallet-btn');
+        if (walletBtn) walletBtn.classList.remove('hidden');
+        
+        // Hide login required button on EVC page
+        const loginRequiredBtn = document.getElementById('login-required');
+        if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
+    }
+}
+
 // Authentication Functions
 function showLogin() {
     showModal('login-modal');
