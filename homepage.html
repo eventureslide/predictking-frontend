@@ -11,7 +11,7 @@
     <!-- Loading Screen -->
     <div id="loading-screen" class="loading-screen">
         <div class="logo-container">
-            <div class="crown-icon pulsing">♛</div>
+            <div class="crown-icon">♛</div>
             <h1 class="logo pulsing">PREDICTKING</h1>
             <p class="motto">Predict. Win. Dominate.</p>
         </div>
@@ -47,7 +47,7 @@
                     <button class="header-btn" onclick="showProfile()">◉</button>
                     <button class="header-btn" onclick="showLeaderboard()">♚</button>
                     <button id="login-btn" class="primary-btn" onclick="showLogin()">LOGIN</button>
-                    <button id="register-btn" class="secondary-btn" onclick="showRegister()">REGISTER</button> 
+                    <button id="register-btn" class="secondary-btn" onclick="showRegister()" style="width: 0px; height: 0px; padding: 0; border: 0; margin: 0; opacity: 0; overflow: hidden;">REGISTER</button>
                 </div>
             </div>
         </header>
@@ -91,7 +91,12 @@
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                 </select>
-                <input type="file" id="profile-pic" accept="image/*">
+                <div class="file-upload-wrapper">
+                    <input type="file" id="profile-pic" accept="image/*" style="display: none;">
+                    <button type="button" class="file-upload-btn" onclick="document.getElementById('profile-pic').click();">
+                        📷 Upload Profile Picture
+                    </button>
+                </div>
                 <select id="currency" required>
                     <option value="">Select Currency</option>
                     <option value="INR">₹ INR</option>
