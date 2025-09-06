@@ -342,9 +342,13 @@ function updateBalance() {
             `-${formatCurrency(currentUser.debt, currentUser.currency)}` :
             formatCurrency(currentUser.balance, currentUser.currency);
         
-        document.getElementById('balance').textContent = balanceText;
-        if (currentUser.debt > 0) {
-            document.getElementById('balance').style.color = '#ff0a54';
+        const balanceEl = document.getElementById('balance');
+        if (balanceEl) {
+            balanceEl.textContent = balanceText;
+            balanceEl.style.display = 'none'; // Always hide on homepage
+            if (currentUser.debt > 0) {
+                balanceEl.style.color = '#ff0a54';
+            }
         }
     }
 }
