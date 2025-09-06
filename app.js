@@ -27,6 +27,23 @@ let adminSettings = {
     ]
 };
 
+// Profile picture defaults
+const defaultProfilePics = {
+    male: [
+        "https://ibb.co/qMY9zgpL", // Add more male profile pic URLs here
+        // Add 50+ more male profile pic URLs
+    ],
+    female: [
+        "https://ibb.co/8gjLwgRn", // Add more female profile pic URLs here  
+        // Add 50+ more female profile pic URLs
+    ]
+};
+
+function getRandomProfilePic(gender) {
+    const pics = defaultProfilePics[gender] || defaultProfilePics.male;
+    return pics[Math.floor(Math.random() * pics.length)];
+}
+
 // Initialization
 /* Replace with: */
 document.addEventListener('DOMContentLoaded', function() {
@@ -169,7 +186,7 @@ async function registerUser() {
         gender: document.getElementById('gender').value,
         currency: document.getElementById('currency').value,
         instagram: document.getElementById('instagram').value,
-        profilePic: null, // File upload handling needed
+        profilePic: getRandomProfilePic(document.getElementById('gender').value),
         registrationDate: firebase.firestore.Timestamp.now(),
         kycStatus: 'pending',
         repScore: 'GOOD',
