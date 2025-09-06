@@ -10,18 +10,20 @@
 <body>
     <div id="main-app" class="main-app evc-page">
         <!-- Header -->
+        <!-- Replace the header in evc.html: -->
         <header class="header">
             <div class="header-left">
-                <div class="crown-icon" onclick="goHome()">👑</div>
+                <div class="crown-icon" onclick="goHome()">♛</div>
                 <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
             </div>
             <div class="header-right">
                 <div class="header-buttons">
                     <button class="header-btn" onclick="goHome()">HOME</button>
-                    <button id="wallet-btn" class="header-btn" onclick="showWallet()">
-                        <span class="wallet-icon">💰</span>
+                    <button id="wallet-btn" class="header-btn hidden" onclick="showWallet()">
+                        <span class="wallet-icon">◈</span>
                         <span id="balance">₹0</span>
                     </button>
+                    <button id="login-required" class="primary-btn" onclick="goHome(); setTimeout(showLogin, 100);">LOGIN TO EARN</button>
                 </div>
             </div>
         </header>
