@@ -292,7 +292,10 @@ function showModal(modalId) {
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 // Clean up ad timer when modal closes
@@ -302,9 +305,17 @@ function cleanupAdTimer() {
         window.currentAdTimer = null;
     }
     const claimBtn = document.getElementById('claim-reward');
-    if (claimBtn) claimBtn.classList.add('hidden');
+    if (claimBtn) {
+        claimBtn.classList.add('hidden');
+    }
     const adVideo = document.getElementById('ad-video');
-    if (adVideo) adVideo.src = '';
+    if (adVideo) {
+        adVideo.src = '';
+    }
+    const timerEl = document.getElementById('ad-timer');
+    if (timerEl) {
+        timerEl.textContent = '30';
+    }
 }
 
 // Wallet Functions
@@ -509,32 +520,34 @@ function watchAd() {
         return;
     }
     
+    // Clear any existing timer
+    if (window.currentAdTimer) {
+        clearInterval(window.currentAdTimer);
+        window.currentAdTimer = null;
+    }
+    
     const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
-    document.getElementById('ad-video').src = adUrl + '?autoplay=1';
+    document.getElementById('ad-video').src = adUrl + '?autoplay=1&mute=1';
     showModal('ad-modal');
     
-    let timeLeft = 32; // Video duration + 2 seconds
-    let timerInterval;
-    let videoStarted = false;
+    // Reset claim button
+    const claimBtn = document.getElementById('claim-reward');
+    claimBtn.classList.add('hidden');
     
-    // Wait 2 seconds before starting timer
-    setTimeout(() => {
-        videoStarted = true;
+    let timeLeft = 32; // 30 second video + 2 seconds buffer
+    document.getElementById('ad-timer').textContent = timeLeft;
+    
+    // Start timer immediately
+    window.currentAdTimer = setInterval(() => {
+        timeLeft--;
         document.getElementById('ad-timer').textContent = timeLeft;
         
-        timerInterval = setInterval(() => {
-            timeLeft--;
-            document.getElementById('ad-timer').textContent = timeLeft;
-            
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                document.getElementById('claim-reward').classList.remove('hidden');
-            }
-        }, 1000);
-    }, 2000);
-    
-    // Store interval for cleanup
-    window.currentAdTimer = timerInterval;
+        if (timeLeft <= 0) {
+            clearInterval(window.currentAdTimer);
+            window.currentAdTimer = null;
+            claimBtn.classList.remove('hidden');
+        }
+    }, 1000);
     
     // Log ad view
     logActivity('ad_view', { userId: currentUser.id, adUrl });
