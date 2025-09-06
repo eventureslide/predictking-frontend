@@ -250,6 +250,17 @@ body {
     text-transform: uppercase;
 }
 
+.default-theme .primary-btn {
+    background: transparent;
+    border: 2px solid #FFF3DA;
+    color: #FFF3DA;
+}
+
+.default-theme .primary-btn:hover {
+    background: #FFF3DA;
+    color: #141414;
+}
+
 .primary-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(158, 240, 26, 0.4);
