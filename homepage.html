@@ -60,7 +60,30 @@
         </main>
 
         <!-- EVC Button -->
-        <button class="evc-btn" onclick="goToEVC()">EARN COINS</button>
+        <!-- Stats Bar for Logged Out Mode -->
+        <div id="sticky-stats-bar" class="sticky-stats-bar hidden">
+            <div class="stats-container">
+                <div class="stat-item-sticky">
+                    <span class="stat-label-sticky">Active Players:</span>
+                    <span id="active-players-sticky" class="stat-value-sticky">0</span>
+                </div>
+                <div class="stat-item-sticky">
+                    <span class="stat-label-sticky">Total Pot:</span>
+                    <span id="total-pot-sticky" class="stat-value-sticky">₹0</span>
+                </div>
+            </div>
+            <button class="evc-btn" onclick="goToEVC()">EARN COINS</button>
+        </div>
+
+        <!-- Original EVC Button (hidden when logged out) -->
+        <button id="original-evc-btn" class="evc-btn" onclick="goToEVC()">EARN COINS</button>
+            
+
+                
+</div>
+
+<!-- Original EVC Button (hidden when logged out) -->
+<button id="original-evc-btn" class="evc-btn" onclick="goToEVC()">EARN COINS</button>
     </div>
 
     <!-- Login Modal -->
