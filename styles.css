@@ -251,6 +251,37 @@ body {
     box-shadow: 0 5px 15px rgba(158, 240, 26, 0.4);
 }
 
+.modal .primary-btn {
+    background: var(--neon);
+    color: #141414;
+    border: 2px solid var(--neon);
+    font-weight: 700;
+}
+
+.modal .secondary-btn {
+    background: transparent;
+    color: var(--neon);
+    border: 2px solid var(--neon);
+}
+
+.modal-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #333;
+}
+
+.modal-footer a {
+    color: var(--neon);
+    text-decoration: none;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.modal-footer a:hover {
+    text-decoration: underline;
+}
+
 .secondary-btn {
     background: transparent;
     border: 2px solid var(--neon);
@@ -758,13 +789,13 @@ input:focus, select:focus, textarea:focus {
     color: #ff0a54;
 }
 
-/* EVC Button */
+/* Replace existing .evc-btn styles with: */
 .evc-btn {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
-    background: linear-gradient(135deg, var(--neon), rgba(158, 240, 26, 0.8));
-    border: none;
+    background: #FFF3DA;
+    border: 2px solid #FFF3DA;
     color: #141414;
     padding: 1rem 2rem;
     border-radius: 50px;
@@ -774,12 +805,33 @@ input:focus, select:focus, textarea:focus {
     font-size: 1rem;
     transition: all 0.3s ease;
     z-index: 1000;
-    box-shadow: 0 5px 20px rgba(158, 240, 26, 0.3);
+    box-shadow: 0 5px 20px rgba(255, 243, 218, 0.3);
 }
 
 .evc-btn:hover {
     transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255, 243, 218, 0.5);
+}
+
+/* Themed EVC button when logged in */
+.male-theme .evc-btn {
+    background: linear-gradient(135deg, #9ef01a, rgba(158, 240, 26, 0.8));
+    border-color: #9ef01a;
+    box-shadow: 0 5px 20px rgba(158, 240, 26, 0.3);
+}
+
+.male-theme .evc-btn:hover {
     box-shadow: 0 10px 30px rgba(158, 240, 26, 0.5);
+}
+
+.female-theme .evc-btn {
+    background: linear-gradient(135deg, #ff0a54, rgba(255, 10, 84, 0.8));
+    border-color: #ff0a54;
+    box-shadow: 0 5px 20px rgba(255, 10, 84, 0.3);
+}
+
+.female-theme .evc-btn:hover {
+    box-shadow: 0 10px 30px rgba(255, 10, 84, 0.5);
 }
 
 /* Wallet */
@@ -864,7 +916,7 @@ input:focus, select:focus, textarea:focus {
 /* Notifications */
 .notification {
     position: fixed;
-    top: 100px;
+    top: 120px;
     right: 2rem;
     background: rgba(20, 20, 20, 0.95);
     border: 1px solid var(--neon);
@@ -948,6 +1000,27 @@ input:focus, select:focus, textarea:focus {
 .danger-btn {
     background: #ff0a54 !important;
     color: #fff !important;
+}
+
+/* ADD: */
+.male-theme .danger-btn {
+    background: #ff0a54 !important;
+    color: #fff !important;
+}
+
+.female-theme .danger-btn {
+    background: #9ef01a !important;
+    color: #141414 !important;
+}
+
+/* Fix EVC button in female theme */
+.female-theme .evc-btn {
+    background: linear-gradient(135deg, #ff0a54, rgba(255, 10, 84, 0.8));
+    box-shadow: 0 5px 20px rgba(255, 10, 84, 0.3);
+}
+
+.female-theme .evc-btn:hover {
+    box-shadow: 0 10px 30px rgba(255, 10, 84, 0.5);
 }
 
 /* Notifications Tab */
