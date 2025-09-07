@@ -1,0 +1,17 @@
+{
+    "name": "PredictKing",
+    "short_name": "PredictKing",
+    "description": "Predict. Win. Dominate.",
+    "start_url": "/homepage.html",
+    "display": "standalone",
+    "orientation": "portrait",
+    "theme_color": "#141414",
+    "background_color": "#141414",
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ]
+}
