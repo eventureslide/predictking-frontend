@@ -73,11 +73,22 @@ body {
 }
 
 .loading-screen .logo {
-    font-size: 3rem;
+    font-size: 2.2rem;
     font-weight: 900;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     margin-top: -0.5rem;
     margin-bottom: 0.5rem;
+}
+
+@media (max-width: 480px) {
+    .loading-screen .logo {
+        font-size: 1.8rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .loading-screen .crown-icon {
+        font-size: 4rem;
+    }
 }
 
 .motto {
@@ -223,6 +234,38 @@ body {
     grid-template-rows: 1fr 1fr;
     gap: 0.5rem;
     margin-right: 1rem;
+}
+
+/* Logged out specific layout */
+.logged-out-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.logged-out-login {
+    background: transparent !important;
+    border: 2px solid #FFF3DA !important;
+    color: #FFF3DA !important;
+    padding: 0.8rem 2rem !important;
+}
+
+.logged-out-login:hover {
+    background: #FFF3DA !important;
+    color: #141414 !important;
+}
+
+.button-grid-2x1 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+}
+
+.button-grid-2x1 .header-btn {
+    width: 3.5rem;
+    height: 3.5rem;
+    font-size: 1.3rem;
 }
 
 .header-btn {
@@ -1153,6 +1196,70 @@ input:focus, select:focus, textarea:focus {
     border-left-color: #ff0a54;
 }
 
+.notification {
+    position: fixed;
+    top: 0;
+    left: -400px; /* Start off-screen left */
+    width: 350px;
+    background: rgba(255, 243, 218, 0.95) !important;
+    color: #141414 !important;
+    padding: 1.5rem 2rem;
+    border-radius: 0 0 12px 0;
+    z-index: 10001;
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    backdrop-filter: blur(10px);
+    border-left: 4px solid #141414;
+    box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.male-theme .notification {
+    background: rgba(158, 240, 26, 0.95) !important;
+    border-left-color: #141414;
+}
+
+.female-theme .notification {
+    background: rgba(255, 10, 84, 0.95) !important;
+    border-left-color: #141414;
+}
+
+
+.notification {
+    position: fixed;
+    top: 0;
+    left: -400px;
+    width: 350px;
+    /* Translucency: change alpha value (0.0-1.0) here */
+    background: rgba(255, 243, 218, 0.95) !important;
+    color: #141414 !important;
+    padding: 1.5rem 2rem;
+    border-radius: 0 0 12px 0;
+    z-index: 10001;
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    backdrop-filter: blur(10px);
+    border-left: 4px solid #141414 !important;
+    box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.male-theme .notification {
+    background: rgba(158, 240, 26, 0.95) !important;
+    border-left-color: #141414 !important;
+}
+
+.female-theme .notification {
+    background: rgba(255, 10, 84, 0.95) !important;
+    border-left-color: #141414 !important;
+}
+
+.notification.slide-in-left {
+    left: 0;
+    transform: translateX(0);
+}
+
+.notification.slide-out-right {
+    left: 100vw;
+    transform: translateX(0);
+}
+
 .notification.slide-in-right {
     right: 0;
     transform: translateX(0);
@@ -1409,6 +1516,115 @@ input:focus, select:focus, textarea:focus {
     line-height: 1.6;
 }
 
+
+/* Ad Modal Specific */
+.ad-modal-content {
+    position: relative;
+}
+
+.ad-container {
+    position: relative;
+    margin: 2rem 0;
+}
+
+.ad-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 10;
+    cursor: not-allowed;
+}
+
+.ad-close-bottom {
+    position: absolute;
+    bottom: 1rem;
+    right: 1.5rem;
+    color: #aaa;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.ad-close-bottom:hover {
+    color: var(--neon);
+}
+
+/* Emoji Theming System */
+/* 
+To individually change emoji tint/filter:
+- Add class "emoji-warm-white" for warm white tint
+- Add class "emoji-male" for male theme tint  
+- Add class "emoji-female" for female theme tint
+- Add class "emoji-original" to show original colors
+*/
+
+/* Default logged out theme - warm white tint */
+body:not(.male-theme):not(.female-theme) .crown-icon,
+body:not(.male-theme):not(.female-theme) .wallet-icon,
+body:not(.male-theme):not(.female-theme) .event-placeholder,
+body:not(.male-theme):not(.female-theme) .card-icon,
+body:not(.male-theme):not(.female-theme) .header-btn {
+    filter: grayscale(100%) sepia(1) hue-rotate(35deg) saturate(0.8) brightness(1.1);
+    color: #FFF3DA;
+}
+
+/* Male theme - green tint */
+.male-theme .crown-icon,
+.male-theme .logo,
+.male-theme .wallet-icon,
+.male-theme .event-placeholder,
+.male-theme .card-icon,
+.male-theme .header-btn {
+    filter: grayscale(100%) sepia(1) hue-rotate(65deg) saturate(3) brightness(1.2);
+    color: #9ef01a;
+}
+
+/* Female theme - pink tint */
+.female-theme .crown-icon,
+.female-theme .logo,
+.female-theme .wallet-icon,
+.female-theme .event-placeholder,
+.female-theme .card-icon,
+.female-theme .header-btn {
+    filter: grayscale(100%) sepia(1) hue-rotate(300deg) saturate(3) brightness(1.2);
+    color: #ff0a54;
+}
+
+/* Individual emoji control classes */
+.emoji-warm-white {
+    filter: grayscale(100%) sepia(1) hue-rotate(35deg) saturate(0.8) brightness(1.1) !important;
+    color: #FFF3DA !important;
+}
+
+.emoji-male {
+    filter: grayscale(100%) sepia(1) hue-rotate(65deg) saturate(3) brightness(1.2) !important;
+    color: #9ef01a !important;
+}
+
+.emoji-female {
+    filter: grayscale(100%) sepia(1) hue-rotate(300deg) saturate(3) brightness(1.2) !important;
+    color: #ff0a54 !important;
+}
+
+.emoji-original {
+    filter: none !important;
+    color: initial !important;
+}
+
+/* EVC Page - Force warm white emojis regardless of theme */
+.evc-page .crown-icon,
+.evc-page .logo,
+.evc-page .wallet-icon,
+.evc-page .card-icon,
+.evc-page .header-btn,
+.evc-page #home-btn {
+    filter: grayscale(100%) sepia(1) hue-rotate(35deg) saturate(0.8) brightness(1.1) !important;
+    color: #FFF3DA !important;
+}
+
 /* Loading state */
 .loading::before {
     content: '';
@@ -1503,6 +1719,30 @@ input:focus, select:focus, textarea:focus {
         gap: 0.3rem;
         padding: 0.8rem;
         font-size: 0.8rem;
+    }
+    .leaderboard-row {
+        display: grid;
+        grid-template-columns: 60px 50px 2fr 120px 120px;
+        gap: 0.8rem;
+        padding: 1rem;
+        border-bottom: 1px solid #333;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+    
+    .name-container {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+    }
+    
+    .name {
+        font-weight: 600;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.2;
+        max-width: 100%;
     }
     
     .ladder-header,
