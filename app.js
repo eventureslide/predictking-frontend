@@ -73,11 +73,14 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoadingScreen();
     }
     
-    // Enhanced loading sequence
+    // Enhanced loading sequence with loading bar wait
+    const loadingBarDuration = 3000; // 3 seconds for loading bar
+    const loadingBarPromise = new Promise(resolve => setTimeout(resolve, loadingBarDuration));
+    
     Promise.all([
         loadInitialData(),
         checkLoginStatus(),
-        new Promise(resolve => setTimeout(resolve, 2000)) // Minimum loading time
+        loadingBarPromise // Always wait for loading bar to complete
     ]).then(() => {
         if (document.getElementById('loading-screen')) {
             hideLoadingScreen();
@@ -620,7 +623,11 @@ function watchAd() {
     }
     
     const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
-    document.getElementById('ad-video').src = adUrl + '?autoplay=1&mute=1';
+    const iframe = document.getElementById('ad-video');
+    
+    // Enhanced video URL with autoplay, unmuted, and controls disabled
+    iframe.src = adUrl + '?autoplay=1&mute=0&controls=0&disablekb=1&fs=0&modestbranding=1&rel=0';
+    
     showModal('ad-modal');
     
     // Reset claim button
@@ -628,19 +635,44 @@ function watchAd() {
     claimBtn.classList.add('hidden');
     
     let timeLeft = 32; // 30 second video + 2 seconds buffer
+    let isPaused = false;
     document.getElementById('ad-timer').textContent = timeLeft;
     
-    // Start timer immediately
+    // Enhanced timer with buffering detection
     window.currentAdTimer = setInterval(() => {
-        timeLeft--;
-        document.getElementById('ad-timer').textContent = timeLeft;
-        
-        if (timeLeft <= 0) {
-            clearInterval(window.currentAdTimer);
-            window.currentAdTimer = null;
-            claimBtn.classList.remove('hidden');
+        // Simple buffering detection (you may need to enhance this)
+        if (!isPaused) {
+            timeLeft--;
+            document.getElementById('ad-timer').textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(window.currentAdTimer);
+                window.currentAdTimer = null;
+                claimBtn.classList.remove('hidden');
+            }
         }
     }, 1000);
+    
+    // Attempt to detect video state changes
+    iframe.onload = function() {
+        try {
+            // This may not work due to CORS, but worth trying
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            const video = iframeDoc.querySelector('video');
+            
+            if (video) {
+                video.addEventListener('waiting', () => {
+                    isPaused = true;
+                });
+                
+                video.addEventListener('playing', () => {
+                    isPaused = false;
+                });
+            }
+        } catch (e) {
+            console.log('Cannot access iframe content due to CORS restrictions');
+        }
+    };
     
     // Log ad view
     logActivity('ad_view', { userId: currentUser.id, adUrl });
@@ -939,9 +971,10 @@ async function loadLeaderboard() {
             row.innerHTML = `
                 <span class="position">#${position}</span>
                 <img src="${user.profilePic || getRandomProfilePic(user.gender)}" alt="Profile" class="leaderboard-pic ${user.gender}">
-                <span class="name">${user.displayName}</span>
+                <div class="name-container">
+                    <span class="name">${user.displayName}</span>
+                </div>
                 <span class="winnings">${formatCurrency(user.totalWinnings || 0, user.currency)}</span>
-                <span class="bets">${user.totalBets || 0}</span>
                 <span class="rep-score-container">
                     <span class="rep-badge ${user.repScore.toLowerCase()}">${user.repScore}</span>
                 </span>
@@ -1026,17 +1059,17 @@ function showNotification(message, type = 'info') {
     const text = document.getElementById('notification-text');
     
     text.textContent = message;
-    notification.className = `notification ${type} slide-in-right`;
+    notification.className = `notification ${type} slide-in-left`;
     notification.classList.remove('hidden');
     
     // Slide out after 2 seconds
     setTimeout(() => {
-        notification.classList.remove('slide-in-right');
-        notification.classList.add('slide-out-left');
+        notification.classList.remove('slide-in-left');
+        notification.classList.add('slide-out-right');
         
         setTimeout(() => {
             notification.classList.add('hidden');
-            notification.classList.remove('slide-out-left');
+            notification.classList.remove('slide-out-right');
         }, 500);
     }, 2000);
 }
