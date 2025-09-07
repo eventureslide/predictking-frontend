@@ -38,11 +38,12 @@
                 </div>
                 <div class="header-buttons">
                     <!-- Logged out buttons -->
-                    <div id="logged-out-buttons" class="button-grid">
-                        <button id="login-btn" class="primary-btn" onclick="showLogin()">LOGIN</button>
-                        <button class="header-btn" onclick="showLeaderboard()">🏆</button>
-                        <button class="header-btn" onclick="showWallet()">💰</button>
-                        <button class="header-btn" onclick="showNotifications()">🔔</button>
+                    <div id="logged-out-buttons" class="logged-out-layout">
+                        <button id="login-btn" class="primary-btn logged-out-login" onclick="showLogin()">LOGIN</button>
+                        <div class="button-grid-2x1">
+                            <button class="header-btn" onclick="showLeaderboard()">🏆</button>
+                            <button class="header-btn" onclick="showWallet()">💰</button>
+                        </div>
                     </div>
                     
                     <!-- Logged in buttons -->
