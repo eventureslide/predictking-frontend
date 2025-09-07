@@ -69,31 +69,55 @@ function getRandomProfilePic(gender) {
 // Initialization
 /* Replace with: */
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if elements exist before using them
     if (document.getElementById('loading-screen')) {
         showLoadingScreen();
     }
     
-    setTimeout(() => {
+    // Enhanced loading sequence
+    Promise.all([
+        loadInitialData(),
+        checkLoginStatus(),
+        new Promise(resolve => setTimeout(resolve, 2000)) // Minimum loading time
+    ]).then(() => {
         if (document.getElementById('loading-screen')) {
             hideLoadingScreen();
         }
-        checkLoginStatus();
-        loadEvents();
-        loadStats();
-        startRealTimeUpdates();
-
-        // Fix EVC page login detection
-        if (window.location.pathname.includes('evc.html')) {
-            const loginRequiredBtn = document.getElementById('login-required');
-            const walletBtn = document.getElementById('wallet-btn');
-            if (currentUser && loginRequiredBtn) {
-                loginRequiredBtn.classList.add('hidden');
-                if (walletBtn) walletBtn.classList.remove('hidden');
-            }
-        }
-    }, 3000);
+        finalizeInitialization();
+    });
 });
+
+async function loadInitialData() {
+    await Promise.all([
+        loadEvents(),
+        loadStats()
+    ]);
+}
+
+function finalizeInitialization() {
+    startRealTimeUpdates();
+    
+    // Update UI based on current page
+    if (window.location.pathname.includes('evc.html')) {
+        updateEVCPageUI();
+    } else {
+        // Homepage UI updates
+        const loggedOutBtns = document.getElementById('logged-out-buttons');
+        const loggedInBtns = document.getElementById('logged-in-buttons');
+        
+        if (currentUser) {
+            if (loggedOutBtns) loggedOutBtns.classList.add('hidden');
+            if (loggedInBtns) loggedInBtns.classList.remove('hidden');
+        } else {
+            if (loggedOutBtns) loggedOutBtns.classList.remove('hidden');
+            if (loggedInBtns) loggedInBtns.classList.add('hidden');
+        }
+    }
+    
+    // Apply theme colors
+    if (currentUser) {
+        forceThemeColors();
+    }
+}
 
 // Loading Screen Functions
 function showLoadingScreen() {
@@ -116,19 +140,13 @@ function setTheme(theme) {
 function updateThemeBasedOnUser() {
     if (!currentUser) {
         setTheme('default');
-        // Show sticky stats bar for logged out users
-        const stickyBar = document.getElementById('sticky-stats-bar');
-        const originalBtn = document.getElementById('original-evc-btn');
-        if (stickyBar) stickyBar.classList.remove('hidden');
-        if (originalBtn) originalBtn.classList.add('hidden');
-        
-        // Hide wallet button when logged out
-        const walletBtn = document.getElementById('wallet-btn');
-        if (walletBtn) walletBtn.classList.add('hidden');
-        
-        // Show login required button on EVC page
-        const loginRequiredBtn = document.getElementById('login-required');
-        if (loginRequiredBtn) loginRequiredBtn.classList.remove('hidden');
+        // Show sticky stats bar for logged out users (homepage only)
+        if (!window.location.pathname.includes('evc.html')) {
+            const stickyBar = document.getElementById('sticky-stats-bar');
+            const originalBtn = document.getElementById('original-evc-btn');
+            if (stickyBar) stickyBar.classList.remove('hidden');
+            if (originalBtn) originalBtn.classList.add('hidden');
+        }
     } else {
         // Hide sticky stats bar for logged in users
         const stickyBar = document.getElementById('sticky-stats-bar');
@@ -141,15 +159,33 @@ function updateThemeBasedOnUser() {
         } else if (currentUser.gender === 'female') {
             setTheme('female');
         }
-        
-        // Show wallet button when logged in
-        const walletBtn = document.getElementById('wallet-btn');
-        if (walletBtn) walletBtn.classList.remove('hidden');
-        
-        // Hide login required button on EVC page
-        const loginRequiredBtn = document.getElementById('login-required');
-        if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
     }
+    
+    // Update page-specific UI
+    if (window.location.pathname.includes('evc.html')) {
+        updateEVCPageUI();
+    }
+}
+
+function forceThemeColors() {
+    // Force exact theme colors after theme change
+    setTimeout(() => {
+        if (currentUser) {
+            const themeColor = currentUser.gender === 'male' ? '#9ef01a' : '#ff0a54';
+            
+            // Update header elements
+            const headerElements = document.querySelectorAll('.logo, .crown-icon, .header-btn');
+            headerElements.forEach(el => {
+                if (el) el.style.color = themeColor + ' !important';
+            });
+            
+            // Update primary buttons
+            const primaryBtns = document.querySelectorAll('.primary-btn');
+            primaryBtns.forEach(btn => {
+                if (btn) btn.style.background = themeColor + ' !important';
+            });
+        }
+    }, 100);
 }
 
 // Authentication Functions
@@ -197,6 +233,7 @@ async function loginUser(code, silentLogin = false) {
         localStorage.setItem('userCode', code);
         updateUIForLoggedInUser();
         updateThemeBasedOnUser();
+        forceThemeColors();
         closeModal('login-modal');
         
         // Only increase active players count for actual login, not refresh
@@ -292,32 +329,50 @@ async function generateSHA256(text) {
 }
 
 /* Replace with: */
-function checkLoginStatus() {
+async function checkLoginStatus() {
     const savedCode = localStorage.getItem('userCode');
     if (savedCode) {
-        loginUser(savedCode, true).then(() => { // Pass true for silent login
-            // Update EVC page UI after login
-            if (window.location.pathname.includes('evc.html')) {
-                updateThemeBasedOnUser();
-                const loginRequiredBtn = document.getElementById('login-required');
-                const walletBtn = document.getElementById('wallet-btn');
-                if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
-                if (walletBtn) walletBtn.classList.remove('hidden');
-            }
-        });
+        await loginUser(savedCode, true); // Pass true for silent login
+        updateThemeBasedOnUser();
+        
+        // Update page-specific UI after login
+        if (window.location.pathname.includes('evc.html')) {
+            updateEVCPageUI();
+        }
     }
 }
 
 function updateUIForLoggedInUser() {
-    const loginBtn = document.getElementById('login-btn');
-    const registerBtn = document.getElementById('register-btn');
-    const walletBtn = document.getElementById('wallet-btn');
+    const loggedOutBtns = document.getElementById('logged-out-buttons');
+    const loggedInBtns = document.getElementById('logged-in-buttons');
     
-    if (loginBtn) loginBtn.classList.add('hidden');
-    if (registerBtn) registerBtn.classList.add('hidden');
-    if (walletBtn) walletBtn.classList.remove('hidden');
+    if (loggedOutBtns) loggedOutBtns.classList.add('hidden');
+    if (loggedInBtns) loggedInBtns.classList.remove('hidden');
     
     updateBalance();
+}
+
+function updateEVCPageUI() {
+    // Handle EVC page specific UI updates
+    const loginRequiredBtn = document.getElementById('login-required');
+    const walletBtn = document.getElementById('wallet-btn');
+    const homeBtn = document.getElementById('home-btn');
+    
+    if (currentUser) {
+        if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
+        if (walletBtn) walletBtn.classList.remove('hidden');
+        if (homeBtn) {
+            homeBtn.style.color = currentUser.gender === 'male' ? '#9ef01a' : '#ff0a54';
+            homeBtn.style.borderColor = currentUser.gender === 'male' ? '#9ef01a' : '#ff0a54';
+        }
+    } else {
+        if (loginRequiredBtn) loginRequiredBtn.classList.remove('hidden');
+        if (walletBtn) walletBtn.classList.add('hidden');
+        if (homeBtn) {
+            homeBtn.style.color = '#FFF3DA';
+            homeBtn.style.borderColor = '#FFF3DA';
+        }
+    }
 }
 
 // Modal Functions
@@ -887,7 +942,9 @@ async function loadLeaderboard() {
                 <span class="name">${user.displayName}</span>
                 <span class="winnings">${formatCurrency(user.totalWinnings || 0, user.currency)}</span>
                 <span class="bets">${user.totalBets || 0}</span>
-                <span class="rep-score ${user.repScore.toLowerCase()}">${user.repScore}</span>
+                <span class="rep-score-container">
+                    <span class="rep-badge ${user.repScore.toLowerCase()}">${user.repScore}</span>
+                </span>
             `;
             
             leaderboardEl.appendChild(row);
@@ -969,12 +1026,19 @@ function showNotification(message, type = 'info') {
     const text = document.getElementById('notification-text');
     
     text.textContent = message;
-    notification.className = `notification ${type}`;
+    notification.className = `notification ${type} slide-in-right`;
     notification.classList.remove('hidden');
     
+    // Slide out after 2 seconds
     setTimeout(() => {
-        notification.classList.add('hidden');
-    }, 3000);
+        notification.classList.remove('slide-in-right');
+        notification.classList.add('slide-out-left');
+        
+        setTimeout(() => {
+            notification.classList.add('hidden');
+            notification.classList.remove('slide-out-left');
+        }, 500);
+    }, 2000);
 }
 
 function showBuffering() {
@@ -1011,15 +1075,22 @@ function downloadCode() {
 }
 
 function logout() {
-    updateActivePlayersCount(-1); // Decrease count
+    updateActivePlayersCount(-1);
     currentUser = null;
     localStorage.removeItem('userCode');
     setTheme('default');
     
-    // Update UI
-    document.getElementById('login-btn').classList.remove('hidden');
-    document.getElementById('register-btn').classList.remove('hidden');
-    document.getElementById('wallet-btn').classList.add('hidden');
+    // Update UI for homepage
+    const loggedOutBtns = document.getElementById('logged-out-buttons');
+    const loggedInBtns = document.getElementById('logged-in-buttons');
+    
+    if (loggedOutBtns) loggedOutBtns.classList.remove('hidden');
+    if (loggedInBtns) loggedInBtns.classList.add('hidden');
+    
+    // Update EVC page UI if needed
+    if (window.location.pathname.includes('evc.html')) {
+        updateEVCPageUI();
+    }
     
     closeModal('profile-modal');
     showNotification('Logged out successfully', 'success');
@@ -1068,6 +1139,66 @@ function claimDailyBonus() {
     
     // Log daily bonus
     logActivity('daily_bonus', { userId: currentUser.id, bonus });
+}
+
+// Live Chat and Notifications Functions
+function showLiveChat() {
+    if (!currentUser) {
+        showNotification('Please login to access Live Chat', 'error');
+        return;
+    }
+    
+    // Create coming soon modal
+    let modal = document.getElementById('live-chat-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'live-chat-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('live-chat-modal')">&times;</span>
+                <h2>Live Chat</h2>
+                <div class="coming-soon">
+                    <h3>Coming Soon!</h3>
+                    <p>Live chat feature will be available soon. Stay tuned for updates!</p>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    showModal('live-chat-modal');
+}
+
+function showNotifications() {
+    if (!currentUser) {
+        showNotification('Please login to view notifications', 'error');
+        return;
+    }
+    
+    // Create notifications modal
+    let modal = document.getElementById('notifications-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'notifications-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('notifications-modal')">&times;</span>
+                <h2>NOTIFICATIONS</h2>
+                <div class="notifications-tab">
+                    ${createNotificationsTab()}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    showModal('notifications-modal');
+}
+
+function openTelegram() {
+    window.open('https://t.me/PredictKingSupport', '_blank');
 }
 
 // Close modals when clicking outside
