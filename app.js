@@ -68,30 +68,31 @@ function getRandomProfilePic(gender) {
 
 // Initialization
 /* Replace with: */
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if elements exist before using them
-    if (document.getElementById('loading-screen')) {
-        showLoadingScreen();
+document.addEventListener('DOMContentLoaded', async function() {
+    showLoadingScreen();
+    
+    // Prevent text selection on loading screen
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.style.userSelect = 'none';
+        loadingScreen.style.webkitUserSelect = 'none';
+        loadingScreen.style.mozUserSelect = 'none';
     }
     
+    // Load all necessary data
+    await Promise.all([
+        checkLoginStatus(),
+        loadEvents(),
+        loadStats()
+    ]);
+    
+    startRealTimeUpdates();
+    updateThemeBasedOnUser();
+    
+    // Wait for loading bar to complete (minimum 3 seconds)
     setTimeout(() => {
-        if (document.getElementById('loading-screen')) {
-            hideLoadingScreen();
-        }
-        checkLoginStatus();
-        loadEvents();
-        loadStats();
-        startRealTimeUpdates();
-
-        // Fix EVC page login detection
-        if (window.location.pathname.includes('evc.html')) {
-            const loginRequiredBtn = document.getElementById('login-required');
-            const walletBtn = document.getElementById('wallet-btn');
-            if (currentUser && loginRequiredBtn) {
-                loginRequiredBtn.classList.add('hidden');
-                if (walletBtn) walletBtn.classList.remove('hidden');
-            }
-        }
+        hideLoadingScreen();
+        updateButtonLayout();
     }, 3000);
 });
 
@@ -150,6 +151,40 @@ function updateThemeBasedOnUser() {
         const loginRequiredBtn = document.getElementById('login-required');
         if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
     }
+}
+
+function updateButtonLayout() {
+    const profileBtn = document.getElementById('profile-btn');
+    const notificationsBtn = document.getElementById('notifications-btn');
+    const loginBtn = document.getElementById('login-btn');
+    
+    if (currentUser) {
+        // Logged in: show 4 buttons in grid
+        if (profileBtn) profileBtn.classList.remove('hidden');
+        if (notificationsBtn) notificationsBtn.classList.remove('hidden');
+        if (loginBtn) loginBtn.classList.add('hidden');
+    } else {
+        // Logged out: show only 2 buttons
+        if (profileBtn) profileBtn.classList.add('hidden');
+        if (notificationsBtn) notificationsBtn.classList.add('hidden');
+        if (loginBtn) loginBtn.classList.remove('hidden');
+    }
+}
+
+function showLiveChat() {
+    if (!currentUser) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    showModal('livechat-modal');
+}
+
+function showNotifications() {
+    if (!currentUser) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    showModal('notifications-modal');
 }
 
 // Authentication Functions
@@ -261,7 +296,8 @@ async function registerUser() {
         // Check if nickname exists
         const nicknameQuery = await db.collection('users').where('nickname', '==', formData.nickname).get();
         if (!nicknameQuery.empty) {
-            showNotification('Nickname already exists', 'error');
+            showNotification('Nickname already taken. Please choose another.', 'error');
+            hideBuffering();
             return;
         }
 
@@ -565,7 +601,7 @@ function watchAd() {
     }
     
     const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
-    document.getElementById('ad-video').src = adUrl + '?autoplay=1&mute=1';
+    document.getElementById('ad-video').src = adUrl + '?autoplay=1&mute=0&controls=0';
     showModal('ad-modal');
     
     // Reset claim button
@@ -970,11 +1006,22 @@ function showNotification(message, type = 'info') {
     
     text.textContent = message;
     notification.className = `notification ${type}`;
+    notification.style.transform = 'translateX(-100%)';
     notification.classList.remove('hidden');
     
+    // Slide in from left
     setTimeout(() => {
-        notification.classList.add('hidden');
-    }, 3000);
+        notification.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Slide out to right after 2 seconds
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100vw)';
+        setTimeout(() => {
+            notification.classList.add('hidden');
+            notification.style.transform = 'translateX(-100%)';
+        }, 300);
+    }, 2000);
 }
 
 function showBuffering() {
