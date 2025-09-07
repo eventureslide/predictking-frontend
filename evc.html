@@ -8,7 +8,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="main-app" class="main-app evc-page">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="logo-container">
+            <div class="crown-icon">♛</div>
+            <h1 class="logo pulsing">PREDICTKING</h1>
+            <p class="motto">Earn. Win. Dominate.</p>
+        </div>
+        <div class="loading-bar">
+            <div class="loading-fill"></div>
+        </div>
+    </div>
+
+    <div id="main-app" class="main-app evc-page hidden">
         <!-- Header -->
         <!-- Replace the header in evc.html: -->
        <header class="header">
@@ -19,8 +31,7 @@
             <div class="header-right">
                 <div class="header-buttons">
                     <button id="wallet-btn" class="header-btn hidden" onclick="showWallet()">
-                        <span class="wallet-icon">◈</span>
-                        <span id="balance">₹0</span>
+                        <span class="wallet-icon">💰</span>
                     </button>
                     <button id="login-required" class="primary-btn" onclick="goHome(); setTimeout(showLogin, 100);">LOGIN TO EARN</button>
                     <button id="home-btn" class="secondary-btn" onclick="goHome()">HOME</button>
