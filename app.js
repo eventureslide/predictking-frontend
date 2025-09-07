@@ -69,17 +69,6 @@ function getRandomProfilePic(gender) {
 // Initialization
 /* Replace with: */
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if we're on EVC page
-    if (window.location.pathname.includes('evc.html')) {
-        showEVCLoadingScreen();
-        setTimeout(() => {
-            checkLoginStatus();
-            updateThemeBasedOnUser();
-            hideEVCLoadingScreen();
-        }, 2000);
-        return;
-    }
-    
     // Check if elements exist before using them
     if (document.getElementById('loading-screen')) {
         showLoadingScreen();
@@ -117,81 +106,6 @@ function hideLoadingScreen() {
     document.getElementById('main-app').classList.remove('hidden');
 }
 
-function showEVCLoadingScreen() {
-    const loadingScreen = document.getElementById('evc-loading-screen');
-    if (loadingScreen) {
-        loadingScreen.style.display = 'flex';
-        document.getElementById('main-app').classList.add('hidden');
-    }
-}
-
-function hideEVCLoadingScreen() {
-    const loadingScreen = document.getElementById('evc-loading-screen');
-    if (loadingScreen) {
-        loadingScreen.style.display = 'none';
-        document.getElementById('main-app').classList.remove('hidden');
-    }
-}
-
-function showLiveChat() {
-    if (!currentUser) {
-        showNotification('Please login to access live chat', 'error');
-        return;
-    }
-    
-    // Create and show coming soon modal
-    let modal = document.getElementById('live-chat-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'live-chat-modal';
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('live-chat-modal')">&times;</span>
-                <h2>LIVE CHAT</h2>
-                <div style="text-align: center; padding: 2rem;">
-                    <p style="font-size: 1.2rem; margin-bottom: 2rem;">Coming Soon!</p>
-                    <p>Live chat feature is under development.</p>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-    showModal('live-chat-modal');
-}
-
-function showNotifications() {
-    if (!currentUser) {
-        showNotification('Please login first', 'error');
-        return;
-    }
-    
-    // Create and show notifications modal with same content as profile notifications tab
-    let modal = document.getElementById('notifications-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'notifications-modal';
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('notifications-modal')">&times;</span>
-                <h2>NOTIFICATIONS</h2>
-                <div class="notifications-tab">
-                    <div class="notification-item">
-                        <div class="notification-content">
-                            <h4>Welcome to PredictKing!</h4>
-                            <p>Start betting and earning rewards.</p>
-                            <span class="notification-time">2 hours ago</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-    showModal('notifications-modal');
-}
-
 // Theme Management
 function setTheme(theme) {
     document.body.className = '';
@@ -202,23 +116,39 @@ function setTheme(theme) {
 function updateThemeBasedOnUser() {
     if (!currentUser) {
         setTheme('default');
-        // Show logged out buttons, hide logged in buttons
-        const loggedOutBtns = document.querySelector('.header-buttons:not(.logged-in-buttons)');
-        const loggedInBtns = document.querySelector('.logged-in-buttons');
-        if (loggedOutBtns) loggedOutBtns.classList.remove('hidden');
-        if (loggedInBtns) loggedInBtns.classList.add('hidden');
+        // Show sticky stats bar for logged out users
+        const stickyBar = document.getElementById('sticky-stats-bar');
+        const originalBtn = document.getElementById('original-evc-btn');
+        if (stickyBar) stickyBar.classList.remove('hidden');
+        if (originalBtn) originalBtn.classList.add('hidden');
+        
+        // Hide wallet button when logged out
+        const walletBtn = document.getElementById('wallet-btn');
+        if (walletBtn) walletBtn.classList.add('hidden');
+        
+        // Show login required button on EVC page
+        const loginRequiredBtn = document.getElementById('login-required');
+        if (loginRequiredBtn) loginRequiredBtn.classList.remove('hidden');
     } else {
-        // Hide logged out buttons, show logged in buttons
-        const loggedOutBtns = document.querySelector('.header-buttons:not(.logged-in-buttons)');
-        const loggedInBtns = document.querySelector('.logged-in-buttons');
-        if (loggedOutBtns) loggedOutBtns.classList.add('hidden');
-        if (loggedInBtns) loggedInBtns.classList.remove('hidden');
+        // Hide sticky stats bar for logged in users
+        const stickyBar = document.getElementById('sticky-stats-bar');
+        const originalBtn = document.getElementById('original-evc-btn');
+        if (stickyBar) stickyBar.classList.add('hidden');
+        if (originalBtn) originalBtn.classList.remove('hidden');
         
         if (currentUser.gender === 'male') {
             setTheme('male');
         } else if (currentUser.gender === 'female') {
             setTheme('female');
         }
+        
+        // Show wallet button when logged in
+        const walletBtn = document.getElementById('wallet-btn');
+        if (walletBtn) walletBtn.classList.remove('hidden');
+        
+        // Hide login required button on EVC page
+        const loginRequiredBtn = document.getElementById('login-required');
+        if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
     }
 }
 
@@ -953,12 +883,10 @@ async function loadLeaderboard() {
             row.className = 'leaderboard-row';
             row.innerHTML = `
                 <span class="position">#${position}</span>
-                <img src="${user.profilePic || getRandomProfilePic(user.gender)}" 
-                     alt="Profile" 
-                     class="leaderboard-pic ${user.gender}"
-                     onclick="toggleLeaderboardName(this, '${user.displayName}')">
-                <span class="leaderboard-name">${user.displayName.substring(0, 10)}${user.displayName.length > 10 ? '...' : ''}</span>
+                <img src="${user.profilePic || getRandomProfilePic(user.gender)}" alt="Profile" class="leaderboard-pic ${user.gender}">
+                <span class="name">${user.displayName}</span>
                 <span class="winnings">${formatCurrency(user.totalWinnings || 0, user.currency)}</span>
+                <span class="bets">${user.totalBets || 0}</span>
                 <span class="rep-score ${user.repScore.toLowerCase()}">${user.repScore}</span>
             `;
             
@@ -967,22 +895,6 @@ async function loadLeaderboard() {
     } catch (error) {
         console.error('Error loading leaderboard:', error);
     }
-}
-
-function toggleLeaderboardName(element, displayName) {
-    // Remove any existing popups
-    document.querySelectorAll('.leaderboard-name-popup').forEach(popup => popup.remove());
-    
-    // Create new popup
-    const popup = document.createElement('div');
-    popup.className = 'leaderboard-name-popup';
-    popup.textContent = displayName;
-    
-    const row = element.closest('.leaderboard-row');
-    row.appendChild(popup);
-    
-    // Remove popup after 2 seconds
-    setTimeout(() => popup.remove(), 2000);
 }
 
 // Buy-in Functions
@@ -1019,25 +931,24 @@ function testBuyIn() {
     logActivity('buyin', { userId: currentUser.id, amount, method: 'test' });
 }
 
+// Stats and Real-time Updates
 async function loadStats() {
     try {
         const stats = await db.collection('stats').doc('global').get();
         if (stats.exists) {
             const data = stats.data();
             
-            // Update all stat displays
-            const activePlayersEls = ['active-players', 'active-players-sticky', 'active-players-bottom'];
-            const totalPotEls = ['total-pot', 'total-pot-sticky', 'total-pot-bottom'];
+            // Update main stats
+            const activePlayersEl = document.getElementById('active-players');
+            const totalPotEl = document.getElementById('total-pot');
+            if (activePlayersEl) activePlayersEl.textContent = data.activePlayers || 0;
+            if (totalPotEl) totalPotEl.textContent = formatCurrency(data.totalPot || 0, 'INR');
             
-            activePlayersEls.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = data.activePlayers || 0;
-            });
-            
-            totalPotEls.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = formatCurrency(data.totalPot || 0, 'INR');
-            });
+            // Update sticky stats for logged out mode
+            const activePlayersStickyEl = document.getElementById('active-players-sticky');
+            const totalPotStickyEl = document.getElementById('total-pot-sticky');
+            if (activePlayersStickyEl) activePlayersStickyEl.textContent = data.activePlayers || 0;
+            if (totalPotStickyEl) totalPotStickyEl.textContent = formatCurrency(data.totalPot || 0, 'INR');
         }
     } catch (error) {
         console.error('Error loading stats:', error);
@@ -1059,20 +970,11 @@ function showNotification(message, type = 'info') {
     
     text.textContent = message;
     notification.className = `notification ${type}`;
-    
-    // Swoosh animation
     notification.classList.remove('hidden');
-    notification.classList.add('show');
     
     setTimeout(() => {
-        notification.classList.remove('show');
-        notification.classList.add('hide');
-        
-        setTimeout(() => {
-            notification.classList.add('hidden');
-            notification.classList.remove('hide');
-        }, 500);
-    }, 2000);
+        notification.classList.add('hidden');
+    }, 3000);
 }
 
 function showBuffering() {
