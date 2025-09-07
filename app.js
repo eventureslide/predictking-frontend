@@ -97,6 +97,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, remaining);
     });
+
+    // Initialize EVC page specific elements
+    if (window.location.pathname.includes('evc.html')) {
+        // Update ad reward display
+        const adRewardEl = document.getElementById('ad-reward');
+        if (adRewardEl) {
+            adRewardEl.textContent = adminSettings.perAdReward;
+        }
+        
+        // Setup video buffer detection
+        setTimeout(setupVideoBufferDetection, 1000);
+    }
+    
 });
 
 // Loading Screen Functions
@@ -120,7 +133,7 @@ function setTheme(theme) {
 function updateThemeBasedOnUser() {
     if (!currentUser) {
         setTheme('default');
-        // Show sticky stats bar for logged out users
+        updateHeaderButtons();
         const stickyBar = document.getElementById('sticky-stats-bar');
         const originalBtn = document.getElementById('original-evc-btn');
         if (stickyBar) stickyBar.classList.remove('hidden');
@@ -201,6 +214,7 @@ async function loginUser(code, silentLogin = false) {
         localStorage.setItem('userCode', code);
         updateUIForLoggedInUser();
         updateThemeBasedOnUser();
+        updateHeaderButtons();
         closeModal('login-modal');
         
         // Only increase active players count for actual login, not refresh
@@ -311,6 +325,24 @@ function checkLoginStatus() {
             }
         });
     }
+}
+
+// Add after the checkLoginStatus function
+function checkLoginStatus() {
+    const savedCode = localStorage.getItem('userCode');
+    if (savedCode) {
+        return loginUser(savedCode, true).then(() => {
+            updateHeaderButtons();
+            updateThemeBasedOnUser();
+            if (window.location.pathname.includes('evc.html')) {
+                const loginRequiredBtn = document.getElementById('login-required');
+                const walletBtn = document.getElementById('wallet-btn');
+                if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
+                if (walletBtn) walletBtn.classList.remove('hidden');
+            }
+        });
+    }
+    return Promise.resolve();
 }
 
 function updateUIForLoggedInUser() {
@@ -571,6 +603,8 @@ function watchAd() {
     
     const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
     document.getElementById('ad-video').src = adUrl + '?autoplay=1&mute=1';
+    // Add autoplay and unmute parameters
+    document.getElementById('ad-video').src = adUrl + '?autoplay=1&mute=0&controls=0&disablekb=1&fs=0&modestbranding=1';
     showModal('ad-modal');
     
     // Reset claim button
@@ -594,6 +628,37 @@ function watchAd() {
     
     // Log ad view
     logActivity('ad_view', { userId: currentUser.id, adUrl });
+}
+
+// Add video buffering detection
+function setupVideoBufferDetection() {
+    const video = document.getElementById('ad-video');
+    let isBuffering = false;
+    
+    video.addEventListener('waiting', function() {
+        isBuffering = true;
+        if (window.currentAdTimer) {
+            clearInterval(window.currentAdTimer);
+        }
+    });
+    
+    video.addEventListener('canplay', function() {
+        if (isBuffering) {
+            isBuffering = false;
+            // Resume timer
+            let timeLeft = parseInt(document.getElementById('ad-timer').textContent);
+            window.currentAdTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('ad-timer').textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(window.currentAdTimer);
+                    window.currentAdTimer = null;
+                    document.getElementById('claim-reward').classList.remove('hidden');
+                }
+            }, 1000);
+        }
+    });
 }
 
 function claimAdReward() {
@@ -891,7 +956,6 @@ async function loadLeaderboard() {
                 <img src="${user.profilePic || getRandomProfilePic(user.gender)}" alt="Profile" class="leaderboard-pic ${user.gender}">
                 <span class="name">${user.displayName}</span>
                 <span class="winnings">${formatCurrency(user.totalWinnings || 0, user.currency)}</span>
-                <span class="bets">${user.totalBets || 0}</span>
                 <span class="rep-score ${user.repScore.toLowerCase()}">${user.repScore}</span>
             `;
             
@@ -943,11 +1007,9 @@ async function loadStats() {
         if (stats.exists) {
             const data = stats.data();
             
-            // Update main stats
-            const activePlayersEl = document.getElementById('active-players');
-            const totalPotEl = document.getElementById('total-pot');
-            if (activePlayersEl) activePlayersEl.textContent = data.activePlayers || 0;
-            if (totalPotEl) totalPotEl.textContent = formatCurrency(data.totalPot || 0, 'INR');
+            // Update main stats (new layout)
+            const activePlayersMainEl = document.getElementById('active-players-main');
+            if (activePlayersMainEl) activePlayersMainEl.textContent = data.activePlayers || 0;
             
             // Update sticky stats for logged out mode
             const activePlayersStickyEl = document.getElementById('active-players-sticky');
@@ -1028,9 +1090,9 @@ function logout() {
     setTheme('default');
     
     // Update UI
-    document.getElementById('login-btn').classList.remove('hidden');
-    document.getElementById('register-btn').classList.remove('hidden');
-    document.getElementById('wallet-btn').classList.add('hidden');
+    // Update UI
+    updateHeaderButtons();
+    updateThemeBasedOnUser();
     
     closeModal('profile-modal');
     showNotification('Logged out successfully', 'success');
@@ -1118,9 +1180,23 @@ function updateHeaderButtons() {
     }
 }
 
-// Close modals when clicking outside
+// Add these functions after existing modal functions
+function openTelegram() {
+    window.open('https://t.me/predictking_support', '_blank');
+}
+
+// Update existing updateUIForLoggedInUser function
+function updateUIForLoggedInUser() {
+    updateHeaderButtons();
+    updateBalance();
+}
+
+// Update the close modal click handler
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
+        if (event.target.id === 'ad-modal') {
+            cleanupAdTimer();
+        }
         event.target.style.display = 'none';
     }
 }
