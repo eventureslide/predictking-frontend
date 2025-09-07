@@ -1,4 +1,4 @@
-/* PredictKing Styles - Optimized and Consolidated */
+/* PredictKing Styles */
 * {
     margin: 0;
     padding: 0;
@@ -11,28 +11,6 @@ body {
     color: #FFF3DA;
     min-height: 100vh;
     overflow-x: hidden;
-}
-
-/* Theme Colors */
-.default-theme {
-    --primary: #FFF3DA;
-    --secondary: #141414;
-    --accent: #666;
-    --neon: #FFF3DA;
-}
-
-.male-theme {
-    --primary: #FFF3DA;
-    --secondary: #141414;
-    --accent: #9ef01a;
-    --neon: #9ef01a;
-}
-
-.female-theme {
-    --primary: #FFF3DA;
-    --secondary: #141414;
-    --accent: #ff0a54;
-    --neon: #ff0a54;
 }
 
 /* Loading Screen */
@@ -48,47 +26,25 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 10000;
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    pointer-events: none;
 }
 
 .logo-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.2rem;
     text-align: center;
     margin-bottom: 3rem;
 }
 
-.loading-screen .crown-icon {
-    font-size: 6rem;
-    margin-bottom: 0;
-    line-height: 1;
+.crown-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
     filter: grayscale(100%);
     transition: all 0.3s ease;
 }
 
-.loading-screen .logo {
-    font-size: 2.2rem;
+.logo {
+    font-size: 3rem;
     font-weight: 900;
-    letter-spacing: 1px;
-    margin-top: -0.5rem;
+    letter-spacing: 2px;
     margin-bottom: 0.5rem;
-}
-
-@media (max-width: 480px) {
-    .loading-screen .logo {
-        font-size: 1.8rem;
-        letter-spacing: 0.5px;
-    }
-    
-    .loading-screen .crown-icon {
-        font-size: 4rem;
-    }
 }
 
 .motto {
@@ -115,6 +71,7 @@ body {
     overflow: hidden;
 }
 
+/* Replace with: */
 .loading-fill {
     height: 100%;
     background: linear-gradient(90deg, #FFF3DA, #ffffff);
@@ -125,6 +82,67 @@ body {
 @keyframes loading {
     0% { width: 0%; }
     100% { width: 100%; }
+}
+
+/* Theme Colors */
+.default-theme {
+    --primary: #FFF3DA;
+    --secondary: #141414;
+    --accent: #666;
+    --neon: #FFF3DA;
+}
+
+.male-theme {
+    --primary: #FFF3DA;
+    --secondary: #141414;
+    --accent: #9ef01a;
+    --neon: #9ef01a;
+}
+
+.female-theme {
+    --primary: #FFF3DA;
+    --secondary: #141414;
+    --accent: #ff0a54;
+    --neon: #ff0a54;
+}
+
+/* WITH: */
+/* Emoji Theming - Apply grayscale filter and theme colors to all emojis */
+.default-theme .crown-icon,
+.default-theme .wallet-icon,
+.default-theme .event-placeholder {
+    filter: grayscale(100%);
+    color: #FFF3DA;
+}
+
+/* Replace with: */
+.male-theme .crown-icon,
+.male-theme .logo,
+.male-theme .wallet-icon,
+.male-theme .event-placeholder,
+.male-theme .card-icon,
+.male-theme .header-btn {
+    filter: grayscale(100%) sepia(1) hue-rotate(65deg) saturate(3) brightness(1.2);
+    color: #9ef01a;
+    text-shadow: 0 0 10px rgba(158, 240, 26, 0.5);
+}
+
+.female-theme .crown-icon,
+.female-theme .logo,
+.female-theme .wallet-icon,
+.female-theme .event-placeholder,
+.female-theme .card-icon,
+.female-theme .header-btn {
+    filter: grayscale(100%) sepia(1) hue-rotate(300deg) saturate(3) brightness(1.2);
+    color: #ff0a54;
+    text-shadow: 0 0 10px rgba(255, 10, 84, 0.5);
+}
+
+/* To remove tint and show original emoji colors, add this class: */
+.emoji-original {
+    filter: none !important;
+    color: initial !important;
+    text-shadow: none !important;
 }
 
 /* Layout */
@@ -162,13 +180,11 @@ body {
 .header-left .crown-icon {
     font-size: 2rem;
     transition: all 0.3s ease;
-    color: var(--neon);
 }
 
 .header-left .logo {
     font-size: 1.5rem;
     font-weight: 900;
-    color: var(--neon);
 }
 
 .header-right {
@@ -177,144 +193,52 @@ body {
     gap: 2rem;
 }
 
-/* Enhanced Stats Section */
 .stats {
     display: flex;
     gap: 2rem;
 }
 
-.stat-item-large {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
+.stat-item {
+    text-align: center;
 }
 
-.stat-label-large {
-    font-size: 1rem;
+.stat-label {
+    font-size: 0.8rem;
     color: #888;
-    font-weight: 500;
+    display: block;
 }
 
-.stat-value-large {
-    font-size: 2rem;
-    font-weight: 900;
+.stat-value {
+    font-weight: 700;
     color: var(--neon);
 }
 
-.live-chat-btn {
-    background: transparent;
-    border: 1px solid var(--neon);
-    color: var(--neon);
-    padding: 0.3rem 1rem;
-    border-radius: 15px;
-    cursor: pointer;
-    font-family: 'Orbitron', monospace;
-    font-size: 0.7rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    margin-top: 0.5rem;
-}
-
-.live-chat-btn:hover {
-    background: var(--neon);
-    color: #141414;
-}
-
-/* Button Grid Layout */
 .header-buttons {
     display: flex;
-    align-items: center;
     gap: 1rem;
-}
-
-.button-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 0.5rem;
-    margin-right: 1rem;
-}
-
-/* Logged out specific layout */
-.logged-out-layout {
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.8rem;
-}
-
-.logged-out-login {
-    background: transparent !important;
-    border: 2px solid #FFF3DA !important;
-    color: #FFF3DA !important;
-    padding: 0.8rem 2rem !important;
-}
-
-.logged-out-login:hover {
-    background: #FFF3DA !important;
-    color: #141414 !important;
-}
-
-.button-grid-2x1 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.8rem;
-}
-
-.button-grid-2x1 .header-btn {
-    width: 3.5rem;
-    height: 3.5rem;
-    font-size: 1.3rem;
 }
 
 .header-btn {
     background: transparent;
-    border: 1px solid var(--neon);
-    color: var(--neon);
-    padding: 0.5rem;
+    border: 1px solid #333;
+    color: var(--primary);
+    padding: 0.5rem 1rem;
     border-radius: 4px;
     cursor: pointer;
     font-family: 'Orbitron', monospace;
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     transition: all 0.3s ease;
-    width: 3rem;
-    height: 3rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
 }
 
 .header-btn:hover {
-    background: rgba(255, 243, 218, 0.1);
-    transform: translateY(-1px);
+    border-color: var(--neon);
+    box-shadow: 0 0 10px rgba(158, 240, 26, 0.3);
 }
 
-/* Theme-specific header button styling */
-.male-theme .header-btn {
-    background: rgba(158, 240, 26, 0.1);
-    border-color: #9ef01a;
-    color: #9ef01a;
-}
-
-.female-theme .header-btn {
-    background: rgba(255, 10, 84, 0.1);
-    border-color: #ff0a54;
-    color: #ff0a54;
-}
-
-/* Logged out theme - warm white icons */
-body:not(.male-theme):not(.female-theme) .header-btn {
-    color: #FFF3DA;
-    background: rgba(255, 243, 218, 0.1);
-    border-color: #FFF3DA;
-}
-
-/* Primary and Secondary Buttons */
 .primary-btn {
     background: var(--neon);
-    border: 2px solid var(--neon);
+    border: none;
     color: #141414;
     padding: 0.8rem 1.5rem;
     border-radius: 4px;
@@ -342,6 +266,37 @@ body:not(.male-theme):not(.female-theme) .header-btn {
     box-shadow: 0 5px 15px rgba(158, 240, 26, 0.4);
 }
 
+.modal .primary-btn {
+    background: var(--neon);
+    color: #141414;
+    border: 2px solid var(--neon);
+    font-weight: 700;
+}
+
+.modal .secondary-btn {
+    background: transparent;
+    color: var(--neon);
+    border: 2px solid var(--neon);
+}
+
+.modal-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #333;
+}
+
+.modal-footer a {
+    color: var(--neon);
+    text-decoration: none;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.modal-footer a:hover {
+    text-decoration: underline;
+}
+
 .secondary-btn {
     background: transparent;
     border: 2px solid var(--neon);
@@ -361,23 +316,6 @@ body:not(.male-theme):not(.female-theme) .header-btn {
     color: #141414;
 }
 
-/* Wallet Button Special Styling */
-.wallet-btn {
-    max-width: 120px;
-    overflow: hidden;
-}
-
-.wallet-btn #balance,
-.header .wallet-btn #balance,
-#wallet-btn #balance,
-.header-btn #balance {
-    display: none !important;
-}
-
-.wallet-icon {
-    font-size: 1.5rem;
-}
-
 /* Main Content */
 .main-content {
     flex: 1;
@@ -392,7 +330,6 @@ body:not(.male-theme):not(.female-theme) .header-btn {
     margin: 0 auto;
 }
 
-/* Event Cards */
 .event-card {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
@@ -416,7 +353,6 @@ body:not(.male-theme):not(.female-theme) .header-btn {
 .event-placeholder {
     font-size: 3rem;
     opacity: 0.7;
-    color: var(--neon);
 }
 
 .event-info h3 {
@@ -439,7 +375,7 @@ body:not(.male-theme):not(.female-theme) .header-btn {
     text-align: center;
 }
 
-/* EVC Specific Styles */
+/* EVC Specific */
 .evc-page {
     background: linear-gradient(135deg, #141414 0%, #1a1a1a 100%);
 }
@@ -486,7 +422,6 @@ body:not(.male-theme):not(.female-theme) .header-btn {
 .card-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
-    color: var(--neon);
 }
 
 .earning-card h3 {
@@ -523,94 +458,6 @@ body:not(.male-theme):not(.female-theme) .header-btn {
     cursor: not-allowed;
 }
 
-/* EVC Button */
-.evc-btn {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    background: #FFF3DA;
-    border: 2px solid #FFF3DA;
-    color: #141414;
-    padding: 1rem 2rem;
-    border-radius: 50px;
-    cursor: pointer;
-    font-family: 'Orbitron', monospace;
-    font-weight: 700;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    z-index: 1000;
-    box-shadow: 0 5px 20px rgba(255, 243, 218, 0.3);
-}
-
-.evc-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(255, 243, 218, 0.5);
-}
-
-.male-theme .evc-btn {
-    background: linear-gradient(135deg, #9ef01a, rgba(158, 240, 26, 0.8));
-    border-color: #9ef01a;
-    box-shadow: 0 5px 20px rgba(158, 240, 26, 0.3);
-}
-
-.male-theme .evc-btn:hover {
-    box-shadow: 0 10px 30px rgba(158, 240, 26, 0.5);
-}
-
-.female-theme .evc-btn {
-    background: linear-gradient(135deg, #ff0a54, rgba(255, 10, 84, 0.8));
-    border-color: #ff0a54;
-    box-shadow: 0 5px 20px rgba(255, 10, 84, 0.3);
-}
-
-.female-theme .evc-btn:hover {
-    box-shadow: 0 10px 30px rgba(255, 10, 84, 0.5);
-}
-
-/* Sticky Stats Bar for Logged Out Mode */
-.sticky-stats-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(20, 20, 20, 0.95);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid #333;
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 1000;
-}
-
-.stats-container {
-    display: flex;
-    gap: 2rem;
-}
-
-.stat-item-sticky {
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-}
-
-.stat-label-sticky {
-    font-size: 0.8rem;
-    color: #ccc;
-    margin-bottom: 0.2rem;
-}
-
-.stat-value-sticky {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #FFF3DA;
-}
-
-/* Adjust main content when sticky bar is visible */
-body:not(.male-theme):not(.female-theme) .main-content {
-    padding-bottom: 100px;
-}
-
 /* Modals */
 .modal {
     display: none;
@@ -625,35 +472,29 @@ body:not(.male-theme):not(.female-theme) .main-content {
 }
 
 .modal-content {
-    background: rgba(26, 26, 26, 0.95); /* Translucent background */
-    backdrop-filter: blur(10px);
+    background: #1a1a1a;
     margin: 5% auto;
     padding: 2rem;
     border-radius: 12px;
     width: 90%;
     max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
     border: 1px solid #333;
     position: relative;
     animation: modalSlideIn 0.3s ease;
 }
 
 .male-theme .modal-content {
-    background: rgba(26, 26, 26, 0.95);
     border-color: #9ef01a;
     box-shadow: 0 0 20px rgba(158, 240, 26, 0.2);
 }
 
 .female-theme .modal-content {
-    background: rgba(26, 26, 26, 0.95);
     border-color: #ff0a54;
     box-shadow: 0 0 20px rgba(255, 10, 84, 0.2);
 }
 
 .modal-content.large {
     max-width: 800px;
-    max-height: 85vh;
 }
 
 @keyframes modalSlideIn {
@@ -680,24 +521,6 @@ body:not(.male-theme):not(.female-theme) .main-content {
     margin-bottom: 2rem;
     color: var(--neon);
     text-align: center;
-}
-
-.modal-footer {
-    text-align: center;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #333;
-}
-
-.modal-footer a {
-    color: var(--neon);
-    text-decoration: none;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.modal-footer a:hover {
-    text-decoration: underline;
 }
 
 /* Forms */
@@ -754,30 +577,6 @@ input:focus, select:focus, textarea:focus {
     color: #888;
 }
 
-/* File Upload */
-.file-upload-wrapper {
-    margin: 1rem 0;
-}
-
-.file-upload-btn {
-    background: #FFF3DA;
-    color: #333;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: 'Orbitron', monospace;
-    font-weight: 700;
-    width: 100%;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-.file-upload-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(255, 243, 218, 0.4);
-}
-
 /* Code Display */
 .code-display {
     display: flex;
@@ -791,8 +590,8 @@ input:focus, select:focus, textarea:focus {
     font-size: 0.8rem;
 }
 
-/* Profile and Tabs */
-.profile-tabs, .betting-tabs {
+/* Profile Tabs */
+.profile-tabs {
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
@@ -817,48 +616,8 @@ input:focus, select:focus, textarea:focus {
     border-color: var(--neon);
 }
 
-.tab-content, .betting-content {
+.tab-content {
     min-height: 300px;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-/* Profile Picture Styles */
-.profile-pic-display {
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
-.profile-image, .current-profile-pic {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 3px solid #9ef01a;
-    object-fit: cover;
-}
-
-.current-profile-pic {
-    width: 60px;
-    height: 60px;
-    margin: 0.5rem 0;
-}
-
-.profile-image.female,
-.current-profile-pic.female {
-    border-color: #ff0a54;
-}
-
-.leaderboard-pic {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 0.5rem;
-    object-fit: cover;
-    border: 2px solid #9ef01a;
-}
-
-.leaderboard-pic.female {
-    border-color: #ff0a54;
 }
 
 /* Balance Tab */
@@ -911,7 +670,7 @@ input:focus, select:focus, textarea:focus {
     border-bottom: 1px solid #333;
 }
 
-/* Enhanced Leaderboard */
+/* Leaderboard */
 .leaderboard {
     max-height: 400px;
     overflow-y: auto;
@@ -919,12 +678,11 @@ input:focus, select:focus, textarea:focus {
 
 .leaderboard-row {
     display: grid;
-    grid-template-columns: 60px 50px 1fr 120px 80px 120px;
-    gap: 0.5rem;
+    grid-template-columns: 60px 1fr 120px 80px 100px;
+    gap: 1rem;
     padding: 1rem;
     border-bottom: 1px solid #333;
     align-items: center;
-    font-size: 0.9rem;
 }
 
 .leaderboard-row:first-child {
@@ -938,46 +696,13 @@ input:focus, select:focus, textarea:focus {
     text-align: center;
 }
 
-.name {
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.winnings, .bets {
-    text-align: center;
-    font-weight: 600;
-}
-
-.rep-score-container {
-    display: flex;
-    justify-content: center;
-}
-
-.rep-badge {
-    display: inline-block;
-    padding: 0.3rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    white-space: nowrap;
-}
-
-.rep-badge.good {
-    background: rgba(158, 240, 26, 0.2);
-    color: #9ef01a;
-    border: 1px solid #9ef01a;
-}
-
-.rep-badge.bad {
-    background: rgba(255, 10, 84, 0.2);
-    color: #ff0a54;
-    border: 1px solid #ff0a54;
-}
-
 /* Betting Interface */
+.betting-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
 .pool-betting {
     text-align: center;
 }
@@ -1089,6 +814,51 @@ input:focus, select:focus, textarea:focus {
     color: #ff0a54;
 }
 
+/* Replace existing .evc-btn styles with: */
+.evc-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: #FFF3DA;
+    border: 2px solid #FFF3DA;
+    color: #141414;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    box-shadow: 0 5px 20px rgba(255, 243, 218, 0.3);
+}
+
+.evc-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255, 243, 218, 0.5);
+}
+
+/* Themed EVC button when logged in */
+.male-theme .evc-btn {
+    background: linear-gradient(135deg, #9ef01a, rgba(158, 240, 26, 0.8));
+    border-color: #9ef01a;
+    box-shadow: 0 5px 20px rgba(158, 240, 26, 0.3);
+}
+
+.male-theme .evc-btn:hover {
+    box-shadow: 0 10px 30px rgba(158, 240, 26, 0.5);
+}
+
+.female-theme .evc-btn {
+    background: linear-gradient(135deg, #ff0a54, rgba(255, 10, 84, 0.8));
+    border-color: #ff0a54;
+    box-shadow: 0 5px 20px rgba(255, 10, 84, 0.3);
+}
+
+.female-theme .evc-btn:hover {
+    box-shadow: 0 10px 30px rgba(255, 10, 84, 0.5);
+}
+
 /* Wallet */
 .wallet-balance {
     text-align: center;
@@ -1168,118 +938,34 @@ input:focus, select:focus, textarea:focus {
     color: #ffa500;
 }
 
-/* Enhanced Notification System */
+/* Notifications */
 .notification {
     position: fixed;
-    top: 0;
-    right: -400px; /* Start off-screen */
-    width: 350px;
-    /* Translucency adjustment: change alpha value (0.0-1.0) */
-    background: rgba(255, 243, 218, 0.95) !important;
-    color: #141414 !important;
-    padding: 1.5rem 2rem;
-    border-radius: 0 0 0 12px;
+    top: 120px;
+    right: 2rem;
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid var(--neon);
+    color: var(--primary);
+    padding: 1rem 2rem;
+    border-radius: 8px;
     z-index: 10001;
-    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: all 0.3s ease;
     backdrop-filter: blur(10px);
-    border-left: 4px solid #FFF3DA;
-    box-shadow: -5px 5px 20px rgba(0, 0, 0, 0.3);
-}
-
-.male-theme .notification {
-    background: rgba(158, 240, 26, 0.95) !important;
-    border-left-color: #9ef01a;
-}
-
-.female-theme .notification {
-    background: rgba(255, 10, 84, 0.95) !important;
-    border-left-color: #ff0a54;
-}
-
-.notification {
-    position: fixed;
-    top: 0;
-    left: -400px; /* Start off-screen left */
-    width: 350px;
-    background: rgba(255, 243, 218, 0.95) !important;
-    color: #141414 !important;
-    padding: 1.5rem 2rem;
-    border-radius: 0 0 12px 0;
-    z-index: 10001;
-    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    backdrop-filter: blur(10px);
-    border-left: 4px solid #141414;
-    box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.3);
-}
-
-.male-theme .notification {
-    background: rgba(158, 240, 26, 0.95) !important;
-    border-left-color: #141414;
-}
-
-.female-theme .notification {
-    background: rgba(255, 10, 84, 0.95) !important;
-    border-left-color: #141414;
-}
-
-
-.notification {
-    position: fixed;
-    top: 0;
-    left: -400px;
-    width: 350px;
-    /* Translucency: change alpha value (0.0-1.0) here */
-    background: rgba(255, 243, 218, 0.95) !important;
-    color: #141414 !important;
-    padding: 1.5rem 2rem;
-    border-radius: 0 0 12px 0;
-    z-index: 10001;
-    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    backdrop-filter: blur(10px);
-    border-left: 4px solid #141414 !important;
-    box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.3);
-}
-
-.male-theme .notification {
-    background: rgba(158, 240, 26, 0.95) !important;
-    border-left-color: #141414 !important;
-}
-
-.female-theme .notification {
-    background: rgba(255, 10, 84, 0.95) !important;
-    border-left-color: #141414 !important;
-}
-
-.notification.slide-in-left {
-    left: 0;
-    transform: translateX(0);
-}
-
-.notification.slide-out-right {
-    left: 100vw;
-    transform: translateX(0);
-}
-
-.notification.slide-in-right {
-    right: 0;
-    transform: translateX(0);
-}
-
-.notification.slide-out-left {
-    right: 100vw;
-    transform: translateX(100%);
 }
 
 .notification.success {
-    border-left-color: #9ef01a;
+    border-color: #9ef01a;
+    background: rgba(158, 240, 26, 0.1);
 }
 
 .notification.error {
-    border-left-color: #ff0a54;
+    border-color: #ff0a54;
+    background: rgba(255, 10, 84, 0.1);
 }
 
 .notification.warning {
-    border-left-color: #ffa500;
+    border-color: #ffa500;
+    background: rgba(255, 165, 0, 0.1);
 }
 
 /* Ad Modal */
@@ -1341,6 +1027,7 @@ input:focus, select:focus, textarea:focus {
     color: #fff !important;
 }
 
+/* ADD: */
 .male-theme .danger-btn {
     background: #ff0a54 !important;
     color: #fff !important;
@@ -1349,6 +1036,16 @@ input:focus, select:focus, textarea:focus {
 .female-theme .danger-btn {
     background: #9ef01a !important;
     color: #141414 !important;
+}
+
+/* Fix EVC button in female theme */
+.female-theme .evc-btn {
+    background: linear-gradient(135deg, #ff0a54, rgba(255, 10, 84, 0.8));
+    box-shadow: 0 5px 20px rgba(255, 10, 84, 0.3);
+}
+
+.female-theme .evc-btn:hover {
+    box-shadow: 0 10px 30px rgba(255, 10, 84, 0.5);
 }
 
 /* Notifications Tab */
@@ -1442,13 +1139,10 @@ input:focus, select:focus, textarea:focus {
     color: var(--neon);
 }
 
-.earnings-list, .earnings-history {
+.earnings-list {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    max-height: 400px;
-    overflow-y: auto;
-    margin: 1rem 0;
 }
 
 .earning-item {
@@ -1458,13 +1152,11 @@ input:focus, select:focus, textarea:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 0.5rem;
 }
 
-.earning-action, .earning-type {
+.earning-type {
     font-weight: 700;
-    color: var(--neon);
+    color: var(--primary);
 }
 
 .earning-amount {
@@ -1474,155 +1166,7 @@ input:focus, select:focus, textarea:focus {
 
 .earning-time {
     font-size: 0.8rem;
-    color: #ccc;
-}
-
-.total-earnings {
-    text-align: center;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--neon);
-    margin-top: 1rem;
-    padding: 1rem;
-    background: rgba(158, 240, 26, 0.1);
-    border-radius: 8px;
-}
-
-.female-theme .earning-action,
-.female-theme .earning-amount,
-.female-theme .total-earnings {
-    color: #ff0a54 !important;
-}
-
-.female-theme .total-earnings {
-    background: rgba(255, 10, 84, 0.1) !important;
-}
-
-/* Coming Soon Styling */
-.coming-soon {
-    text-align: center;
-    padding: 3rem 2rem;
-}
-
-.coming-soon h3 {
-    color: var(--neon);
-    font-size: 2rem;
-    margin-bottom: 1rem;
-}
-
-.coming-soon p {
-    font-size: 1.1rem;
     color: #888;
-    line-height: 1.6;
-}
-
-
-/* Ad Modal Specific */
-.ad-modal-content {
-    position: relative;
-}
-
-.ad-container {
-    position: relative;
-    margin: 2rem 0;
-}
-
-.ad-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    z-index: 10;
-    cursor: not-allowed;
-}
-
-.ad-close-bottom {
-    position: absolute;
-    bottom: 1rem;
-    right: 1.5rem;
-    color: #aaa;
-    font-size: 2rem;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.ad-close-bottom:hover {
-    color: var(--neon);
-}
-
-/* Emoji Theming System */
-/* 
-To individually change emoji tint/filter:
-- Add class "emoji-warm-white" for warm white tint
-- Add class "emoji-male" for male theme tint  
-- Add class "emoji-female" for female theme tint
-- Add class "emoji-original" to show original colors
-*/
-
-/* Default logged out theme - warm white tint */
-body:not(.male-theme):not(.female-theme) .crown-icon,
-body:not(.male-theme):not(.female-theme) .wallet-icon,
-body:not(.male-theme):not(.female-theme) .event-placeholder,
-body:not(.male-theme):not(.female-theme) .card-icon,
-body:not(.male-theme):not(.female-theme) .header-btn {
-    filter: grayscale(100%) sepia(1) hue-rotate(35deg) saturate(0.8) brightness(1.1);
-    color: #FFF3DA;
-}
-
-/* Male theme - green tint */
-.male-theme .crown-icon,
-.male-theme .logo,
-.male-theme .wallet-icon,
-.male-theme .event-placeholder,
-.male-theme .card-icon,
-.male-theme .header-btn {
-    filter: grayscale(100%) sepia(1) hue-rotate(65deg) saturate(3) brightness(1.2);
-    color: #9ef01a;
-}
-
-/* Female theme - pink tint */
-.female-theme .crown-icon,
-.female-theme .logo,
-.female-theme .wallet-icon,
-.female-theme .event-placeholder,
-.female-theme .card-icon,
-.female-theme .header-btn {
-    filter: grayscale(100%) sepia(1) hue-rotate(300deg) saturate(3) brightness(1.2);
-    color: #ff0a54;
-}
-
-/* Individual emoji control classes */
-.emoji-warm-white {
-    filter: grayscale(100%) sepia(1) hue-rotate(35deg) saturate(0.8) brightness(1.1) !important;
-    color: #FFF3DA !important;
-}
-
-.emoji-male {
-    filter: grayscale(100%) sepia(1) hue-rotate(65deg) saturate(3) brightness(1.2) !important;
-    color: #9ef01a !important;
-}
-
-.emoji-female {
-    filter: grayscale(100%) sepia(1) hue-rotate(300deg) saturate(3) brightness(1.2) !important;
-    color: #ff0a54 !important;
-}
-
-.emoji-original {
-    filter: none !important;
-    color: initial !important;
-}
-
-/* EVC Page - Force warm white emojis regardless of theme */
-.evc-page .crown-icon,
-.evc-page .logo,
-.evc-page .wallet-icon,
-.evc-page .card-icon,
-.evc-page .header-btn,
-.evc-page #home-btn {
-    filter: grayscale(100%) sepia(1) hue-rotate(35deg) saturate(0.8) brightness(1.1) !important;
-    color: #FFF3DA !important;
 }
 
 /* Loading state */
@@ -1657,24 +1201,9 @@ body:not(.male-theme):not(.female-theme) .header-btn {
         gap: 1rem;
     }
     
-    .button-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.3rem;
-    }
-    
-    .header-btn {
-        width: 2.5rem;
-        height: 2.5rem;
-        font-size: 1rem;
-    }
-    
-    .stat-value-large {
-        font-size: 1.5rem;
-    }
-    
-    .live-chat-btn {
-        font-size: 0.6rem;
-        padding: 0.2rem 0.8rem;
+    .stats {
+        gap: 1rem;
+        font-size: 0.8rem;
     }
     
     .events-grid {
@@ -1715,34 +1244,10 @@ body:not(.male-theme):not(.female-theme) .header-btn {
     }
     
     .leaderboard-row {
-        grid-template-columns: 40px 35px 1fr 80px 60px 80px;
-        gap: 0.3rem;
+        grid-template-columns: 40px 1fr 80px 60px 80px;
+        gap: 0.5rem;
         padding: 0.8rem;
         font-size: 0.8rem;
-    }
-    .leaderboard-row {
-        display: grid;
-        grid-template-columns: 60px 50px 2fr 120px 120px;
-        gap: 0.8rem;
-        padding: 1rem;
-        border-bottom: 1px solid #333;
-        align-items: center;
-        font-size: 0.9rem;
-    }
-    
-    .name-container {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-    }
-    
-    .name {
-        font-weight: 600;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-        hyphens: auto;
-        line-height: 1.2;
-        max-width: 100%;
     }
     
     .ladder-header,
@@ -1768,15 +1273,6 @@ body:not(.male-theme):not(.female-theme) .header-btn {
     .crown-icon {
         font-size: 1.5rem;
     }
-    
-    .notification {
-        width: 90%;
-        right: -90%;
-    }
-    
-    .notification.slide-in-right {
-        right: 5%;
-    }
 }
 
 @media (max-width: 480px) {
@@ -1794,12 +1290,6 @@ body:not(.male-theme):not(.female-theme) .header-btn {
     .secondary-btn {
         padding: 0.6rem 1rem;
         font-size: 0.8rem;
-    }
-    
-    .button-grid .header-btn {
-        width: 2rem;
-        height: 2rem;
-        font-size: 0.9rem;
     }
     
     .event-card {
@@ -1823,11 +1313,6 @@ body:not(.male-theme):not(.female-theme) .header-btn {
     .setting-item label {
         min-width: auto;
     }
-    
-    .leaderboard-row {
-        grid-template-columns: 30px 30px 1fr 60px 50px 60px;
-        font-size: 0.7rem;
-    }
 }
 
 /* High contrast mode for accessibility */
@@ -1842,4 +1327,401 @@ body:not(.male-theme):not(.female-theme) .header-btn {
     .secondary-btn {
         border-width: 2px;
     }
+}
+
+/*********************************/
+/********************************************************************************/
+/*******************************************************************************/
+/*********************************/
+
+/* Loading screen crown fixes */
+.loading-screen .crown-icon {
+    font-size: 6rem;
+    margin-bottom: 1rem;
+}
+
+.loading-screen .logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+
+/* EVC home button */
+#home-btn {
+    color: white !important;
+    margin-left: 1rem;
+}
+
+.female-theme #home-btn {
+    color: #ff0a54 !important;
+    border-color: #ff0a54 !important;
+}
+
+.male-theme #home-btn {
+    color: #9ef01a !important;
+    border-color: #9ef01a !important;
+}
+
+#login-btn {
+    color: white !important;
+}
+
+/* Profile picture upload button */
+.file-upload-wrapper {
+    margin: 1rem 0;
+}
+
+.file-upload-btn {
+    background: linear-gradient(135deg, #9ef01a, #7acc00);
+    color: #0a0a0a;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    width: 100%;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.file-upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(158, 240, 26, 0.4);
+}
+
+
+/* Theme color fixes */
+.male-theme .logo,
+.male-theme .header-btn,
+.male-theme .crown-icon {
+    color: #9ef01a !important;
+}
+
+.female-theme .logo,
+.female-theme .header-btn,
+.female-theme .crown-icon {
+    color: #ff0a54 !important;
+}
+
+/* Notification popup theme fix */
+.female-theme .notification {
+    border-color: #ff0a54 !important;
+    background: rgba(255, 10, 84, 0.1) !important;
+}
+
+.male-theme .notification {
+    border-color: #9ef01a !important;
+    background: rgba(158, 240, 26, 0.1) !important;
+}
+
+/* Bigger bold emojis */
+.header-btn {
+    font-size: 1.5rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
+}
+
+.wallet-icon {
+    font-size: 1.5rem !important;
+}
+
+
+
+/* Earnings modal styles */
+.earnings-history {
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 1rem 0;
+}
+
+.earning-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+}
+
+.earning-action {
+    font-weight: 700;
+    color: #9ef01a;
+}
+
+.earning-amount {
+    font-weight: 700;
+    color: #9ef01a;
+}
+
+.earning-time {
+    font-size: 0.8rem;
+    color: #ccc;
+}
+
+.total-earnings {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #9ef01a;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(158, 240, 26, 0.1);
+    border-radius: 8px;
+}
+
+.female-theme .earning-action,
+.female-theme .earning-amount,
+.female-theme .total-earnings {
+    color: #ff0a54 !important;
+}
+
+.female-theme .total-earnings {
+    background: rgba(255, 10, 84, 0.1) !important;
+}
+
+/* Loading screen crown position fix */
+.loading-screen .logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem; /* Much smaller gap */
+}
+
+.loading-screen .crown-icon {
+    font-size: 6rem;
+    margin-bottom: 0; /* Remove margin */
+    line-height: 1; /* Tight line height */
+}
+
+.loading-screen .logo {
+    margin-top: -0.5rem; /* Pull text closer to crown */
+}
+
+/* Profile upload button - warm white for logged out theme */
+.file-upload-btn {
+    background: #f8f8f8 !important;
+    color: #333 !important;
+}
+
+/* Profile picture display styles */
+.profile-pic-display {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.profile-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #9ef01a;
+    object-fit: cover;
+}
+
+.female-theme .profile-image {
+    border-color: #ff0a54;
+}
+
+.leaderboard-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    object-fit: cover;
+}
+
+/* Force exact theme colors */
+.male-theme .logo,
+.male-theme .crown-icon,
+.male-theme .header-btn,
+.male-theme .wallet-btn,
+.male-theme #balance {
+    color: #9ef01a !important;
+}
+
+.female-theme .logo,
+.female-theme .crown-icon,
+.female-theme .header-btn,
+.female-theme .wallet-btn,
+.female-theme #balance {
+    color: #ff0a54 !important;
+}
+
+/* Header button backgrounds */
+.male-theme .header-btn {
+    background: rgba(158, 240, 26, 0.1) !important;
+    border-color: #9ef01a !important;
+}
+
+.female-theme .header-btn {
+    background: rgba(255, 10, 84, 0.1) !important;
+    border-color: #ff0a54 !important;
+}
+
+/* Notification theme fixes */
+.female-theme .notification {
+    background: rgba(255, 10, 84, 0.9) !important;
+    border: 1px solid #ff0a54 !important;
+    color: white !important;
+}
+
+.female-theme .modal-content {
+    border: 1px solid #ff0a54 !important;
+}
+
+.female-theme .primary-btn {
+    background: #ff0a54 !important;
+}
+
+/* Center emojis in header buttons */
+.header-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+/* Hide balance text overflow */
+.wallet-btn {
+    max-width: 120px;
+    overflow: hidden;
+}
+
+.wallet-btn #balance {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Hide wallet balance text on homepage */
+.header .wallet-btn #balance {
+    display: none !important;
+}
+
+/* Hide wallet balance text completely on homepage */
+#wallet-btn #balance {
+    display: none !important;
+}
+
+/* Also hide it when it gets updated dynamically */
+.header-btn #balance {
+    display: none !important;
+}
+
+/* Logged out theme - warm white icons */
+body:not(.male-theme):not(.female-theme) .header-btn {
+    color: #f8f8f8 !important;
+    background: rgba(248, 248, 248, 0.1) !important;
+    border-color: #f8f8f8 !important;
+}
+
+/* Sticky stats bar for logged out mode */
+.sticky-stats-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #333;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+}
+
+.stats-container {
+    display: flex;
+    gap: 2rem;
+}
+
+.stat-item-sticky {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.stat-label-sticky {
+    font-size: 0.8rem;
+    color: #ccc;
+    margin-bottom: 0.2rem;
+}
+
+.stat-value-sticky {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f8f8f8;
+}
+
+/* Adjust main content when sticky bar is visible */
+body:not(.male-theme):not(.female-theme) .main-content {
+    padding-bottom: 100px;
+}
+
+/* Fix modal overflow issues */
+.modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    max-width: 95vw;
+}
+
+.modal-content.large {
+    max-height: 85vh;
+}
+
+/* Specific fixes for common overflow areas */
+.betting-content,
+.tab-content,
+.leaderboard,
+.earnings-history {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* Ensure all popups are translucent */
+.notification {
+    background: rgba(20, 20, 20, 0.9) !important;
+    backdrop-filter: blur(5px) !important;
+}
+
+.female-theme .notification {
+    background: rgba(255, 10, 84, 0.9) !important;
+}
+
+.male-theme .notification {
+    background: rgba(158, 240, 26, 0.9) !important;
+}
+
+/* Profile picture gender borders */
+.profile-image,
+.leaderboard-pic,
+.current-profile-pic {
+    border: 3px solid #9ef01a; /* Default male */
+}
+
+/* Female border */
+.profile-image.female,
+.leaderboard-pic.female,
+.current-profile-pic.female {
+    border-color: #ff0a54 !important;
+}
+
+/* Male border */
+.profile-image.male,
+.leaderboard-pic.male, 
+.current-profile-pic.male {
+    border-color: #9ef01a !important;
+}
+
+.current-profile-pic {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0.5rem 0;
 }

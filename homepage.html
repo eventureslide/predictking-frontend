@@ -30,33 +30,24 @@
             </div>
             <div class="header-right">
                 <div class="stats">
-                    <div class="stat-item-large">
-                        <span class="stat-label-large">Active Players</span>
-                        <span id="active-players" class="stat-value-large">0</span>
-                        <button class="live-chat-btn" onclick="showLiveChat()">Live Chat</button>
+                    <div class="stat-item">
+                        <span class="stat-label">Active Players:</span>
+                        <span id="active-players" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Pot:</span>
+                        <span id="total-pot" class="stat-value">₹0</span>
                     </div>
                 </div>
                 <div class="header-buttons">
-                    <!-- Logged out buttons -->
-                    <div id="logged-out-buttons" class="logged-out-layout">
-                        <button id="login-btn" class="primary-btn logged-out-login" onclick="showLogin()">LOGIN</button>
-                        <div class="button-grid-2x1">
-                            <button class="header-btn" onclick="showLeaderboard()">🏆</button>
-                            <button class="header-btn" onclick="showWallet()">💰</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Logged in buttons -->
-                    <div id="logged-in-buttons" class="button-grid hidden">
-                        <button class="header-btn" onclick="showProfile()">👤</button>
-                        <button class="header-btn" onclick="showLeaderboard()">🏆</button>
-                        <button id="wallet-btn" class="header-btn" onclick="showWallet()">
-                            <span class="wallet-icon">💰</span>
-                        </button>
-                        <button class="header-btn" onclick="showNotifications()">🔔</button>
-                    </div>
-                    
-                    <button id="register-btn" class="secondary-btn hidden" onclick="showRegister()">REGISTER</button>
+                    <button id="wallet-btn" class="header-btn hidden" onclick="showWallet()">
+                        <span class="wallet-icon">💰</span>
+                        <span id="balance" style="display: none;">₹0</span>
+                    </button>
+                    <button class="header-btn" onclick="showProfile()">👤</button>
+                    <button class="header-btn" onclick="showLeaderboard()">🏆</button>
+                    <button id="login-btn" class="primary-btn" onclick="showLogin()">LOGIN</button>
+                    <button id="register-btn" class="secondary-btn" onclick="showRegister()" style="width: 0px; height: 0px; padding: 0; border: 0; margin: 0; opacity: 0; overflow: hidden;">REGISTER</button>
                 </div>
             </div>
         </header>
