@@ -29,25 +29,24 @@
                 <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
             </div>
             <div class="header-right">
-                <div class="stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Active Players:</span>
-                        <span id="active-players" class="stat-value">0</span>
+                <div class="header-buttons">
+                    <div class="header-buttons-top">
+                        <button id="login-btn" class="login-btn-large" onclick="showLogin()">LOGIN</button>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Total Pot:</span>
-                        <span id="total-pot" class="stat-value">₹0</span>
+                    <div class="header-buttons-bottom">
+                        <button class="header-btn" onclick="showWallet()" title="Wallet">💰</button>
+                        <button class="header-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
                     </div>
                 </div>
-                <div class="header-buttons">
-                    <button id="wallet-btn" class="header-btn hidden" onclick="showWallet()">
-                        <span class="wallet-icon">💰</span>
-                        <span id="balance" style="display: none;">₹0</span>
-                    </button>
-                    <button class="header-btn" onclick="showProfile()">👤</button>
-                    <button class="header-btn" onclick="showLeaderboard()">🏆</button>
-                    <button id="login-btn" class="primary-btn" onclick="showLogin()">LOGIN</button>
-                    <button id="register-btn" class="secondary-btn" onclick="showRegister()" style="width: 0px; height: 0px; padding: 0; border: 0; margin: 0; opacity: 0; overflow: hidden;">REGISTER</button>
+                <div class="header-buttons logged-in-buttons hidden">
+                    <div class="header-buttons-top">
+                        <div class="header-buttons-grid">
+                            <button class="header-btn" onclick="showProfile()" title="Profile">👤</button>
+                            <button class="header-btn" onclick="showNotifications()" title="Notifications">🔔</button>
+                            <button class="header-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
+                            <button id="wallet-btn" class="header-btn" onclick="showWallet()" title="Wallet">💰</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -75,16 +74,26 @@
             <button class="evc-btn" onclick="goToEVC()">EARN COINS</button>
         </div>
 
-        <!-- Original EVC Button (hidden when logged out) -->
-        <button id="original-evc-btn" class="evc-btn" onclick="goToEVC()">EARN COINS</button>
-            
-
-                
-</div>
-
-<!-- Original EVC Button (hidden when logged out) -->
-<button id="original-evc-btn" class="evc-btn" onclick="goToEVC()">EARN COINS</button>
+       <!-- Bottom Sticky Section -->
+        <div class="bottom-sticky-section" id="bottom-sticky">
+            <div class="stats-section">
+                <div class="stat-item-large">
+                    <span class="stat-label-large">Active Players:</span>
+                    <span id="active-players-bottom" class="stat-value-large">0</span>
+                </div>
+                <div class="stat-item-large">
+                    <span class="stat-label-large">Total Pot:</span>
+                    <span id="total-pot-bottom" class="stat-value-large">₹0</span>
+                </div>
+            </div>
+            <div class="bottom-right-section">
+                <button class="evc-btn" onclick="goToEVC()">EARN COINS</button>
+                <button class="live-chat-btn" onclick="showLiveChat()">LIVE CHAT</button>
+            </div>
+        </div>             
     </div>
+
+
 
     <!-- Login Modal -->
     <div id="login-modal" class="modal">
