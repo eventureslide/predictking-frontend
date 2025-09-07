@@ -77,15 +77,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const minLoadTime = 3000;
     const startTime = Date.now();
     
+    // Different initialization for EVC vs Homepage
+    let initPromise;
+    if (window.location.pathname.includes('evc.html')) {
+        initPromise = Promise.resolve().then(() => {
+            return checkLoginStatus();
+        }).then(() => {
+            updateThemeBasedOnUser();
+            // EVC specific initialization
+            const adRewardEl = document.getElementById('ad-reward');
+            if (adRewardEl) {
+                adRewardEl.textContent = adminSettings.perAdReward;
+            }
+            setTimeout(setupVideoBufferDetection, 100);
+        });
+    } else {
+        initPromise = checkLoginStatus().then(() => {
+            loadEvents();
+            loadStats();
+            startRealTimeUpdates();
+        });
+    }
+    
     Promise.all([
-        new Promise(resolve => {
-            checkLoginStatus().then(() => {
-                loadEvents();
-                loadStats();
-                startRealTimeUpdates();
-                resolve();
-            });
-        }),
+        initPromise,
         new Promise(resolve => setTimeout(resolve, minLoadTime))
     ]).then(() => {
         const elapsed = Date.now() - startTime;
@@ -97,21 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, remaining);
     });
-
-    // Initialize EVC page specific elements
-    if (window.location.pathname.includes('evc.html')) {
-        // Update ad reward display
-        const adRewardEl = document.getElementById('ad-reward');
-        if (adRewardEl) {
-            adRewardEl.textContent = adminSettings.perAdReward;
-        }
-        
-        // Setup video buffer detection
-        setTimeout(setupVideoBufferDetection, 1000);
-    }
-    
 });
-
 // Loading Screen Functions
 function showLoadingScreen() {
     document.getElementById('loading-screen').style.display = 'flex';
@@ -631,8 +632,11 @@ function watchAd() {
 }
 
 // Add video buffering detection
+// Add this function to app.js if it doesn't exist
 function setupVideoBufferDetection() {
     const video = document.getElementById('ad-video');
+    if (!video) return;
+    
     let isBuffering = false;
     
     video.addEventListener('waiting', function() {
@@ -1172,11 +1176,15 @@ function updateHeaderButtons() {
         if (profileBtn) profileBtn.classList.remove('hidden');
         if (loginBtn) loginBtn.classList.add('hidden');
         if (walletBtn) walletBtn.classList.remove('hidden');
+        if (leaderboardBtn) leaderboardBtn.classList.remove('hidden');
+        if (notificationsBtn) notificationsBtn.classList.remove('hidden');
     } else {
-        // Logged out: Login, Leaderboard, Wallet, Notifications
+        // Logged out: Login button + only Leaderboard and Notifications squares
         if (profileBtn) profileBtn.classList.add('hidden');
         if (loginBtn) loginBtn.classList.remove('hidden');
-        if (walletBtn) walletBtn.classList.remove('hidden');
+        if (walletBtn) walletBtn.classList.add('hidden');
+        if (leaderboardBtn) leaderboardBtn.classList.remove('hidden');
+        if (notificationsBtn) notificationsBtn.classList.remove('hidden');
     }
 }
 
