@@ -107,18 +107,20 @@
     </div>
 
     <!-- Ad Modal -->
+    <!-- Ad Modal -->
     <div id="ad-modal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="cleanupAdTimer(); closeModal('ad-modal')">&times;</span>
+        <div class="modal-content ad-modal-content">
             <h2>Watch Advertisement</h2>
             <div class="ad-container">
                 <iframe id="ad-video" width="100%" height="300" frameborder="0" allowfullscreen></iframe>
+                <div class="ad-overlay"></div>
             </div>
             <div class="ad-controls">
                 <div class="ad-progress">
                     <span id="ad-timer">30</span> seconds remaining
                 </div>
                 <button id="claim-reward" class="primary-btn hidden" onclick="claimAdReward()">CLAIM REWARD</button>
+                <span class="close ad-close-bottom" onclick="cleanupAdTimer(); closeModal('ad-modal')">&times;</span>
             </div>
         </div>
     </div>
