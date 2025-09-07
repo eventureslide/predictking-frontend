@@ -87,27 +87,22 @@
             <div class="header-right">
                 <!-- Logged Out Layout -->
                 <div class="header-buttons logged-out-layout">
-                    <div class="top-buttons-row">
-                        <button class="live-chat-btn-header" onclick="showLiveChat()">LIVE CHAT</button>
-                        <button id="login-btn" class="login-btn-header" onclick="showLogin()">LOGIN</button>
-                    </div>
-                    <div class="bottom-buttons-row">
-                        <button class="header-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
-                        <button class="header-btn" onclick="showWallet()" title="Wallet">💰</button>
+                    <div class="logged-out-buttons-row">
+                        <button class="login-btn-left" onclick="showLogin()">LOGIN</button>
+                        <button class="header-btn center-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
+                        <button class="live-chat-btn-right" onclick="showLiveChat()">LIVE CHAT</button>
                     </div>
                 </div>
                 
                 <!-- Logged In Layout -->
                 <div class="header-buttons logged-in-layout hidden">
-                    <div class="top-buttons-row">
-                        <button class="live-chat-btn-header" onclick="showLiveChat()">LIVE CHAT</button>
-                    </div>
-                    <div class="bottom-buttons-grid">
+                    <div class="logged-in-buttons-grid">
                         <button class="header-btn" onclick="showProfile()" title="Profile">👤</button>
                         <button class="header-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
                         <button class="header-btn" onclick="showWallet()" title="Wallet">💰</button>
                         <button class="header-btn" onclick="showNotifications()" title="Notifications">🔔</button>
                         <button class="header-btn" onclick="showCasino()" title="Casino">🎰</button>
+                        <button class="header-btn" onclick="showLiveChat()" title="Live Chat">💬</button>
                     </div>
                 </div>
             </div>
@@ -139,6 +134,7 @@
         <!-- Bottom Sticky Section -->
         <!-- Bottom Sticky Section -->
         <!-- Bottom Sticky Section -->
+        <!-- Bottom Sticky Section -->
         <div class="bottom-sticky-section" id="bottom-sticky">
             <div class="bottom-content">
                 <div class="stats-compact">
@@ -153,7 +149,7 @@
                 </div>
                 <button class="evc-btn-compact" onclick="goToEVC()">EARN COINS</button>
             </div>
-        </div>   
+        </div>  
     </div>
 
 
