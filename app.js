@@ -27,6 +27,43 @@ let adminSettings = {
     ]
 };
 
+
+// Viewport monitoring for mobile-only access
+function checkViewportSize() {
+    if (window.innerWidth > 768) {
+        // Show mobile-only message if window gets resized to desktop size
+        document.body.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(135deg, #141414, #1a1a1a);
+                color: #FFF3DA;
+                font-family: 'Orbitron', monospace;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                padding: 2rem;
+                z-index: 10000;
+            ">
+                <div style="font-size: 4rem; margin-bottom: 2rem;">♛</div>
+                <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: 2px;">PREDICTKING</h1>
+                <h2 style="font-size: 1.5rem; margin-bottom: 2rem; color: #888;">Please Use Mobile Device</h2>
+                <p style="font-size: 1.1rem; max-width: 500px; line-height: 1.6;">
+                    This application is optimized for mobile devices only. Please access from your smartphone or resize your browser window to mobile view.
+                </p>
+            </div>
+        `;
+    }
+}
+
+// Monitor viewport changes
+window.addEventListener('resize', checkViewportSize);
+
 // Profile picture defaults
 const defaultProfilePics = {
     male: [
@@ -69,6 +106,11 @@ function getRandomProfilePic(gender) {
 // Initialization
 /* Replace with: */
 document.addEventListener('DOMContentLoaded', function() {
+    // Double-check mobile access
+    if (!isMobileDevice()) {
+        return; // Exit if not mobile
+    }
+    
     // Check if we're on EVC page
     if (window.location.pathname.includes('evc.html')) {
         showEVCLoadingScreen();
@@ -93,18 +135,14 @@ document.addEventListener('DOMContentLoaded', function() {
         loadEvents();
         loadStats();
         startRealTimeUpdates();
-
-        // Fix EVC page login detection
-        if (window.location.pathname.includes('evc.html')) {
-            const loginRequiredBtn = document.getElementById('login-required');
-            const walletBtn = document.getElementById('wallet-btn');
-            if (currentUser && loginRequiredBtn) {
-                loginRequiredBtn.classList.add('hidden');
-                if (walletBtn) walletBtn.classList.remove('hidden');
-            }
-        }
     }, 3000);
 });
+
+// Add mobile detection function
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           window.innerWidth <= 768;
+}
 
 // Loading Screen Functions
 function showLoadingScreen() {
@@ -398,7 +436,16 @@ function showModal(modalId) {
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.style.display = 'none';
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.classList.add('slide-out');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                modalContent.classList.remove('slide-out');
+            }, 500);
+        } else {
+            modal.style.display = 'none';
+        }
     }
 }
 
