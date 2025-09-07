@@ -8,6 +8,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="logo-container">
+            <div class="crown-icon">♛</div>
+            <h1 class="logo pulsing">PREDICTKING</h1>
+            <p class="motto">Earn. Win. Dominate.</p>
+        </div>
+        <div class="loading-bar">
+            <div class="loading-fill"></div>
+        </div>
+    </div>
     <div id="main-app" class="main-app evc-page">
         <!-- Header -->
         <!-- Replace the header in evc.html: -->
@@ -98,10 +109,11 @@
     <!-- Ad Modal -->
     <div id="ad-modal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="cleanupAdTimer(); closeModal('ad-modal')">&times;</span>
+            <span class="close ad-close" onclick="cleanupAdTimer(); closeModal('ad-modal')">&times;</span>
             <h2>Watch Advertisement</h2>
             <div class="ad-container">
                 <iframe id="ad-video" width="100%" height="300" frameborder="0" allowfullscreen></iframe>
+                <div class="video-shield"></div>
             </div>
             <div class="ad-controls">
                 <div class="ad-progress">
