@@ -25,27 +25,24 @@
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <div class="crown-icon" onclick="goHome()">♛</div>
+                <div class="crown-icon" onclick="goHome()">â™›</div>
                 <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
             </div>
             <div class="header-right">
-                <div class="header-buttons">
-                    <div class="header-buttons-top">
-                        <button id="login-btn" class="login-btn-large" onclick="showLogin()">LOGIN</button>
+                <div class="stats">
+                    <div class="stat-item-main">
+                        <span class="stat-label-main">Active Players</span>
+                        <span id="active-players" class="stat-value-main">0</span>
                     </div>
-                    <div class="header-buttons-bottom">
-                        <button class="header-btn" onclick="showWallet()" title="Wallet">💰</button>
-                        <button class="header-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
-                    </div>
+                    <button id="live-chat-btn" class="live-chat-btn" onclick="showLiveChat()">Live Chat</button>
                 </div>
-                <div class="header-buttons logged-in-buttons hidden">
-                    <div class="header-buttons-top">
-                        <div class="header-buttons-grid">
-                            <button class="header-btn" onclick="showProfile()" title="Profile">👤</button>
-                            <button class="header-btn" onclick="showNotifications()" title="Notifications">🔔</button>
-                            <button class="header-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
-                            <button id="wallet-btn" class="header-btn" onclick="showWallet()" title="Wallet">💰</button>
-                        </div>
+                <div class="header-buttons">
+                    <button id="login-btn" class="login-btn-main" onclick="showLogin()">LOGIN</button>
+                    <div class="button-grid" id="button-grid">
+                        <button id="profile-btn" class="grid-btn hidden" onclick="showProfile()">👤</button>
+                        <button id="leaderboard-btn" class="grid-btn" onclick="showLeaderboard()">🏆</button>
+                        <button id="wallet-btn" class="grid-btn" onclick="showWallet()">💰</button>
+                        <button id="notifications-btn" class="grid-btn hidden" onclick="showNotifications()">🔔</button>
                     </div>
                 </div>
             </div>
@@ -68,32 +65,22 @@
                 </div>
                 <div class="stat-item-sticky">
                     <span class="stat-label-sticky">Total Pot:</span>
-                    <span id="total-pot-sticky" class="stat-value-sticky">₹0</span>
+                    <span id="total-pot-sticky" class="stat-value-sticky">â‚¹0</span>
                 </div>
             </div>
             <button class="evc-btn" onclick="goToEVC()">EARN COINS</button>
         </div>
 
-       <!-- Bottom Sticky Section -->
-        <div class="bottom-sticky-section" id="bottom-sticky">
-            <div class="stats-section">
-                <div class="stat-item-large">
-                    <span class="stat-label-large">Active Players:</span>
-                    <span id="active-players-bottom" class="stat-value-large">0</span>
-                </div>
-                <div class="stat-item-large">
-                    <span class="stat-label-large">Total Pot:</span>
-                    <span id="total-pot-bottom" class="stat-value-large">₹0</span>
-                </div>
-            </div>
-            <div class="bottom-right-section">
-                <button class="evc-btn" onclick="goToEVC()">EARN COINS</button>
-                <button class="live-chat-btn" onclick="showLiveChat()">LIVE CHAT</button>
-            </div>
-        </div>             
+        <!-- Original EVC Button (hidden when logged out) -->
+        <button id="original-evc-btn" class="evc-btn" onclick="goToEVC()">EARN COINS</button>
+            
+
+                
+</div>
+
+<!-- Original EVC Button (hidden when logged out) -->
+<button id="original-evc-btn" class="evc-btn" onclick="goToEVC()">EARN COINS</button>
     </div>
-
-
 
     <!-- Login Modal -->
     <div id="login-modal" class="modal">
@@ -126,14 +113,14 @@
                 <div class="file-upload-wrapper">
                     <input type="file" id="profile-pic" accept="image/*" style="display: none;">
                     <button type="button" class="file-upload-btn" onclick="document.getElementById('profile-pic').click();">
-                        📷 Upload Profile Picture
+                        ðŸ“· Upload Profile Picture
                     </button>
                 </div>
                 <select id="currency" required>
                     <option value="">Select Currency</option>
-                    <option value="INR">₹ INR</option>
+                    <option value="INR">â‚¹ INR</option>
                     <option value="USD">$ USD</option>
-                    <option value="EUR">€ EUR</option>
+                    <option value="EUR">â‚¬ EUR</option>
                 </select>
                 <div class="instagram-field">
                     <span class="prefix">@</span>
@@ -220,7 +207,7 @@
             <h2>WALLET</h2>
             <div class="wallet-balance">
                 <h3>Current Balance</h3>
-                <div class="balance-display" id="wallet-balance">₹0</div>
+                <div class="balance-display" id="wallet-balance">â‚¹0</div>
                 <div class="daily-bonus" onclick="claimDailyBonus()">
                     <span>Daily Bonus Available!</span>
                     <button class="bonus-btn">CLAIM</button>
@@ -254,6 +241,35 @@
         <span id="notification-text"></span>
     </div>
 
+    <!-- Live Chat Modal -->
+    <div id="livechat-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('livechat-modal')">&times;</span>
+            <h2>LIVE CHAT</h2>
+            <div class="coming-soon">
+                <p>Coming Soon!</p>
+                <p>Live chat feature will be available in the next update.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notifications Modal -->
+    <div id="notifications-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('notifications-modal')">&times;</span>
+            <h2>NOTIFICATIONS</h2>
+            <div class="notifications-content">
+                <div class="notification-item">
+                    <div class="notification-content">
+                        <h4>Welcome to PredictKing!</h4>
+                        <p>Start betting and earning rewards.</p>
+                        <span class="notification-time">2 hours ago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
