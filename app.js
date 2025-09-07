@@ -1,4 +1,22 @@
+// Firebase Configuration - REPLACE WITH YOUR CONFIG
+const firebaseConfig = {
+    apiKey: "AIzaSyA61LVsUjl1CsR3XeMyEjjZ-DDU6rMHwhU",
+    authDomain: "predictking-database.firebaseapp.com",
+    projectId: "predictking-database",
+    storageBucket: "predictking-database.firebasestorage.app",
+    messagingSenderId: "786291226968",
+    appId: "1:786291226968:web:4608df217228f4ecdf0d2d"
+};
 
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Global Variables
+let currentUser = null;
+let currentTheme = 'default';
+let events = [];
+let leaderboard = [];
 let adminSettings = {
     vigPercentage: 5,
     dailyBuyinLimit: 1000,
