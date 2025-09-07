@@ -29,25 +29,30 @@
                 <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
             </div>
             <div class="header-right">
-                <div class="stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Active Players:</span>
-                        <span id="active-players" class="stat-value">0</span>
+                <!-- Logged Out Layout -->
+                <div class="header-buttons logged-out-layout">
+                    <div class="top-buttons-row">
+                        <button class="live-chat-btn-header" onclick="showLiveChat()">LIVE CHAT</button>
+                        <button id="login-btn" class="login-btn-header" onclick="showLogin()">LOGIN</button>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Total Pot:</span>
-                        <span id="total-pot" class="stat-value">₹0</span>
+                    <div class="bottom-buttons-row">
+                        <button class="header-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
+                        <button class="header-btn" onclick="showWallet()" title="Wallet">💰</button>
                     </div>
                 </div>
-                <div class="header-buttons">
-                    <button id="wallet-btn" class="header-btn hidden" onclick="showWallet()">
-                        <span class="wallet-icon">💰</span>
-                        <span id="balance" style="display: none;">₹0</span>
-                    </button>
-                    <button class="header-btn" onclick="showProfile()">👤</button>
-                    <button class="header-btn" onclick="showLeaderboard()">🏆</button>
-                    <button id="login-btn" class="primary-btn" onclick="showLogin()">LOGIN</button>
-                    <button id="register-btn" class="secondary-btn" onclick="showRegister()" style="width: 0px; height: 0px; padding: 0; border: 0; margin: 0; opacity: 0; overflow: hidden;">REGISTER</button>
+                
+                <!-- Logged In Layout -->
+                <div class="header-buttons logged-in-layout hidden">
+                    <div class="top-buttons-row">
+                        <button class="live-chat-btn-header" onclick="showLiveChat()">LIVE CHAT</button>
+                    </div>
+                    <div class="bottom-buttons-grid">
+                        <button class="header-btn" onclick="showProfile()" title="Profile">👤</button>
+                        <button class="header-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
+                        <button class="header-btn" onclick="showWallet()" title="Wallet">💰</button>
+                        <button class="header-btn" onclick="showNotifications()" title="Notifications">🔔</button>
+                        <button class="header-btn" onclick="showCasino()" title="Casino">🎰</button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -75,16 +80,32 @@
             <button class="evc-btn" onclick="goToEVC()">EARN COINS</button>
         </div>
 
-        <!-- Original EVC Button (hidden when logged out) -->
-        <button id="original-evc-btn" class="evc-btn" onclick="goToEVC()">EARN COINS</button>
-            
-
-                
-</div>
-
-<!-- Original EVC Button (hidden when logged out) -->
-<button id="original-evc-btn" class="evc-btn" onclick="goToEVC()">EARN COINS</button>
+        <!-- Bottom Sticky Section -->
+        <!-- Bottom Sticky Section -->
+        <div class="bottom-sticky-section" id="bottom-sticky">
+            <div class="bottom-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-info">
+                            <span class="stat-label-bottom">Active Players</span>
+                            <span id="active-players-bottom" class="stat-value-bottom">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-info">
+                            <span class="stat-label-bottom">Total Pot</span>
+                            <span id="total-pot-bottom" class="stat-value-bottom">₹0</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="evc-btn-bottom" onclick="goToEVC()">EARN COINS</button>
+            </div>
+        </div>    
     </div>
+
+
 
     <!-- Login Modal -->
     <div id="login-modal" class="modal">
