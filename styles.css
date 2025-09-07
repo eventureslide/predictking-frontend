@@ -359,6 +359,38 @@ body {
     color: #141414;
 }
 
+/* Modal specific button fixes */
+.modal .primary-btn {
+    background: transparent !important;
+    border: 2px solid #FFF3DA !important;
+    color: #FFF3DA !important;
+}
+
+.modal .primary-btn:hover {
+    background: #FFF3DA !important;
+    color: #141414 !important;
+}
+
+.male-theme .modal .primary-btn {
+    border-color: #9ef01a !important;
+    color: #9ef01a !important;
+}
+
+.male-theme .modal .primary-btn:hover {
+    background: #9ef01a !important;
+    color: #141414 !important;
+}
+
+.female-theme .modal .primary-btn {
+    border-color: #ff0a54 !important;
+    color: #ff0a54 !important;
+}
+
+.female-theme .modal .primary-btn:hover {
+    background: #ff0a54 !important;
+    color: #141414 !important;
+}
+
 .primary-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(158, 240, 26, 0.4);
