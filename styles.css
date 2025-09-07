@@ -1585,26 +1585,8 @@ input:focus, select:focus, textarea:focus {
     }
     
     .leaderboard-row {
-        grid-template-columns: 30px 30px 1fr 60px 60px;
+        grid-template-columns: 30px 30px 1fr 60px 50px 60px;
         font-size: 0.7rem;
-    }
-    
-    .loading-screen .logo {
-        font-size: 1.8rem;
-        letter-spacing: 0.5px;
-    }
-    
-    .loading-screen .crown-icon {
-        font-size: 4rem;
-    }
-    
-    .notification {
-        width: 90%;
-        left: -90%;
-    }
-    
-    .notification.slide-in-left {
-        left: 5%;
     }
 }
 
