@@ -69,30 +69,34 @@ function getRandomProfilePic(gender) {
 // Initialization
 /* Replace with: */
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if elements exist before using them
     if (document.getElementById('loading-screen')) {
         showLoadingScreen();
     }
     
-    setTimeout(() => {
-        if (document.getElementById('loading-screen')) {
-            hideLoadingScreen();
-        }
-        checkLoginStatus();
-        loadEvents();
-        loadStats();
-        startRealTimeUpdates();
-
-        // Fix EVC page login detection
-        if (window.location.pathname.includes('evc.html')) {
-            const loginRequiredBtn = document.getElementById('login-required');
-            const walletBtn = document.getElementById('wallet-btn');
-            if (currentUser && loginRequiredBtn) {
-                loginRequiredBtn.classList.add('hidden');
-                if (walletBtn) walletBtn.classList.remove('hidden');
+    // Minimum loading time for aesthetics
+    const minLoadTime = 3000;
+    const startTime = Date.now();
+    
+    Promise.all([
+        new Promise(resolve => {
+            checkLoginStatus().then(() => {
+                loadEvents();
+                loadStats();
+                startRealTimeUpdates();
+                resolve();
+            });
+        }),
+        new Promise(resolve => setTimeout(resolve, minLoadTime))
+    ]).then(() => {
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, minLoadTime - elapsed);
+        
+        setTimeout(() => {
+            if (document.getElementById('loading-screen')) {
+                hideLoadingScreen();
             }
-        }
-    }, 3000);
+        }, remaining);
+    });
 });
 
 // Loading Screen Functions
@@ -261,7 +265,8 @@ async function registerUser() {
         // Check if nickname exists
         const nicknameQuery = await db.collection('users').where('nickname', '==', formData.nickname).get();
         if (!nicknameQuery.empty) {
-            showNotification('Nickname already exists', 'error');
+            showNotification('Nickname already taken. Please choose another one.', 'error');
+            hideBuffering();
             return;
         }
 
@@ -969,12 +974,18 @@ function showNotification(message, type = 'info') {
     const text = document.getElementById('notification-text');
     
     text.textContent = message;
-    notification.className = `notification ${type}`;
+    notification.className = `notification ${type} slide-in`;
     notification.classList.remove('hidden');
     
     setTimeout(() => {
+        notification.classList.add('slide-out');
+        notification.classList.remove('slide-in');
+    }, 2000);
+    
+    setTimeout(() => {
         notification.classList.add('hidden');
-    }, 3000);
+        notification.classList.remove('slide-out');
+    }, 2500);
 }
 
 function showBuffering() {
@@ -1068,6 +1079,43 @@ function claimDailyBonus() {
     
     // Log daily bonus
     logActivity('daily_bonus', { userId: currentUser.id, bonus });
+}
+
+// Add after existing functions
+function showLiveChat() {
+    if (!currentUser) {
+        showNotification('Please login to access live chat', 'error');
+        return;
+    }
+    showModal('live-chat-modal');
+}
+
+function showNotifications() {
+    if (!currentUser) {
+        showNotification('Please login to view notifications', 'error');
+        return;
+    }
+    showModal('notifications-modal');
+}
+
+function updateHeaderButtons() {
+    const profileBtn = document.getElementById('profile-btn');
+    const loginBtn = document.getElementById('login-btn');
+    const walletBtn = document.getElementById('wallet-btn');
+    const leaderboardBtn = document.getElementById('leaderboard-btn');
+    const notificationsBtn = document.getElementById('notifications-btn');
+    
+    if (currentUser) {
+        // Logged in: Profile, Leaderboard, Wallet, Notifications
+        if (profileBtn) profileBtn.classList.remove('hidden');
+        if (loginBtn) loginBtn.classList.add('hidden');
+        if (walletBtn) walletBtn.classList.remove('hidden');
+    } else {
+        // Logged out: Login, Leaderboard, Wallet, Notifications
+        if (profileBtn) profileBtn.classList.add('hidden');
+        if (loginBtn) loginBtn.classList.remove('hidden');
+        if (walletBtn) walletBtn.classList.remove('hidden');
+    }
 }
 
 // Close modals when clicking outside
