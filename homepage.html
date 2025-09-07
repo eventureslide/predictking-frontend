@@ -29,32 +29,25 @@
                 <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
             </div>
             <div class="header-right">
-                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Active Players:</span>
+                        <span id="active-players" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Pot:</span>
+                        <span id="total-pot" class="stat-value">₹0</span>
+                    </div>
+                </div>
                 <div class="header-buttons">
-                    <div class="stats-section">
-                        <div class="stat-item-main">
-                            <span class="stat-label-main">Active Players</span>
-                            <span id="active-players-main" class="stat-value-main">0</span>
-                        </div>
-                        <button id="live-chat-btn" class="live-chat-btn" onclick="showLiveChat()">Live Chat</button>
-                    </div>
-                    <div class="action-buttons" id="action-buttons">
-                        <button id="login-btn" class="login-btn-main" onclick="showLogin()">LOGIN</button>
-                        <div class="button-grid">
-                            <button id="wallet-btn" class="header-btn square-btn" onclick="showWallet()">
-                                <span class="btn-icon">💰</span>
-                            </button>
-                            <button id="leaderboard-btn" class="header-btn square-btn" onclick="showLeaderboard()">
-                                <span class="btn-icon">🏆</span>
-                            </button>
-                            <button id="profile-btn" class="header-btn square-btn hidden" onclick="showProfile()">
-                                <span class="btn-icon">👤</span>
-                            </button>
-                            <button id="notifications-btn" class="header-btn square-btn" onclick="showNotifications()">
-                                <span class="btn-icon">🔔</span>
-                            </button>
-                        </div>
-                    </div>
+                    <button id="wallet-btn" class="header-btn hidden" onclick="showWallet()">
+                        <span class="wallet-icon">💰</span>
+                        <span id="balance" style="display: none;">₹0</span>
+                    </button>
+                    <button class="header-btn" onclick="showProfile()">👤</button>
+                    <button class="header-btn" onclick="showLeaderboard()">🏆</button>
+                    <button id="login-btn" class="primary-btn" onclick="showLogin()">LOGIN</button>
+                    <button id="register-btn" class="secondary-btn" onclick="showRegister()" style="width: 0px; height: 0px; padding: 0; border: 0; margin: 0; opacity: 0; overflow: hidden;">REGISTER</button>
                 </div>
             </div>
         </header>
@@ -252,38 +245,6 @@
         <span id="notification-text"></span>
     </div>
 
-    <!-- Add before </body> -->
-    <!-- Live Chat Modal -->
-    <div id="live-chat-modal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('live-chat-modal')">&times;</span>
-            <h2>LIVE CHAT</h2>
-            <div class="coming-soon">
-                <div class="coming-soon-icon">💬</div>
-                <h3>Coming Soon!</h3>
-                <p>Live chat feature will be available soon. Stay tuned!</p>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Notifications Modal -->
-    <div id="notifications-modal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('notifications-modal')">&times;</span>
-            <h2>NOTIFICATIONS</h2>
-            <div class="notifications-tab">
-                <div class="notification-item">
-                    <div class="notification-content">
-                        <h4>Welcome to PredictKing!</h4>
-                        <p>Start betting and earning rewards.</p>
-                        <span class="notification-time">2 hours ago</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>

@@ -8,42 +8,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Add after <body> tag in evc.html -->
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
-        <div class="logo-container">
-            <div class="crown-icon">👑</div>
-            <h1 class="logo pulsing">PREDICTKING</h1>
-            <p class="motto">Predict. Win. Dominate.</p>
-        </div>
-        <div class="loading-bar">
-            <div class="loading-fill"></div>
-        </div>
-    </div>
     <div id="main-app" class="main-app evc-page">
         <!-- Header -->
         <!-- Replace the header in evc.html: -->
-       <!-- Loading Screen -->
-        <div id="loading-screen" class="loading-screen">
-            <div class="logo-container">
-                <div class="crown-icon">👑</div>
-                <h1 class="logo pulsing">PREDICTKING</h1>
-                <p class="motto">Earn. Win. Dominate.</p>
-            </div>
-            <div class="loading-bar">
-                <div class="loading-fill"></div>
-            </div>
-        </div>
-        
-        <header class="header">
+       <header class="header">
             <div class="header-left">
-                <div class="crown-icon" onclick="goHome()">👑</div>
+                <div class="crown-icon" onclick="goHome()">♛</div>
                 <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
             </div>
             <div class="header-right">
                 <div class="header-buttons">
-                    <button id="wallet-btn" class="header-btn evc-btn-style hidden" onclick="showWallet()">
-                        <span class="btn-icon">💰</span>
+                    <button id="wallet-btn" class="header-btn hidden" onclick="showWallet()">
+                        <span class="wallet-icon">◈</span>
+                        <span id="balance">₹0</span>
                     </button>
                     <button id="login-required" class="primary-btn" onclick="goHome(); setTimeout(showLogin, 100);">LOGIN TO EARN</button>
                     <button id="home-btn" class="secondary-btn" onclick="goHome()">HOME</button>

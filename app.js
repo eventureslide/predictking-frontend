@@ -69,50 +69,32 @@ function getRandomProfilePic(gender) {
 // Initialization
 /* Replace with: */
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if elements exist before using them
     if (document.getElementById('loading-screen')) {
         showLoadingScreen();
     }
     
-    // Minimum loading time for aesthetics
-    const minLoadTime = 3000;
-    const startTime = Date.now();
-    
-    // Different initialization for EVC vs Homepage
-    let initPromise;
-    if (window.location.pathname.includes('evc.html')) {
-        initPromise = Promise.resolve().then(() => {
-            return checkLoginStatus();
-        }).then(() => {
-            updateThemeBasedOnUser();
-            // EVC specific initialization
-            const adRewardEl = document.getElementById('ad-reward');
-            if (adRewardEl) {
-                adRewardEl.textContent = adminSettings.perAdReward;
+    setTimeout(() => {
+        if (document.getElementById('loading-screen')) {
+            hideLoadingScreen();
+        }
+        checkLoginStatus();
+        loadEvents();
+        loadStats();
+        startRealTimeUpdates();
+
+        // Fix EVC page login detection
+        if (window.location.pathname.includes('evc.html')) {
+            const loginRequiredBtn = document.getElementById('login-required');
+            const walletBtn = document.getElementById('wallet-btn');
+            if (currentUser && loginRequiredBtn) {
+                loginRequiredBtn.classList.add('hidden');
+                if (walletBtn) walletBtn.classList.remove('hidden');
             }
-            setTimeout(setupVideoBufferDetection, 100);
-        });
-    } else {
-        initPromise = checkLoginStatus().then(() => {
-            loadEvents();
-            loadStats();
-            startRealTimeUpdates();
-        });
-    }
-    
-    Promise.all([
-        initPromise,
-        new Promise(resolve => setTimeout(resolve, minLoadTime))
-    ]).then(() => {
-        const elapsed = Date.now() - startTime;
-        const remaining = Math.max(0, minLoadTime - elapsed);
-        
-        setTimeout(() => {
-            if (document.getElementById('loading-screen')) {
-                hideLoadingScreen();
-            }
-        }, remaining);
-    });
+        }
+    }, 3000);
 });
+
 // Loading Screen Functions
 function showLoadingScreen() {
     document.getElementById('loading-screen').style.display = 'flex';
@@ -134,7 +116,7 @@ function setTheme(theme) {
 function updateThemeBasedOnUser() {
     if (!currentUser) {
         setTheme('default');
-        updateHeaderButtons();
+        // Show sticky stats bar for logged out users
         const stickyBar = document.getElementById('sticky-stats-bar');
         const originalBtn = document.getElementById('original-evc-btn');
         if (stickyBar) stickyBar.classList.remove('hidden');
@@ -215,7 +197,6 @@ async function loginUser(code, silentLogin = false) {
         localStorage.setItem('userCode', code);
         updateUIForLoggedInUser();
         updateThemeBasedOnUser();
-        updateHeaderButtons();
         closeModal('login-modal');
         
         // Only increase active players count for actual login, not refresh
@@ -280,8 +261,7 @@ async function registerUser() {
         // Check if nickname exists
         const nicknameQuery = await db.collection('users').where('nickname', '==', formData.nickname).get();
         if (!nicknameQuery.empty) {
-            showNotification('Nickname already taken. Please choose another one.', 'error');
-            hideBuffering();
+            showNotification('Nickname already exists', 'error');
             return;
         }
 
@@ -326,24 +306,6 @@ function checkLoginStatus() {
             }
         });
     }
-}
-
-// Add after the checkLoginStatus function
-function checkLoginStatus() {
-    const savedCode = localStorage.getItem('userCode');
-    if (savedCode) {
-        return loginUser(savedCode, true).then(() => {
-            updateHeaderButtons();
-            updateThemeBasedOnUser();
-            if (window.location.pathname.includes('evc.html')) {
-                const loginRequiredBtn = document.getElementById('login-required');
-                const walletBtn = document.getElementById('wallet-btn');
-                if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
-                if (walletBtn) walletBtn.classList.remove('hidden');
-            }
-        });
-    }
-    return Promise.resolve();
 }
 
 function updateUIForLoggedInUser() {
@@ -604,8 +566,6 @@ function watchAd() {
     
     const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
     document.getElementById('ad-video').src = adUrl + '?autoplay=1&mute=1';
-    // Add autoplay and unmute parameters
-    document.getElementById('ad-video').src = adUrl + '?autoplay=1&mute=0&controls=0&disablekb=1&fs=0&modestbranding=1';
     showModal('ad-modal');
     
     // Reset claim button
@@ -629,40 +589,6 @@ function watchAd() {
     
     // Log ad view
     logActivity('ad_view', { userId: currentUser.id, adUrl });
-}
-
-// Add video buffering detection
-// Add this function to app.js if it doesn't exist
-function setupVideoBufferDetection() {
-    const video = document.getElementById('ad-video');
-    if (!video) return;
-    
-    let isBuffering = false;
-    
-    video.addEventListener('waiting', function() {
-        isBuffering = true;
-        if (window.currentAdTimer) {
-            clearInterval(window.currentAdTimer);
-        }
-    });
-    
-    video.addEventListener('canplay', function() {
-        if (isBuffering) {
-            isBuffering = false;
-            // Resume timer
-            let timeLeft = parseInt(document.getElementById('ad-timer').textContent);
-            window.currentAdTimer = setInterval(() => {
-                timeLeft--;
-                document.getElementById('ad-timer').textContent = timeLeft;
-                
-                if (timeLeft <= 0) {
-                    clearInterval(window.currentAdTimer);
-                    window.currentAdTimer = null;
-                    document.getElementById('claim-reward').classList.remove('hidden');
-                }
-            }, 1000);
-        }
-    });
 }
 
 function claimAdReward() {
@@ -960,6 +886,7 @@ async function loadLeaderboard() {
                 <img src="${user.profilePic || getRandomProfilePic(user.gender)}" alt="Profile" class="leaderboard-pic ${user.gender}">
                 <span class="name">${user.displayName}</span>
                 <span class="winnings">${formatCurrency(user.totalWinnings || 0, user.currency)}</span>
+                <span class="bets">${user.totalBets || 0}</span>
                 <span class="rep-score ${user.repScore.toLowerCase()}">${user.repScore}</span>
             `;
             
@@ -1011,9 +938,11 @@ async function loadStats() {
         if (stats.exists) {
             const data = stats.data();
             
-            // Update main stats (new layout)
-            const activePlayersMainEl = document.getElementById('active-players-main');
-            if (activePlayersMainEl) activePlayersMainEl.textContent = data.activePlayers || 0;
+            // Update main stats
+            const activePlayersEl = document.getElementById('active-players');
+            const totalPotEl = document.getElementById('total-pot');
+            if (activePlayersEl) activePlayersEl.textContent = data.activePlayers || 0;
+            if (totalPotEl) totalPotEl.textContent = formatCurrency(data.totalPot || 0, 'INR');
             
             // Update sticky stats for logged out mode
             const activePlayersStickyEl = document.getElementById('active-players-sticky');
@@ -1040,18 +969,12 @@ function showNotification(message, type = 'info') {
     const text = document.getElementById('notification-text');
     
     text.textContent = message;
-    notification.className = `notification ${type} slide-in`;
+    notification.className = `notification ${type}`;
     notification.classList.remove('hidden');
     
     setTimeout(() => {
-        notification.classList.add('slide-out');
-        notification.classList.remove('slide-in');
-    }, 2000);
-    
-    setTimeout(() => {
         notification.classList.add('hidden');
-        notification.classList.remove('slide-out');
-    }, 2500);
+    }, 3000);
 }
 
 function showBuffering() {
@@ -1094,9 +1017,9 @@ function logout() {
     setTheme('default');
     
     // Update UI
-    // Update UI
-    updateHeaderButtons();
-    updateThemeBasedOnUser();
+    document.getElementById('login-btn').classList.remove('hidden');
+    document.getElementById('register-btn').classList.remove('hidden');
+    document.getElementById('wallet-btn').classList.add('hidden');
     
     closeModal('profile-modal');
     showNotification('Logged out successfully', 'success');
@@ -1147,64 +1070,9 @@ function claimDailyBonus() {
     logActivity('daily_bonus', { userId: currentUser.id, bonus });
 }
 
-// Add after existing functions
-function showLiveChat() {
-    if (!currentUser) {
-        showNotification('Please login to access live chat', 'error');
-        return;
-    }
-    showModal('live-chat-modal');
-}
-
-function showNotifications() {
-    if (!currentUser) {
-        showNotification('Please login to view notifications', 'error');
-        return;
-    }
-    showModal('notifications-modal');
-}
-
-function updateHeaderButtons() {
-    const profileBtn = document.getElementById('profile-btn');
-    const loginBtn = document.getElementById('login-btn');
-    const walletBtn = document.getElementById('wallet-btn');
-    const leaderboardBtn = document.getElementById('leaderboard-btn');
-    const notificationsBtn = document.getElementById('notifications-btn');
-    
-    if (currentUser) {
-        // Logged in: Profile, Leaderboard, Wallet, Notifications
-        if (profileBtn) profileBtn.classList.remove('hidden');
-        if (loginBtn) loginBtn.classList.add('hidden');
-        if (walletBtn) walletBtn.classList.remove('hidden');
-        if (leaderboardBtn) leaderboardBtn.classList.remove('hidden');
-        if (notificationsBtn) notificationsBtn.classList.remove('hidden');
-    } else {
-        // Logged out: Login button + only Leaderboard and Notifications squares
-        if (profileBtn) profileBtn.classList.add('hidden');
-        if (loginBtn) loginBtn.classList.remove('hidden');
-        if (walletBtn) walletBtn.classList.add('hidden');
-        if (leaderboardBtn) leaderboardBtn.classList.remove('hidden');
-        if (notificationsBtn) notificationsBtn.classList.remove('hidden');
-    }
-}
-
-// Add these functions after existing modal functions
-function openTelegram() {
-    window.open('https://t.me/predictking_support', '_blank');
-}
-
-// Update existing updateUIForLoggedInUser function
-function updateUIForLoggedInUser() {
-    updateHeaderButtons();
-    updateBalance();
-}
-
-// Update the close modal click handler
+// Close modals when clicking outside
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
-        if (event.target.id === 'ad-modal') {
-            cleanupAdTimer();
-        }
         event.target.style.display = 'none';
     }
 }
