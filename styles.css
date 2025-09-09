@@ -1766,3 +1766,130 @@ input:focus, select:focus, textarea:focus {
         font-size: 1.1rem;
     }
 }
+
+/* Triangular Borders for Logged-in Header Buttons */
+.logged-in-layout .header-btn {
+    position: relative;
+    overflow: visible;
+}
+
+.logged-in-layout .header-btn::before,
+.logged-in-layout .header-btn::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    z-index: -1;
+    transition: all 0.3s ease;
+}
+
+/* Upward Triangle (1st, 3rd, 5th button) */
+.logged-in-layout .header-btn:nth-child(odd)::before {
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 12px solid var(--neon);
+    opacity: 0.7;
+}
+
+/* Downward Triangle (2nd, 4th, 6th button) */
+.logged-in-layout .header-btn:nth-child(even)::before {
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 12px solid var(--neon);
+    opacity: 0.7;
+}
+
+/* Hover effects for triangular borders */
+.logged-in-layout .header-btn:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1);
+}
+
+/* EVC Page Header Buttons */
+.evc-page .evc-buttons .header-btn {
+    position: relative;
+    overflow: visible;
+}
+
+.evc-page .evc-buttons .header-btn::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    z-index: -1;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+}
+
+/* First EVC button - Upward Triangle */
+.evc-page .evc-buttons .header-btn:first-child::before {
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 12px solid var(--neon);
+}
+
+/* Second EVC button - Downward Triangle */
+.evc-page .evc-buttons .header-btn:last-child::before {
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 12px solid var(--neon);
+}
+
+/* EVC Hover effects */
+.evc-page .evc-buttons .header-btn:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1);
+}
+
+/* Mobile responsive adjustments for triangular borders */
+@media (max-width: 768px) {
+    .logged-in-layout .header-btn::before,
+    .evc-page .evc-buttons .header-btn::before {
+        border-left-width: 12px;
+        border-right-width: 12px;
+        border-bottom-width: 10px;
+        border-top-width: 10px;
+    }
+    
+    .logged-in-layout .header-btn:nth-child(odd)::before,
+    .evc-page .evc-buttons .header-btn:first-child::before {
+        top: -6px;
+    }
+    
+    .logged-in-layout .header-btn:nth-child(even)::before,
+    .evc-page .evc-buttons .header-btn:last-child::before {
+        bottom: -6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .logged-in-layout .header-btn::before,
+    .evc-page .evc-buttons .header-btn::before {
+        border-left-width: 10px;
+        border-right-width: 10px;
+        border-bottom-width: 8px;
+        border-top-width: 8px;
+    }
+    
+    .logged-in-layout .header-btn:nth-child(odd)::before,
+    .evc-page .evc-buttons .header-btn:first-child::before {
+        top: -5px;
+    }
+    
+    .logged-in-layout .header-btn:nth-child(even)::before,
+    .evc-page .evc-buttons .header-btn:last-child::before {
+        bottom: -5px;
+    }
+}
