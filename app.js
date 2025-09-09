@@ -503,6 +503,12 @@ function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'none';
+        
+        // Stop ad video if closing ad modal
+        if (modalId === 'ad-modal') {
+            cleanupAdTimer();
+        }
+        
         // Clean up any animation classes
         const modalContent = modal.querySelector('.modal-content');
         if (modalContent) {
@@ -523,7 +529,20 @@ function cleanupAdTimer() {
     }
     const adVideo = document.getElementById('ad-video');
     if (adVideo) {
-        adVideo.src = '';
+        adVideo.src = 'about:blank'; // This stops the video completely
+        adVideo.remove();
+        // Recreate the iframe to ensure complete cleanup
+        const adContainer = document.querySelector('.ad-container');
+        if (adContainer) {
+            const newIframe = document.createElement('iframe');
+            newIframe.id = 'ad-video';
+            newIframe.width = '100%';
+            newIframe.height = '300';
+            newIframe.frameBorder = '0';
+            newIframe.allowFullscreen = true;
+            newIframe.allow = 'autoplay; fullscreen';
+            adContainer.appendChild(newIframe);
+        }
     }
     const timerEl = document.getElementById('ad-timer');
     if (timerEl) {
@@ -788,7 +807,11 @@ function claimAdReward() {
     
     updateBalance();
     updateEVCWalletBalance();
+    
+    // Clean up and close modal
+    cleanupAdTimer();
     closeModal('ad-modal');
+    
     showNotification(`Earned ${formatCurrency(reward, currentUser.currency)}!`, 'success');
     
     // Log reward claim
@@ -1401,8 +1424,13 @@ function updateThemeBasedOnUser() {
 
 
 // Close modals when clicking outside
+// Close modals when clicking outside
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
+        const modalId = event.target.id;
+        if (modalId === 'ad-modal') {
+            cleanupAdTimer();
+        }
         event.target.style.display = 'none';
     }
 }
