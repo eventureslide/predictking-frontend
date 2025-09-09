@@ -71,19 +71,21 @@ input, textarea, .code-display input, .notification {
     gap: 0.2rem;
     text-align: center;
     margin-bottom: 3rem;
-    padding: 0 10px; /* Add padding to prevent overflow */
+    padding: 0 10px;
 }
 
+/* *********************** Adjust loading screen crown icon size here */
 .loading-screen .crown-icon {
-    font-size: 6rem;
+    font-size: 6rem; /* *********************** Change this value to adjust crown size in loading screen */
     margin-bottom: 0;
     line-height: 1;
     color: #FFF3DA !important;
     transition: all 0.3s ease;
 }
 
+/* *********************** Adjust loading screen PredictKing heading size here */
 .loading-screen .logo {
-    font-size: clamp(2rem, 8vw, 3rem); /* Responsive font size */
+    font-size: clamp(2rem, 8vw, 3rem); /* *********************** Change these values to adjust PredictKing heading size in loading screen */
     font-weight: 900;
     letter-spacing: 2px;
     margin-top: -0.5rem;
@@ -107,8 +109,8 @@ input, textarea, .code-display input, .notification {
 @keyframes pulse {
     0% { transform: scale(1); }
     50% { 
-        transform: scale(1.05); /* Reduced scale to prevent overflow */
-        max-width: calc(100vw - 10px); /* Ensure 5px margin */
+        transform: scale(1.05);
+        max-width: calc(100vw - 10px);
     }
     100% { transform: scale(1); }
 }
@@ -139,6 +141,7 @@ input, textarea, .code-display input, .notification {
     --secondary: #141414;
     --accent: #666;
     --neon: #FFF3DA;
+    --emoji-color: #FFF3DA;
 }
 
 .male-theme {
@@ -146,6 +149,7 @@ input, textarea, .code-display input, .notification {
     --secondary: #141414;
     --accent: #9ef01a;
     --neon: #9ef01a;
+    --emoji-color: #9ef01a;
 }
 
 .female-theme {
@@ -153,6 +157,7 @@ input, textarea, .code-display input, .notification {
     --secondary: #141414;
     --accent: #ff0a54;
     --neon: #ff0a54;
+    --emoji-color: #ff0a54;
 }
 
 /* Layout */
@@ -189,16 +194,18 @@ input, textarea, .code-display input, .notification {
     cursor: pointer;
 }
 
+/* *********************** Adjust header crown icon size here */
 .header-left .crown-icon {
-    font-size: 2rem;
+    font-size: 2rem; /* *********************** Change this value to adjust header crown size */
     transition: all 0.3s ease;
-    color: var(--neon) !important; /* Use theme colors */
+    color: var(--neon) !important;
 }
 
+/* *********************** Adjust header PredictKing heading size here */
 .header-left .logo {
-    font-size: 1.5rem;
+    font-size: 1.5rem; /* *********************** Change this value to adjust header PredictKing heading size */
     font-weight: 900;
-    color: var(--neon) !important; /* Use theme colors */
+    color: var(--neon) !important;
 }
 
 .header-right {
@@ -213,15 +220,15 @@ input, textarea, .code-display input, .notification {
 }
 
 .logged-out-buttons-row {
-    display: flex !important; /* Force flex instead of grid */
-    flex-direction: row !important; /* Force horizontal */
+    display: flex !important;
+    flex-direction: row !important;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
     width: 100%;
     max-width: 100%;
     margin: 1.5rem 0 0 0;
-    flex-wrap: nowrap; /* Prevent wrapping */
+    flex-wrap: nowrap;
 }
 
 .logged-in-layout {
@@ -229,21 +236,21 @@ input, textarea, .code-display input, .notification {
 }
 
 .logged-in-buttons-grid {
-    display: flex !important; /* Force flex instead of grid */
-    flex-direction: row !important; /* Force horizontal */
-    flex-wrap: nowrap; /* Prevent wrapping */
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap;
     gap: 0.3rem;
     justify-content: center;
     align-items: center;
     width: 100%;
-    overflow-x: auto; /* Allow horizontal scroll if needed */
+    overflow-x: auto;
 }
 
 /* Header Button Styles - No Borders */
 .login-btn-left, .live-chat-btn-right {
     background: transparent !important;
     border: none !important;
-    color: var(--neon) !important; /* Use theme colors */
+    color: var(--neon) !important;
     padding: 0.6rem 0.8rem;
     border-radius: 8px;
     cursor: pointer;
@@ -255,8 +262,8 @@ input, textarea, .code-display input, .notification {
     outline: none !important;
     -webkit-tap-highlight-color: transparent !important;
     white-space: nowrap;
-    flex-shrink: 0; /* Prevent shrinking */
-    min-width: fit-content; /* Size based on text */
+    flex-shrink: 0;
+    min-width: fit-content;
 }
 
 .login-btn-left:hover, .live-chat-btn-right:hover {
@@ -274,7 +281,7 @@ input, textarea, .code-display input, .notification {
 .header-btn {
     background: transparent !important;
     border: none !important;
-    color: var(--neon) !important; /* Use theme colors */
+    color: var(--neon) !important;
     padding: 0.8rem;
     border-radius: 8px;
     cursor: pointer;
@@ -284,12 +291,12 @@ input, textarea, .code-display input, .notification {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: auto; /* Auto width based on content */
+    width: auto;
     height: 3rem;
     text-align: center;
     outline: none !important;
     -webkit-tap-highlight-color: transparent !important;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
     min-width: 3rem;
 }
 
@@ -348,11 +355,11 @@ input, textarea, .code-display input, .notification {
     background: rgba(255, 10, 84, 0.2) !important;
 }
 
-/* Primary and Secondary Button Styles - FIXED EARN COINS BUTTON COLOR */
+/* Primary and Secondary Button Styles */
 .primary-btn {
-    background: #FFF3DA !important; /* Warm white background */
+    background: #FFF3DA !important;
     border: 2px solid #FFF3DA !important;
-    color: #141414 !important; /* Black text */
+    color: #141414 !important;
     padding: 0.8rem 1.5rem;
     border-radius: 6px;
     cursor: pointer;
@@ -366,7 +373,7 @@ input, textarea, .code-display input, .notification {
 .primary-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(255, 243, 218, 0.4);
-    background: #f0e6c7 !important; /* Slightly darker on hover */
+    background: #f0e6c7 !important;
 }
 
 .secondary-btn {
@@ -388,11 +395,66 @@ input, textarea, .code-display input, .notification {
     color: #141414 !important;
 }
 
+/* Settings Tab Button Styles */
+.settings-tab .setting-item button {
+    background: transparent;
+    border: 2px solid var(--neon);
+    color: var(--neon);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+}
+
+.settings-tab .setting-item button:hover {
+    background: var(--neon);
+    color: #141414;
+}
+
+/* Logout Button - Opposite Theme Colors */
+.male-theme .settings-tab .danger-btn {
+    background: transparent !important;
+    border: 2px solid #ff0a54 !important;
+    color: #ff0a54 !important;
+}
+
+.male-theme .settings-tab .danger-btn:hover {
+    background: #ff0a54 !important;
+    color: #141414 !important;
+}
+
+.female-theme .settings-tab .danger-btn {
+    background: transparent !important;
+    border: 2px solid #9ef01a !important;
+    color: #9ef01a !important;
+}
+
+.female-theme .settings-tab .danger-btn:hover {
+    background: #9ef01a !important;
+    color: #141414 !important;
+}
+
+.default-theme .settings-tab .danger-btn {
+    background: transparent !important;
+    border: 2px solid #ff0a54 !important;
+    color: #ff0a54 !important;
+}
+
+.default-theme .settings-tab .danger-btn:hover {
+    background: #ff0a54 !important;
+    color: #141414 !important;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;
     padding: 2rem;
-    padding-bottom: 120px; /* Space for sticky bottom section */
+    padding-bottom: 120px;
 }
 
 .events-grid {
@@ -486,7 +548,7 @@ input, textarea, .code-display input, .notification {
     text-align: center;
 }
 
-/* Bottom Sticky Section - FIXED EARN COINS BUTTON COLOR */
+/* Bottom Sticky Section - EARN COINS BUTTON THEME CHANGES */
 .bottom-sticky-section {
     position: fixed;
     bottom: 0;
@@ -537,10 +599,41 @@ input, textarea, .code-display input, .notification {
     color: var(--neon);
 }
 
-.evc-btn-compact {
-    background: #FFF3DA !important; /* Warm white background */
+/* EARN COINS BUTTON - LOGGED OUT: WARM WHITE, LOGGED IN: THEME COLOR */
+.default-theme .evc-btn-compact {
+    background: #FFF3DA !important;
     border: none;
-    color: #141414 !important; /* Black text */
+    color: #141414 !important;
+}
+
+.default-theme .evc-btn-compact:hover {
+    background: #f0e6c7 !important;
+    box-shadow: 0 5px 15px rgba(255, 243, 218, 0.4);
+}
+
+.male-theme .evc-btn-compact {
+    background: #9ef01a !important;
+    border: none;
+    color: #141414 !important;
+}
+
+.male-theme .evc-btn-compact:hover {
+    background: #8dd117 !important;
+    box-shadow: 0 5px 15px rgba(158, 240, 26, 0.4);
+}
+
+.female-theme .evc-btn-compact {
+    background: #ff0a54 !important;
+    border: none;
+    color: #141414 !important;
+}
+
+.female-theme .evc-btn-compact:hover {
+    background: #e60948 !important;
+    box-shadow: 0 5px 15px rgba(255, 10, 84, 0.4);
+}
+
+.evc-btn-compact {
     padding: 1rem 2rem;
     border-radius: 25px;
     cursor: pointer;
@@ -555,8 +648,6 @@ input, textarea, .code-display input, .notification {
 
 .evc-btn-compact:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(255, 243, 218, 0.4);
-    background: #f0e6c7 !important; /* Slightly darker on hover */
 }
 
 /* Modals - No Animation */
@@ -603,6 +694,39 @@ input, textarea, .code-display input, .notification {
     max-height: 85vh;
 }
 
+/* Notification Modal Styling */
+.notification-modal {
+    z-index: 99999 !important;
+    background-color: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+}
+
+.notification-modal-content {
+    background: rgba(26, 26, 26, 0.98);
+    backdrop-filter: blur(15px);
+    margin: 10% auto;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border: 1px solid var(--neon);
+    position: relative;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+}
+
+/* Fade effect for profile modal when notification modal is open */
+.modal.faded {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(2px) !important;
+}
+
+.modal.faded .modal-content {
+    opacity: 0.3 !important;
+    filter: blur(2px) !important;
+}
+
 .close {
     color: #aaa;
     float: right;
@@ -642,6 +766,71 @@ input, textarea, .code-display input, .notification {
     text-decoration: underline;
 }
 
+/* Wallet Modal Styling */
+.wallet-balance {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.wallet-balance h3 {
+    color: #ccc;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.balance-display {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--neon);
+    margin-bottom: 1.5rem;
+}
+
+.daily-bonus {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--neon);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.daily-bonus:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.bonus-btn {
+    background: var(--neon);
+    color: #141414;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.bonus-btn:hover {
+    transform: translateY(-2px);
+}
+
+.wallet-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.wallet-actions button {
+    flex: 1;
+    min-width: 120px;
+}
+
 /* Forms */
 form {
     display: flex;
@@ -665,6 +854,43 @@ input:focus, select:focus, textarea:focus {
     box-shadow: 0 0 10px rgba(158, 240, 26, 0.3);
 }
 
+/* Complaints Tab Styling */
+.complaints-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.complaint-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.complaint-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.complaint-submit-btn {
+    background: var(--neon);
+    color: #141414;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.complaint-submit-btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
 /* Leaderboard - FIXED OVERFLOW AND POPUP */
 .leaderboard {
     max-height: 400px;
@@ -675,7 +901,7 @@ input:focus, select:focus, textarea:focus {
 .leaderboard-row {
     display: grid;
     grid-template-columns: 50px 60px 1fr 80px;
-    gap: 0.5rem;
+    gap: 0.8rem; /* Added gap between profile pic and winnings */
     padding: 1rem 0.5rem;
     border-bottom: 1px solid #333;
     align-items: center;
@@ -754,7 +980,7 @@ input:focus, select:focus, textarea:focus {
 .leaderboard-name-popup {
     position: absolute;
     top: 0;
-    left: 110px; /* Start after profile pic */
+    left: 110px;
     right: 0;
     height: 100%;
     background: var(--neon) !important;
@@ -772,6 +998,63 @@ input:focus, select:focus, textarea:focus {
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+/* Notification Item Styling with Border and Click Effect */
+.notification-item {
+    border: 2px solid var(--neon);
+    border-left: 6px solid var(--neon);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.notification-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(5px);
+}
+
+/* Betting Slip Item Styling with Status Colors */
+.slip-item {
+    border: 2px solid #333;
+    border-left: 6px solid #333;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.slip-status.placed {
+    background: rgba(158, 240, 26, 0.2);
+    color: #9ef01a;
+    border: 1px solid #9ef01a;
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.slip-status.queued {
+    background: rgba(255, 165, 0, 0.2);
+    color: #FFA500;
+    border: 1px solid #FFA500;
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.slip-status.rejected, .slip-status.dropped {
+    background: rgba(255, 10, 84, 0.2);
+    color: #ff0a54;
+    border: 1px solid #ff0a54;
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.8rem;
 }
 
 /* Notifications - FIXED TIMING ISSUES */
@@ -983,10 +1266,12 @@ input:focus, select:focus, textarea:focus {
     pointer-events: none;
 }
 
+/* *********************** Adjust emoji size in earning cards here */
 .card-icon {
-    font-size: 3rem;
+    font-size: 3rem; /* *********************** Change this value to adjust emoji size in earning cards */
     margin-bottom: 1rem;
-    color: var(--neon); /* Use theme colors for emojis */
+    color: var(--emoji-color);
+    filter: drop-shadow(0 0 3px var(--emoji-color));
 }
 
 .earning-card h3 {
@@ -1023,6 +1308,77 @@ input:focus, select:focus, textarea:focus {
     cursor: not-allowed;
 }
 
+/* Recent Earnings Section with Theme Colors and Better Positioning */
+.recent-earnings {
+    margin-top: 3rem;
+    text-align: center;
+    position: sticky;
+    bottom: 1rem;
+    background: rgba(20, 20, 20, 0.9);
+    padding: 1rem;
+    border-radius: 12px;
+}
+
+.recent-earnings h3 {
+    color: var(--neon);
+    cursor: pointer;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid var(--neon);
+    transition: all 0.3s ease;
+    margin: 0;
+}
+
+.recent-earnings h3:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Ad Modal Timer Styling with Gap */
+.ad-controls {
+    margin-top: 2rem; /* Gap between video and timer */
+    text-align: center;
+}
+
+.ad-progress {
+    margin-bottom: 1rem;
+    color: var(--neon);
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+#ad-timer {
+    color: var(--neon);
+    font-weight: 900;
+}
+
+/* Settings Tab Styling */
+.settings-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.setting-item label {
+    font-weight: 700;
+    color: var(--neon);
+}
+
+.setting-item input, .setting-item select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--neon);
+    color: var(--primary);
+    padding: 0.8rem;
+    border-radius: 4px;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .header {
@@ -1038,14 +1394,14 @@ input:focus, select:focus, textarea:focus {
         justify-content: space-between;
         gap: 0.3rem;
         margin-top: 1rem;
-        flex-wrap: nowrap !important; /* Ensure no wrapping on mobile */
+        flex-wrap: nowrap !important;
     }
     
     .logged-in-buttons-grid {
         justify-content: center;
         gap: 0.2rem;
         max-width: 100%;
-        flex-wrap: nowrap !important; /* Ensure no wrapping on mobile */
+        flex-wrap: nowrap !important;
         overflow-x: auto;
     }
     
@@ -1113,8 +1469,9 @@ input:focus, select:focus, textarea:focus {
         padding: 1.5rem;
     }
     
+    /* *********************** Adjust mobile emoji size here */
     .card-icon {
-        font-size: 2.5rem;
+        font-size: 2.5rem; /* *********************** Change this value to adjust mobile emoji size in earning cards */
     }
 }
 
@@ -1144,7 +1501,7 @@ input:focus, select:focus, textarea:focus {
     .header-btn {
         width: 2rem;
         height: 2rem;
-        font-size: 0.9rem; /* *********************** Smallest mobile emoji size for header buttons */
+        font-size: 0.9rem;
         padding: 0.3rem;
     }
     
@@ -1162,7 +1519,8 @@ input:focus, select:focus, textarea:focus {
         padding-bottom: 90px;
     }
     
+    /* *********************** Adjust loading screen sizes for smallest mobile here */
     .loading-screen .logo {
-        font-size: clamp(1.8rem, 10vw, 2.5rem);
+        font-size: clamp(1.8rem, 10vw, 2.5rem); /* *********************** Change these values for smallest mobile PredictKing heading */
     }
 }
