@@ -550,8 +550,8 @@ function createEventCard(event) {
     card.className = 'event-card';
     card.onclick = () => showEventModal(event);
     
-    const backgroundImage = event.backgroundImage || 'https://via.placeholder.com/400x200/333/fff?text=Event';
-    const profilePic = event.profilePic || 'https://via.placeholder.com/50x50/666/fff?text=P';
+    const backgroundImage = event.backgroundImage || 'https://picsum.photos/seed/picsum/200/300';
+    const profilePic = event.profilePic || 'https://picsum.photos/id/237/200/300';
     
     card.innerHTML = `
         <div class="event-background" style="background-image: url('${backgroundImage}')"></div>
