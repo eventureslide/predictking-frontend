@@ -114,11 +114,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if we're on EVC page
     if (window.location.pathname.includes('evc.html')) {
         showEVCLoadingScreen();
-        setTimeout(() => {
-            checkLoginStatus();
+        
+        // Ensure everything loads before showing page
+        Promise.all([
+            checkLoginStatus(),
+            new Promise(resolve => setTimeout(resolve, 3000)) // Minimum 3 seconds
+        ]).then(() => {
             updateThemeBasedOnUser();
             hideEVCLoadingScreen();
-        }, 2000);
+        });
         return;
     }
     
@@ -127,15 +131,19 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoadingScreen();
     }
     
-    setTimeout(() => {
+    // Ensure everything loads before showing page
+    Promise.all([
+        checkLoginStatus(),
+        loadEvents(),
+        loadStats(),
+        new Promise(resolve => setTimeout(resolve, 3000)) // Minimum 3 seconds
+    ]).then(() => {
         if (document.getElementById('loading-screen')) {
             hideLoadingScreen();
         }
-        checkLoginStatus();
-        loadEvents();
-        loadStats();
+        updateThemeBasedOnUser();
         startRealTimeUpdates();
-    }, 3000);
+    });
 });
 
 // Add mobile detection function
@@ -401,19 +409,23 @@ async function generateSHA256(text) {
 
 /* Replace with: */
 function checkLoginStatus() {
-    const savedCode = localStorage.getItem('userCode');
-    if (savedCode) {
-        loginUser(savedCode, true).then(() => { // Pass true for silent login
-            // Update EVC page UI after login
-            if (window.location.pathname.includes('evc.html')) {
-                updateThemeBasedOnUser();
-                const loginRequiredBtn = document.getElementById('login-required');
-                const walletBtn = document.getElementById('wallet-btn');
-                if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
-                if (walletBtn) walletBtn.classList.remove('hidden');
-            }
-        });
-    }
+    return new Promise((resolve) => {
+        const savedCode = localStorage.getItem('userCode');
+        if (savedCode) {
+            loginUser(savedCode, true).then(() => { // Pass true for silent login
+                // Update EVC page UI after login
+                if (window.location.pathname.includes('evc.html')) {
+                    const loginRequiredBtn = document.getElementById('login-required');
+                    const walletBtn = document.getElementById('wallet-btn');
+                    if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
+                    if (walletBtn) walletBtn.classList.remove('hidden');
+                }
+                resolve();
+            }).catch(() => resolve());
+        } else {
+            resolve();
+        }
+    });
 }
 
 function updateUIForLoggedInUser() {
@@ -688,8 +700,10 @@ function watchAd() {
     
     const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
     const iframe = document.getElementById('ad-video');
-    iframe.src = adUrl + '?autoplay=1&mute=0&controls=0&disablekb=1&modestbranding=1&rel=0';
+    // Fixed autoplay parameters - removed mute=0 and added autoplay=1
+    iframe.src = adUrl + '?autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0&enablejsapi=1';
     iframe.style.pointerEvents = 'none'; // Disable all interactions
+    iframe.allow = 'autoplay; fullscreen';
     
     showModal('ad-modal');
     
@@ -1109,20 +1123,31 @@ function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
     const text = document.getElementById('notification-text');
     
+    // Clear any existing timers
+    if (window.notificationTimer) {
+        clearTimeout(window.notificationTimer);
+    }
+    if (window.notificationHideTimer) {
+        clearTimeout(window.notificationHideTimer);
+    }
+    
     text.textContent = message;
     notification.className = `notification ${type}`;
     
     // Swoosh animation from left to right
-    notification.classList.remove('hidden');
+    notification.classList.remove('hidden', 'hide');
     notification.classList.add('show');
     
-    setTimeout(() => {
+    // Set timers with proper cleanup
+    window.notificationTimer = setTimeout(() => {
         notification.classList.remove('show');
         notification.classList.add('hide');
         
-        setTimeout(() => {
+        window.notificationHideTimer = setTimeout(() => {
             notification.classList.add('hidden');
             notification.classList.remove('hide');
+            window.notificationTimer = null;
+            window.notificationHideTimer = null;
         }, 600);
     }, 2500);
 }
@@ -1164,15 +1189,14 @@ function logout() {
     updateActivePlayersCount(-1); // Decrease count
     currentUser = null;
     localStorage.removeItem('userCode');
-    setTheme('default');
-    
-    // Update UI
-    document.getElementById('login-btn').classList.remove('hidden');
-    document.getElementById('register-btn').classList.remove('hidden');
-    document.getElementById('wallet-btn').classList.add('hidden');
     
     closeModal('profile-modal');
     showNotification('Logged out successfully', 'success');
+    
+    // Redirect to homepage after a brief delay
+    setTimeout(() => {
+        window.location.href = 'homepage.html';
+    }, 1000);
 }
 
 // Activity Logging
