@@ -212,12 +212,10 @@
         <div class="modal-content">
             <h2>Your Login Code</h2>
             <p>Save this code securely. You'll need it to login:</p>
-           <div class="code-display">
+            <div class="code-display">
                 <input type="text" id="generated-code" readonly>
-                <div class="code-buttons">
-                    <button onclick="copyCode()" class="secondary-btn">COPY</button>
-                    <button onclick="downloadCode()" class="secondary-btn">DOWNLOAD</button>
-                </div>
+                <button onclick="copyCode()" class="secondary-btn">COPY</button>
+                <button onclick="downloadCode()" class="secondary-btn">DOWNLOAD</button>
             </div>
             <button class="primary-btn" onclick="closeModal('code-modal')">GOT IT</button>
         </div>
