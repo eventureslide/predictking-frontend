@@ -136,7 +136,19 @@ document.addEventListener('DOMContentLoaded', function() {
         checkLoginStatus(),
         loadEvents(),
         loadStats(),
-        new Promise(resolve => setTimeout(resolve, 3000)) // Minimum 3 seconds
+        new Promise(resolve => {
+            // Wait for actual loading completion
+            let completed = 0;
+            const checkProgress = () => {
+                completed += 25;
+                if (completed >= 100) {
+                    setTimeout(resolve, 500); // Small delay after completion
+                } else {
+                    setTimeout(checkProgress, 750); // Staggered progress
+                }
+            };
+            checkProgress();
+        })
     ]).then(() => {
         if (document.getElementById('loading-screen')) {
             hideLoadingScreen();
@@ -1031,22 +1043,22 @@ function createSlipsTab() {
                 <div class="slip-info">
                     <h4>Event: Sample Cricket Match</h4>
                     <p>Bet: ₹100 on Team A</p>
-                    <span class="slip-status queued">QUEUED</span>
                 </div>
+                <span class="slip-status queued">QUEUED</span>
             </div>
             <div class="slip-item">
                 <div class="slip-info">
                     <h4>Event: Football Championship</h4>
                     <p>Bet: ₹250 on Team B</p>
-                    <span class="slip-status placed">PLACED</span>
                 </div>
+                <span class="slip-status placed">PLACED</span>
             </div>
             <div class="slip-item">
                 <div class="slip-info">
                     <h4>Event: Tennis Final</h4>
                     <p>Bet: ₹150 on Player X</p>
-                    <span class="slip-status rejected">REJECTED</span>
                 </div>
+                <span class="slip-status rejected">REJECTED</span>
             </div>
         </div>
     `;
