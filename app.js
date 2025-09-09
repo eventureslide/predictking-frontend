@@ -238,6 +238,42 @@ function showNotifications() {
     showModal('notifications-modal');
 }
 
+function openNotificationModal(notificationText, notificationTitle = "Notification") {
+    // Fade the profile modal
+    const profileModal = document.getElementById('profile-modal');
+    if (profileModal && profileModal.style.display !== 'none') {
+        profileModal.classList.add('faded');
+    }
+    
+    // Create notification modal
+    let modal = document.getElementById('notification-detail-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'notification-detail-modal';
+        modal.className = 'modal notification-modal';
+        modal.innerHTML = `
+            <div class="modal-content notification-modal-content">
+                <span class="close" onclick="closeNotificationModal()">&times;</span>
+                <h2 id="notification-detail-title"></h2>
+                <div id="notification-detail-content"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    document.getElementById('notification-detail-title').textContent = notificationTitle;
+    document.getElementById('notification-detail-content').textContent = notificationText;
+    showModal('notification-detail-modal');
+}
+
+function closeNotificationModal() {
+    const profileModal = document.getElementById('profile-modal');
+    if (profileModal) {
+        profileModal.classList.remove('faded');
+    }
+    closeModal('notification-detail-modal');
+}
+
 // Theme Management
 function setTheme(theme) {
     document.body.className = '';
@@ -947,7 +983,7 @@ function changeProfilePic() {
 function createNotificationsTab() {
     return `
         <div class="notifications-tab">
-            <div class="notification-item">
+            <div class="notification-item" onclick="openNotificationModal('Start betting and earning rewards to unlock exclusive features and bonuses.', 'Welcome to PredictKing!')">
                 <div class="notification-content">
                     <h4>Welcome to PredictKing!</h4>
                     <p>Start betting and earning rewards.</p>
@@ -961,8 +997,15 @@ function createNotificationsTab() {
 function createComplaintsTab() {
     return `
         <div class="complaints-tab">
-            <p>For complaints and support, contact us via Telegram:</p>
-            <button class="primary-btn" onclick="openTelegram()">CONTACT SUPPORT</button>
+            <form class="complaint-form" onsubmit="submitComplaint(event)">
+                <textarea 
+                    id="complaint-text" 
+                    class="complaint-textarea" 
+                    placeholder="Describe your complaint or issue in detail..."
+                    required
+                ></textarea>
+                <button type="submit" class="complaint-submit-btn">SUBMIT COMPLAINT</button>
+            </form>
         </div>
     `;
 }
@@ -986,14 +1029,71 @@ function createSlipsTab() {
         <div class="slips-tab">
             <div class="slip-item">
                 <div class="slip-info">
-                    <h4>Event: Sample Match</h4>
+                    <h4>Event: Sample Cricket Match</h4>
                     <p>Bet: ₹100 on Team A</p>
                     <span class="slip-status queued">QUEUED</span>
+                </div>
+            </div>
+            <div class="slip-item">
+                <div class="slip-info">
+                    <h4>Event: Football Championship</h4>
+                    <p>Bet: ₹250 on Team B</p>
+                    <span class="slip-status placed">PLACED</span>
+                </div>
+            </div>
+            <div class="slip-item">
+                <div class="slip-info">
+                    <h4>Event: Tennis Final</h4>
+                    <p>Bet: ₹150 on Player X</p>
+                    <span class="slip-status rejected">REJECTED</span>
                 </div>
             </div>
         </div>
     `;
 }
+
+async function submitComplaint(event) {
+    event.preventDefault();
+    
+    if (!currentUser) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    
+    const complaintText = document.getElementById('complaint-text').value.trim();
+    
+    if (!complaintText) {
+        showNotification('Please enter your complaint', 'error');
+        return;
+    }
+    
+    try {
+        showBuffering();
+        
+        // Add to admin inbox (complaints collection)
+        await db.collection('admin_complaints').add({
+            userId: currentUser.id,
+            userNickname: currentUser.nickname,
+            userDisplayName: currentUser.displayName,
+            complaintText: complaintText,
+            status: 'pending',
+            timestamp: firebase.firestore.Timestamp.now(),
+            read: false
+        });
+        
+        // Clear the form
+        document.getElementById('complaint-text').value = '';
+        
+        showNotification('Complaint submitted successfully!', 'success');
+        hideBuffering();
+        
+    } catch (error) {
+        console.error('Error submitting complaint:', error);
+        showNotification('Failed to submit complaint', 'error');
+        hideBuffering();
+    }
+}
+
 
 // Leaderboard Functions
 function showLeaderboard() {
