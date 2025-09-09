@@ -291,29 +291,6 @@ function setTheme(theme) {
     document.body.className = '';
     document.body.classList.add(theme + '-theme');
     currentTheme = theme;
-    
-    // Force emoji color updates
-    updateEmojiColors(theme);
-}
-
-function updateEmojiColors(theme) {
-    const colorMap = {
-        'default': '#FFF3DA',
-        'male': '#9ef01a',
-        'female': '#ff0a54'
-    };
-    
-    const color = colorMap[theme];
-    
-    // Update all elements with emojis
-    const emojiElements = document.querySelectorAll('.crown-icon, .header-btn, .card-icon, .wallet-icon');
-    emojiElements.forEach(element => {
-        element.style.color = color + ' !important';
-        element.style.filter = `drop-shadow(0 0 3px ${color}) !important`;
-    });
-    
-    // Update CSS custom property
-    document.documentElement.style.setProperty('--emoji-color', color);
 }
 
 function updateThemeBasedOnUser() {
