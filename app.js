@@ -115,35 +115,71 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.location.pathname.includes('evc.html')) {
         showEVCLoadingScreen();
         
-        // Ensure everything loads before showing page
+        let loadingProgress = 0;
+        const loadingFill = document.querySelector('.loading-fill');
+        
+        // Simulate actual loading progress
+        const loadingInterval = setInterval(() => {
+            loadingProgress += Math.random() * 15;
+            if (loadingFill) {
+                loadingFill.style.width = Math.min(loadingProgress, 90) + '%';
+            }
+            if (loadingProgress >= 90) {
+                clearInterval(loadingInterval);
+            }
+        }, 200);
+        
         Promise.all([
             checkLoginStatus(),
-            new Promise(resolve => setTimeout(resolve, 3000)) // Minimum 3 seconds
+            new Promise(resolve => setTimeout(resolve, 2000))
         ]).then(() => {
-            updateThemeBasedOnUser();
-            hideEVCLoadingScreen();
+            loadingProgress = 100;
+            if (loadingFill) {
+                loadingFill.style.width = '100%';
+            }
+            setTimeout(() => {
+                updateThemeBasedOnUser();
+                hideEVCLoadingScreen();
+            }, 500);
         });
         return;
     }
     
-    // Check if elements exist before using them
+    // Homepage loading with progress
     if (document.getElementById('loading-screen')) {
         showLoadingScreen();
+        
+        let loadingProgress = 0;
+        const loadingFill = document.querySelector('.loading-fill');
+        
+        const loadingInterval = setInterval(() => {
+            loadingProgress += Math.random() * 10;
+            if (loadingFill) {
+                loadingFill.style.width = Math.min(loadingProgress, 85) + '%';
+            }
+            if (loadingProgress >= 85) {
+                clearInterval(loadingInterval);
+            }
+        }, 150);
+        
+        Promise.all([
+            checkLoginStatus(),
+            loadEvents(),
+            loadStats()
+        ]).then(() => {
+            loadingProgress = 100;
+            if (loadingFill) {
+                loadingFill.style.width = '100%';
+            }
+            setTimeout(() => {
+                if (document.getElementById('loading-screen')) {
+                    hideLoadingScreen();
+                }
+                updateThemeBasedOnUser();
+                startRealTimeUpdates();
+            }, 500);
+        });
     }
-    
-    // Ensure everything loads before showing page
-    Promise.all([
-        checkLoginStatus(),
-        loadEvents(),
-        loadStats(),
-        new Promise(resolve => setTimeout(resolve, 3000)) // Minimum 3 seconds
-    ]).then(() => {
-        if (document.getElementById('loading-screen')) {
-            hideLoadingScreen();
-        }
-        updateThemeBasedOnUser();
-        startRealTimeUpdates();
-    });
 });
 
 // Add mobile detection function
@@ -983,10 +1019,12 @@ function changeProfilePic() {
 function createNotificationsTab() {
     return `
         <div class="notifications-tab">
-            <div class="notification-item" onclick="openNotificationModal('Start betting and earning rewards to unlock exclusive features and bonuses.', 'Welcome to PredictKing!')">
+            <div class="notification-item" onclick="openNotificationModal('Start betting and earning rewards to unlock exclusive features and bonuses. Complete your KYC verification and maintain a good reputation score to access premium betting markets and higher limits.', 'Welcome to PredictKing!')">
                 <div class="notification-content">
-                    <h4>Welcome to PredictKing!</h4>
-                    <p>Start betting and earning rewards.</p>
+                    <div class="notification-main">
+                        <h4>Welcome to PredictKing!</h4>
+                        <p>Start betting and earning rewards.</p>
+                    </div>
                     <span class="notification-time">2 hours ago</span>
                 </div>
             </div>
