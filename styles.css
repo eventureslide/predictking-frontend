@@ -74,18 +74,16 @@ input, textarea, .code-display input, .notification {
     padding: 0 10px;
 }
 
-/* *********************** Adjust loading screen crown icon size here */
 .loading-screen .crown-icon {
-    font-size: 6rem; /* *********************** Change this value to adjust crown size in loading screen */
+    font-size: 6rem;
     margin-bottom: 0;
     line-height: 1;
     color: #FFF3DA !important;
     transition: all 0.3s ease;
 }
 
-/* *********************** Adjust loading screen PredictKing heading size here */
 .loading-screen .logo {
-    font-size: clamp(2rem, 8vw, 3rem); /* *********************** Change these values to adjust PredictKing heading size in loading screen */
+    font-size: clamp(2rem, 8vw, 3rem);
     font-weight: 900;
     letter-spacing: 2px;
     margin-top: -0.5rem;
@@ -127,11 +125,15 @@ input, textarea, .code-display input, .notification {
     height: 100%;
     background: linear-gradient(90deg, #FFF3DA, #ffffff);
     width: 0%;
-    animation: loading 3s ease-in-out forwards;
+    animation: loading 3s ease-out forwards;
 }
 
 @keyframes loading {
     0% { width: 0%; }
+    25% { width: 20%; }
+    50% { width: 45%; }
+    75% { width: 70%; }
+    90% { width: 85%; }
     100% { width: 100%; }
 }
 
@@ -194,16 +196,14 @@ input, textarea, .code-display input, .notification {
     cursor: pointer;
 }
 
-/* *********************** Adjust header crown icon size here */
 .header-left .crown-icon {
-    font-size: 2rem; /* *********************** Change this value to adjust header crown size */
+    font-size: 2rem;
     transition: all 0.3s ease;
     color: var(--neon) !important;
 }
 
-/* *********************** Adjust header PredictKing heading size here */
 .header-left .logo {
-    font-size: 1.5rem; /* *********************** Change this value to adjust header PredictKing heading size */
+    font-size: 1.5rem;
     font-weight: 900;
     color: var(--neon) !important;
 }
@@ -374,6 +374,40 @@ input, textarea, .code-display input, .notification {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(255, 243, 218, 0.4);
     background: #f0e6c7 !important;
+}
+
+/* THEME-BASED CLAIM REWARD BUTTON */
+.default-theme .primary-btn {
+    background: #FFF3DA !important;
+    border: 2px solid #FFF3DA !important;
+    color: #141414 !important;
+}
+
+.default-theme .primary-btn:hover {
+    background: #f0e6c7 !important;
+    box-shadow: 0 5px 15px rgba(255, 243, 218, 0.4);
+}
+
+.male-theme .primary-btn {
+    background: #9ef01a !important;
+    border: 2px solid #9ef01a !important;
+    color: #141414 !important;
+}
+
+.male-theme .primary-btn:hover {
+    background: #8dd117 !important;
+    box-shadow: 0 5px 15px rgba(158, 240, 26, 0.4);
+}
+
+.female-theme .primary-btn {
+    background: #ff0a54 !important;
+    border: 2px solid #ff0a54 !important;
+    color: #141414 !important;
+}
+
+.female-theme .primary-btn:hover {
+    background: #e60948 !important;
+    box-shadow: 0 5px 15px rgba(255, 10, 84, 0.4);
 }
 
 .secondary-btn {
@@ -694,6 +728,25 @@ input, textarea, .code-display input, .notification {
     max-height: 85vh;
 }
 
+/* Ad Modal - Responsive Title */
+.modal h2 {
+    margin-bottom: 2rem;
+    color: var(--neon);
+    text-align: center;
+    font-size: 1.5rem;
+    line-height: 1.2;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+@media (max-width: 400px) {
+    .modal h2 {
+        font-size: 1.2rem;
+        word-break: break-word;
+    }
+}
+
 /* Notification Modal Styling */
 .notification-modal {
     z-index: 99999 !important;
@@ -740,12 +793,6 @@ input, textarea, .code-display input, .notification {
 
 .close:hover {
     color: var(--neon);
-}
-
-.modal h2 {
-    margin-bottom: 2rem;
-    color: var(--neon);
-    text-align: center;
 }
 
 .modal-footer {
@@ -831,6 +878,37 @@ input, textarea, .code-display input, .notification {
     min-width: 120px;
 }
 
+/* THEME-BASED BUY IN BUTTON IN WALLET */
+.default-theme .wallet-actions .primary-btn {
+    background: #FFF3DA !important;
+    border: 2px solid #FFF3DA !important;
+    color: #141414 !important;
+}
+
+.default-theme .wallet-actions .primary-btn:hover {
+    background: #f0e6c7 !important;
+}
+
+.male-theme .wallet-actions .primary-btn {
+    background: #9ef01a !important;
+    border: 2px solid #9ef01a !important;
+    color: #141414 !important;
+}
+
+.male-theme .wallet-actions .primary-btn:hover {
+    background: #8dd117 !important;
+}
+
+.female-theme .wallet-actions .primary-btn {
+    background: #ff0a54 !important;
+    border: 2px solid #ff0a54 !important;
+    color: #141414 !important;
+}
+
+.female-theme .wallet-actions .primary-btn:hover {
+    background: #e60948 !important;
+}
+
 /* Forms */
 form {
     display: flex;
@@ -901,7 +979,7 @@ input:focus, select:focus, textarea:focus {
 .leaderboard-row {
     display: grid;
     grid-template-columns: 50px 60px 1fr 80px;
-    gap: 0.8rem; /* Added gap between profile pic and winnings */
+    gap: 0.8rem;
     padding: 1rem 0.5rem;
     border-bottom: 1px solid #333;
     align-items: center;
@@ -1000,24 +1078,88 @@ input:focus, select:focus, textarea:focus {
     to { opacity: 1; }
 }
 
-/* Notification Item Styling with Border and Click Effect */
+/* IMPROVED NOTIFICATION ITEM STYLING - FUTURISTIC AND HYPNOTIC */
 .notification-item {
-    border: 2px solid var(--neon);
-    border-left: 6px solid var(--neon);
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    padding: 1rem;
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    padding: 1.2rem 1.5rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    overflow: hidden;
+}
+
+.notification-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--neon), rgba(255, 255, 255, 0.3));
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 0 10px var(--neon);
+}
+
+.notification-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 .notification-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    transform: translateX(5px);
+    transform: translateX(8px) scale(1.02);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--neon);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 
+                0 0 20px rgba(255, 255, 255, 0.1),
+                -4px 0 15px var(--neon);
 }
 
-/* Betting Slip Item Styling with Status Colors */
+.notification-item:hover::after {
+    opacity: 1;
+}
+
+.notification-content {
+    position: relative;
+    z-index: 2;
+}
+
+.notification-content h4 {
+    color: var(--neon);
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+    font-size: 1rem;
+    text-shadow: 0 0 5px var(--neon);
+}
+
+.notification-content p {
+    color: #ccc;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+}
+
+.notification-time {
+    color: #888;
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.8;
+    display: block;
+    margin-top: 0.8rem;
+}
+
+/* Betting Slip Item Styling with Status Colors and Gaps */
 .slip-item {
     border: 2px solid #333;
     border-left: 6px solid #333;
@@ -1025,6 +1167,18 @@ input:focus, select:focus, textarea:focus {
     margin-bottom: 1rem;
     padding: 1rem;
     background: rgba(255, 255, 255, 0.02);
+}
+
+.slip-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.slip-status {
+    margin-top: 1rem;
+    display: inline-block;
+    width: fit-content;
 }
 
 .slip-status.placed {
@@ -1123,17 +1277,24 @@ input:focus, select:focus, textarea:focus {
     box-shadow: 0 5px 15px rgba(255, 243, 218, 0.4);
 }
 
-/* Code Display */
+/* Code Display - Download button below Copy button */
 .code-display {
     display: flex;
+    flex-direction: column;
     gap: 1rem;
     margin: 2rem 0;
 }
 
 .code-display input {
-    flex: 1;
     font-family: monospace;
     font-size: 0.8rem;
+    margin-bottom: 1rem;
+}
+
+.code-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 /* Profile Tabs */
@@ -1182,14 +1343,6 @@ input:focus, select:focus, textarea:focus {
 
 .debt-warning {
     color: #ff0a54;
-    font-weight: 700;
-    margin: 1rem 0;
-}
-
-.rep-score {
-    display: inline-block;
-    padding: 0.8rem 1.5rem;
-    border-radius: 20px;
     font-weight: 700;
     margin: 1rem 0;
 }
@@ -1266,9 +1419,8 @@ input:focus, select:focus, textarea:focus {
     pointer-events: none;
 }
 
-/* *********************** Adjust emoji size in earning cards here */
 .card-icon {
-    font-size: 3rem; /* *********************** Change this value to adjust emoji size in earning cards */
+    font-size: 3rem;
     margin-bottom: 1rem;
     color: var(--emoji-color);
     filter: drop-shadow(0 0 3px var(--emoji-color));
@@ -1337,7 +1489,7 @@ input:focus, select:focus, textarea:focus {
 
 /* Ad Modal Timer Styling with Gap */
 .ad-controls {
-    margin-top: 2rem; /* Gap between video and timer */
+    margin-top: 2rem;
     text-align: center;
 }
 
@@ -1377,6 +1529,90 @@ input:focus, select:focus, textarea:focus {
     color: var(--primary);
     padding: 0.8rem;
     border-radius: 4px;
+}
+
+/* BUY-IN MODAL BUTTON STYLING */
+.payment-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.payment-btn, .test-btn {
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+/* Theme-based payment buttons */
+.default-theme .payment-btn {
+    background: #FFF3DA;
+    color: #141414;
+}
+
+.default-theme .payment-btn:hover {
+    background: #f0e6c7;
+    transform: translateY(-2px);
+}
+
+.default-theme .test-btn {
+    background: transparent;
+    border: 2px solid #FFF3DA;
+    color: #FFF3DA;
+}
+
+.default-theme .test-btn:hover {
+    background: #FFF3DA;
+    color: #141414;
+}
+
+.male-theme .payment-btn {
+    background: #9ef01a;
+    color: #141414;
+}
+
+.male-theme .payment-btn:hover {
+    background: #8dd117;
+    transform: translateY(-2px);
+}
+
+.male-theme .test-btn {
+    background: transparent;
+    border: 2px solid #9ef01a;
+    color: #9ef01a;
+}
+
+.male-theme .test-btn:hover {
+    background: #9ef01a;
+    color: #141414;
+}
+
+.female-theme .payment-btn {
+    background: #ff0a54;
+    color: #141414;
+}
+
+.female-theme .payment-btn:hover {
+    background: #e60948;
+    transform: translateY(-2px);
+}
+
+.female-theme .test-btn {
+    background: transparent;
+    border: 2px solid #ff0a54;
+    color: #ff0a54;
+}
+
+.female-theme .test-btn:hover {
+    background: #ff0a54;
+    color: #141414;
 }
 
 /* Mobile Responsive */
@@ -1469,9 +1705,12 @@ input:focus, select:focus, textarea:focus {
         padding: 1.5rem;
     }
     
-    /* *********************** Adjust mobile emoji size here */
     .card-icon {
-        font-size: 2.5rem; /* *********************** Change this value to adjust mobile emoji size in earning cards */
+        font-size: 2.5rem;
+    }
+    
+    .modal h2 {
+        font-size: 1.3rem;
     }
 }
 
@@ -1519,8 +1758,11 @@ input:focus, select:focus, textarea:focus {
         padding-bottom: 90px;
     }
     
-    /* *********************** Adjust loading screen sizes for smallest mobile here */
     .loading-screen .logo {
-        font-size: clamp(1.8rem, 10vw, 2.5rem); /* *********************** Change these values for smallest mobile PredictKing heading */
+        font-size: clamp(1.8rem, 10vw, 2.5rem);
+    }
+    
+    .modal h2 {
+        font-size: 1.1rem;
     }
 }
