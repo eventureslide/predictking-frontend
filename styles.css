@@ -1144,7 +1144,7 @@ input:focus, select:focus, textarea:focus {
     .header-btn {
         width: 2rem;
         height: 2rem;
-        font-size: 0.9rem;
+        font-size: 0.9rem; /* *********************** Smallest mobile emoji size for header buttons */
         padding: 0.3rem;
     }
     
