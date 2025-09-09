@@ -430,21 +430,23 @@ function updateUIForLoggedInUser() {
 
 // Modal Functions
 function showModal(modalId) {
-    document.getElementById(modalId).style.display = 'block';
+    const modal = document.getElementById(modalId);
+    modal.style.display = 'block';
+    // Remove any animation classes to ensure no animation
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.classList.remove('slide-out');
+    }
 }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
+        modal.style.display = 'none';
+        // Clean up any animation classes
         const modalContent = modal.querySelector('.modal-content');
         if (modalContent) {
-            modalContent.classList.add('slide-out');
-            setTimeout(() => {
-                modal.style.display = 'none';
-                modalContent.classList.remove('slide-out');
-            }, 500);
-        } else {
-            modal.style.display = 'none';
+            modalContent.classList.remove('slide-out');
         }
     }
 }
@@ -536,15 +538,19 @@ function createEventCard(event) {
     card.className = 'event-card';
     card.onclick = () => showEventModal(event);
     
+    const backgroundImage = event.backgroundImage || 'https://via.placeholder.com/400x200/333/fff?text=Event';
+    const profilePic = event.profilePic || 'https://via.placeholder.com/50x50/666/fff?text=P';
+    
     card.innerHTML = `
-        <div class="event-image">
-            <div class="event-placeholder">🎯</div>
-        </div>
-        <div class="event-info">
-            <h3>${event.title}</h3>
-            <div class="event-details">
-                <span class="event-time">${formatEventTime(event.startTime)}</span>
-                <span class="event-participants">${event.totalBets || 0} bets</span>
+        <div class="event-background" style="background-image: url('${backgroundImage}')"></div>
+        <img src="${profilePic}" alt="Event Profile" class="event-profile-pic">
+        <div class="event-content">
+            <div class="event-spacer"></div>
+            <div class="event-info">
+                <h3>${event.title}</h3>
+                <div class="event-details">
+                    <span class="event-time">${formatEventTime(event.startTime)}</span>
+                    <span class="event-participants">${event.totalBets || 0} bets</span>
             </div>
             <div class="event-pot">
                 Total Pot: ${formatCurrency(event.totalPot || 0, 'INR')}
@@ -1003,7 +1009,6 @@ async function loadLeaderboard() {
                      alt="Profile" 
                      class="leaderboard-pic ${user.gender}"
                      onclick="toggleLeaderboardName(this, '${user.displayName}')">
-                <span class="leaderboard-name">${user.displayName.substring(0, 10)}${user.displayName.length > 10 ? '...' : ''}</span>
                 <span class="winnings">${formatCurrency(user.totalWinnings || 0, user.currency)}</span>
                 <span class="rep-score ${user.repScore.toLowerCase()}">${user.repScore}</span>
             `;
@@ -1107,7 +1112,7 @@ function showNotification(message, type = 'info') {
     text.textContent = message;
     notification.className = `notification ${type}`;
     
-    // Swoosh animation
+    // Swoosh animation from left to right
     notification.classList.remove('hidden');
     notification.classList.add('show');
     
@@ -1118,8 +1123,8 @@ function showNotification(message, type = 'info') {
         setTimeout(() => {
             notification.classList.add('hidden');
             notification.classList.remove('hide');
-        }, 500);
-    }, 2000);
+        }, 600);
+    }, 2500);
 }
 
 function showBuffering() {
