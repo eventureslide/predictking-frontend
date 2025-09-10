@@ -156,6 +156,20 @@ document.addEventListener('DOMContentLoaded', function() {
         updateThemeBasedOnUser();
         startRealTimeUpdates();
     });
+
+    // ADD THIS RIGHT HERE:
+    document.getElementById('profile-pic').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // For now, we'll use a default pic since we don't have image upload service
+                showNotification('Profile picture selected (will use default for now)', 'info');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
 });
 
 // Add mobile detection function
