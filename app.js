@@ -156,20 +156,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateThemeBasedOnUser();
         startRealTimeUpdates();
     });
-
-    // ADD THIS RIGHT HERE:
-    document.getElementById('profile-pic').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                // For now, we'll use a default pic since we don't have image upload service
-                showNotification('Profile picture selected (will use default for now)', 'info');
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
 });
 
 // Add mobile detection function
@@ -356,18 +342,7 @@ if (registerForm) {
     });
 }
 
-// ADD THIS RIGHT HERE:
-document.getElementById('profile-pic').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            // For now, we'll use a default pic since we don't have image upload service
-            showNotification('Profile picture selected (will use default for now)', 'info');
-        };
-        reader.readAsDataURL(file);
-    }
-});
+
 
 // Find the loginUser function and add 'async' before 'function':
 async function loginUser(code, silentLogin = false) {
@@ -1032,16 +1007,8 @@ function changeProfilePic() {
     }).then(() => {
         currentUser.profilePic = newPic;
         showNotification('Profile picture updated!', 'success');
-        // Refresh the current profile picture display
-        const currentPic = document.querySelector('.current-profile-pic');
-        if (currentPic) {
-            currentPic.src = newPic;
-        }
-        // Also refresh balance tab if visible
-        const balanceImg = document.querySelector('.profile-image');
-        if (balanceImg) {
-            balanceImg.src = newPic;
-        }
+        // Refresh settings tab
+        showTab('settings');
     }).catch(error => {
         console.error('Error updating profile pic:', error);
         showNotification('Failed to update profile picture', 'error');
