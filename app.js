@@ -342,7 +342,18 @@ if (registerForm) {
     });
 }
 
-
+// ADD THIS RIGHT HERE:
+document.getElementById('profile-pic').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // For now, we'll use a default pic since we don't have image upload service
+            showNotification('Profile picture selected (will use default for now)', 'info');
+        };
+        reader.readAsDataURL(file);
+    }
+});
 
 // Find the loginUser function and add 'async' before 'function':
 async function loginUser(code, silentLogin = false) {
@@ -1007,8 +1018,16 @@ function changeProfilePic() {
     }).then(() => {
         currentUser.profilePic = newPic;
         showNotification('Profile picture updated!', 'success');
-        // Refresh settings tab
-        showTab('settings');
+        // Refresh the current profile picture display
+        const currentPic = document.querySelector('.current-profile-pic');
+        if (currentPic) {
+            currentPic.src = newPic;
+        }
+        // Also refresh balance tab if visible
+        const balanceImg = document.querySelector('.profile-image');
+        if (balanceImg) {
+            balanceImg.src = newPic;
+        }
     }).catch(error => {
         console.error('Error updating profile pic:', error);
         showNotification('Failed to update profile picture', 'error');
