@@ -104,12 +104,14 @@ function getRandomProfilePic(gender) {
 }
 
 // Initialization
-/* Replace with: */
 document.addEventListener('DOMContentLoaded', function() {
     // Double-check mobile access
     if (!isMobileDevice()) {
         return; // Exit if not mobile
     }
+    
+    // Initialize collections
+    initializeCollections();
     
     // Check if we're on EVC page
     if (window.location.pathname.includes('evc.html')) {
@@ -544,6 +546,9 @@ function cleanupAdTimer() {
     if (window.currentAdTimer) {
         clearInterval(window.currentAdTimer);
         window.currentAdTimer = null;
+        
+        // If timer was running and modal closes early, it's just a click, not a view
+        // ad_click was already logged, ad_view will NOT be logged
     }
     const claimBtn = document.getElementById('claim-reward');
     if (claimBtn) {
@@ -551,9 +556,8 @@ function cleanupAdTimer() {
     }
     const adVideo = document.getElementById('ad-video');
     if (adVideo) {
-        adVideo.src = 'about:blank'; // This stops the video completely
+        adVideo.src = 'about:blank';
         adVideo.remove();
-        // Recreate the iframe to ensure complete cleanup
         const adContainer = document.querySelector('.ad-container');
         if (adContainer) {
             const newIframe = document.createElement('iframe');
@@ -615,7 +619,10 @@ function formatCurrency(amount, currency) {
 // Events and Betting Functions
 async function loadEvents() {
     try {
-        const eventsSnapshot = await db.collection('events').where('status', '==', 'active').get();
+        const eventsSnapshot = await db.collection('events')
+            .where('status', 'in', ['active', 'settled'])
+            .where('display_status', '==', 'visible')
+            .get();
         events = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         displayEvents();
     } catch (error) {
@@ -662,7 +669,8 @@ function createEventCard(event) {
     return card;
 }
 
-function showEventModal(event) {
+// REPLACE the showEventModal function with this improved version:
+async function showEventModal(event) {
     if (!currentUser) {
         showNotification('Please login to bet', 'error');
         return;
@@ -673,27 +681,60 @@ function showEventModal(event) {
         return;
     }
     
-    if (currentUser.repScore === 'BAD' || currentUser.debt > 0) {
-        showNotification('Clear your debt to start betting', 'error');
+    // Check for debt
+    if (currentUser.debt > 0) {
+        showNotification(`Clear your debt of ${formatCurrency(currentUser.debt, currentUser.currency)} to start betting`, 'error');
         return;
     }
+    
+    window.currentEventId = event.id;
     
     document.getElementById('event-title').textContent = event.title;
     document.getElementById('event-time').textContent = formatEventTime(event.startTime);
     document.getElementById('event-status').textContent = event.status;
     
-    showBettingTab('pool');
-    showModal('event-modal');
+    const now = new Date();
+    const eventStart = event.startTime ? event.startTime.toDate() : new Date(0);
+    const hasStarted = now > eventStart;
     
-    // Log event view
+    // Check if user has wagered on this event
+    const userHasWagered = await userHadBetOnEvent(event.id);
+    
+    let vfrButton = '';
+    if (hasStarted && event.status === 'active' && userHasWagered) {
+        vfrButton = `<button class="vfr-btn" onclick="showVFRModal('${event.id}')">VOTE FOR RESULT</button>`;
+    }
+    
+    document.getElementById('event-modal').querySelector('.modal-content').innerHTML = `
+        <span class="close" onclick="closeModal('event-modal')">&times;</span>
+        <h2 id="event-title">${event.title}</h2>
+        <p>Start Time: <span id="event-time">${formatEventTime(event.startTime)}</span></p>
+        <p>Status: <span id="event-status">${event.status}</span></p>
+        ${vfrButton}
+        <div class="betting-tabs">
+            <button class="tab-btn" onclick="showBettingTab('pool')">Pool Betting</button>
+            <button class="tab-btn" onclick="showBettingTab('1v1')">1v1 Betting</button>
+        </div>
+        <div id="betting-content">
+            <div class="select-betting-type">
+                <h3>Select Betting Type</h3>
+                <p>Please select Pool Betting or 1v1 Betting to continue</p>
+            </div>
+        </div>
+    `;
+    
+    showModal('event-modal');
     logActivity('event_view', { userId: currentUser.id, eventId: event.id });
 }
 
+// REPLACE the showBettingTab function with this improved version:
 function showBettingTab(type) {
     const content = document.getElementById('betting-content');
     
     if (type === 'pool') {
         content.innerHTML = createPoolBettingUI();
+        // Load odds after UI is created
+        setTimeout(() => loadPoolOdds(window.currentEventId), 500);
     } else {
         content.innerHTML = create1v1BettingUI();
     }
@@ -702,27 +743,37 @@ function showBettingTab(type) {
     document.querySelectorAll('.betting-tabs .tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    event.target.classList.add('active');
+    
+    // Find the clicked button and mark it active
+    const clickedBtn = Array.from(document.querySelectorAll('.betting-tabs .tab-btn'))
+        .find(btn => btn.onclick.toString().includes(type));
+    if (clickedBtn) {
+        clickedBtn.classList.add('active');
+    }
 }
 
 function createPoolBettingUI() {
+    const currentEvent = events.find(e => e.id === window.currentEventId);
+    if (!currentEvent || !currentEvent.options) {
+        return '<div class="pool-betting">Event options not available</div>';
+    }
+    
     return `
         <div class="pool-betting">
-            <div class="betting-options">
-                <div class="option-card" onclick="placeBet('team_a', 'pool')">
-                    <h4>Team A</h4>
-                    <div class="odds">2.1</div>
-                    <div class="bet-count">45 bets</div>
-                </div>
-                <div class="option-card" onclick="placeBet('team_b', 'pool')">
-                    <h4>Team B</h4>
-                    <div class="odds">1.8</div>
-                    <div class="bet-count">67 bets</div>
-                </div>
+            <div class="betting-options" id="betting-options">
+                ${currentEvent.options.map((option, index) => `
+                    <div class="option-card" onclick="selectBettingOption('${option}', ${index})">
+                        <h4>${option}</h4>
+                        <div class="odds" id="odds-${index}">Loading...</div>
+                        <div class="bet-count" id="bets-${index}">0 bets</div>
+                        <div class="pool-amount" id="pool-${index}">₹0</div>
+                    </div>
+                `).join('')}
             </div>
             <div class="bet-input">
+                <div class="selected-option" id="selected-option">Select an option first</div>
                 <input type="number" id="bet-amount" placeholder="Bet amount" min="1">
-                <button class="primary-btn" onclick="confirmBet()">PLACE BET</button>
+                <button class="primary-btn" onclick="confirmPoolBet()">PLACE BET</button>
             </div>
         </div>
     `;
@@ -740,6 +791,79 @@ function create1v1BettingUI() {
             </div>
         </div>
     `;
+}
+
+// ADD THIS ENTIRE FUNCTION - it's missing from your current code
+async function placeBet(option, type, amount = null) {
+    if (!currentUser) {
+        showNotification('Please login to bet', 'error');
+        return;
+    }
+    
+    const betAmount = amount || parseInt(document.getElementById('bet-amount')?.value);
+    if (!betAmount || betAmount <= 0) {
+        showNotification('Enter valid bet amount', 'error');
+        return;
+    }
+    
+    if (betAmount > currentUser.balance) {
+        showNotification('Insufficient balance', 'error');
+        return;
+    }
+    
+    try {
+        // Get current event (you'll need to pass eventId to this function)
+        const currentEventId = window.currentEventId; // You'll need to set this when opening event modal
+        
+        // Deduct from user balance
+        currentUser.balance -= betAmount;
+        
+        // Update user in Firebase
+        await db.collection('users').doc(currentUser.id).update({
+            balance: currentUser.balance,
+            totalBets: (currentUser.totalBets || 0) + 1
+        });
+        
+        // Create bet record
+        await db.collection('bets').add({
+            userId: currentUser.id,
+            eventId: currentEventId,
+            option: option,
+            amount: betAmount,
+            type: type,
+            timestamp: firebase.firestore.Timestamp.now(),
+            status: 'placed'
+        });
+        
+        // Update event pot
+        const eventRef = db.collection('events').doc(currentEventId);
+        const eventDoc = await eventRef.get();
+        const currentPot = eventDoc.data().totalPot || 0;
+        const currentBets = eventDoc.data().totalBets || 0;
+        
+        await eventRef.update({
+            totalPot: currentPot + betAmount,
+            totalBets: currentBets + 1
+        });
+        
+        updateBalance();
+        closeModal('event-modal');
+        showNotification(`Bet placed: ${formatCurrency(betAmount, currentUser.currency)} on ${option}`, 'success');
+        
+        // ADD THIS LOGGING CALL
+        logActivity('bet_placed', { 
+            userId: currentUser.id, 
+            eventId: currentEventId,
+            amount: betAmount,
+            option: option,
+            type: type,
+            newBalance: currentUser.balance 
+        });
+        
+    } catch (error) {
+        console.error('Error placing bet:', error);
+        showNotification('Failed to place bet', 'error');
+    }
 }
 
 function createPriceLadder() {
@@ -767,6 +891,309 @@ function createPriceLadder() {
     `;
 }
 
+let selectedBettingOption = null;
+let selectedOptionIndex = null;
+
+function selectBettingOption(option, index) {
+    selectedBettingOption = option;
+    selectedOptionIndex = index;
+    
+    // Update UI
+    document.querySelectorAll('.option-card').forEach(card => card.classList.remove('selected'));
+    document.querySelectorAll('.option-card')[index].classList.add('selected');
+    document.getElementById('selected-option').textContent = `Selected: ${option}`;
+}
+
+// REPLACE the confirmPoolBet function with this version that includes proper status:
+async function confirmPoolBet() {
+    if (!currentUser) {
+        showNotification('Please login to bet', 'error');
+        return;
+    }
+    
+    if (!selectedBettingOption) {
+        showNotification('Please select a betting option first', 'error');
+        return;
+    }
+    
+    const betAmount = parseInt(document.getElementById('bet-amount').value);
+    if (!betAmount || betAmount <= 0) {
+        showNotification('Enter valid bet amount', 'error');
+        return;
+    }
+    
+    if (betAmount > currentUser.balance) {
+        showNotification('Insufficient balance', 'error');
+        return;
+    }
+    
+    try {
+        showBuffering();
+        
+        const eventId = window.currentEventId;
+        const currentEvent = events.find(e => e.id === eventId);
+        
+        // Create betting slip with proper status
+        const bettingSlip = {
+            userId: currentUser.id,
+            userNickname: currentUser.nickname,
+            userDisplayName: currentUser.displayName,
+            eventId: eventId,
+            eventTitle: currentEvent.title,
+            eventStartTime: currentEvent.startTime,
+            selectedOption: selectedBettingOption,
+            betAmount: betAmount,
+            currency: currentUser.currency,
+            timestamp: firebase.firestore.Timestamp.now(),
+            status: 'placed', // Initial status
+            betType: 'pool',
+            odds: null,
+            potentialWinning: null
+        };
+        
+        // Use transaction to ensure consistency
+        await db.runTransaction(async (transaction) => {
+            // Get or create betting pool
+            const poolRef = db.collection('betting_pools').doc(eventId);
+            const poolDoc = await transaction.get(poolRef);
+            
+            let poolData;
+            if (!poolDoc.exists) {
+                poolData = {
+                    eventId: eventId,
+                    eventTitle: currentEvent.title,
+                    eventStartTime: currentEvent.startTime,
+                    eventOptions: currentEvent.options,
+                    totalPool: 0,
+                    totalBets: 0,
+                    optionPools: {},
+                    optionBetCounts: {},
+                    vigPercentage: currentEvent.vigPercentage || 5,
+                    status: 'active',
+                    createdAt: firebase.firestore.Timestamp.now()
+                };
+                
+                // Initialize option pools
+                currentEvent.options.forEach(option => {
+                    poolData.optionPools[option] = 0;
+                    poolData.optionBetCounts[option] = 0;
+                });
+            } else {
+                poolData = poolDoc.data();
+            }
+            
+            // Update pool with new bet
+            poolData.totalPool += betAmount;
+            poolData.totalBets += 1;
+            poolData.optionPools[selectedBettingOption] += betAmount;
+            poolData.optionBetCounts[selectedBettingOption] += 1;
+            
+            // Calculate odds (after vig)
+            const totalAfterVig = poolData.totalPool * (1 - poolData.vigPercentage / 100);
+            const optionPool = poolData.optionPools[selectedBettingOption];
+            const odds = totalAfterVig / optionPool;
+            const potentialWinning = betAmount * odds;
+            
+            bettingSlip.odds = parseFloat(odds.toFixed(2));
+            bettingSlip.potentialWinning = parseFloat(potentialWinning.toFixed(2));
+            
+            // Update user balance
+            const userRef = db.collection('users').doc(currentUser.id);
+            transaction.update(userRef, {
+                balance: currentUser.balance - betAmount,
+                totalBets: (currentUser.totalBets || 0) + 1
+            });
+            
+            // Save pool data
+            transaction.set(poolRef, poolData);
+            
+            // Save betting slip
+            const slipRef = db.collection('betting_slips').doc();
+            transaction.set(slipRef, bettingSlip);
+            
+            // Update event total pot
+            const eventRef = db.collection('events').doc(eventId);
+            transaction.update(eventRef, {
+                totalPot: poolData.totalPool,
+                totalBets: poolData.totalBets
+            });
+        });
+        
+        // Update local user data
+        currentUser.balance -= betAmount;
+        currentUser.totalBets = (currentUser.totalBets || 0) + 1;
+        
+        updateBalance();
+        hideBuffering();
+        closeModal('event-modal');
+        
+        showNotification(
+            `Bet placed: ${formatCurrency(betAmount, currentUser.currency)} on ${selectedBettingOption}. Potential win: ${formatCurrency(bettingSlip.potentialWinning, currentUser.currency)}`,
+            'success'
+        );
+        
+        // Log activity
+        logActivity('bet_placed', {
+            userId: currentUser.id,
+            eventId: eventId,
+            amount: betAmount,
+            option: selectedBettingOption,
+            odds: bettingSlip.odds,
+            potentialWinning: bettingSlip.potentialWinning,
+            status: 'placed'
+        });
+        
+    } catch (error) {
+        console.error('Error placing bet:', error);
+        showNotification('Failed to place bet', 'error');
+        hideBuffering();
+    }
+}
+
+async function loadPoolOdds(eventId) {
+    try {
+        const poolDoc = await db.collection('betting_pools').doc(eventId).get();
+        const currentEvent = events.find(e => e.id === eventId);
+        
+        let poolData;
+        if (!poolDoc.exists) {
+            // No bets placed yet, show initial odds
+            const numOptions = currentEvent.options.length;
+            const initialOdds = numOptions; // Equal probability initially
+            
+            currentEvent.options.forEach((option, index) => {
+                const oddsEl = document.getElementById(`odds-${index}`);
+                const betsEl = document.getElementById(`bets-${index}`);
+                const poolEl = document.getElementById(`pool-${index}`);
+                
+                if (oddsEl) oddsEl.textContent = initialOdds.toFixed(1);
+                if (betsEl) betsEl.textContent = '0 bets';
+                if (poolEl) poolEl.textContent = '₹0';
+            });
+            return;
+        }
+        
+        poolData = poolDoc.data();
+        const totalAfterVig = poolData.totalPool * (1 - poolData.vigPercentage / 100);
+        
+        poolData.eventOptions.forEach((option, index) => {
+            const optionPool = poolData.optionPools[option] || 1;
+            const odds = totalAfterVig / optionPool;
+            const betCount = poolData.optionBetCounts[option] || 0;
+            const poolAmount = poolData.optionPools[option] || 0;
+            
+            const oddsEl = document.getElementById(`odds-${index}`);
+            const betsEl = document.getElementById(`bets-${index}`);
+            const poolEl = document.getElementById(`pool-${index}`);
+            
+            if (oddsEl) oddsEl.textContent = odds.toFixed(2);
+            if (betsEl) betsEl.textContent = `${betCount} bets`;
+            if (poolEl) poolEl.textContent = `₹${poolAmount}`;
+        });
+        
+    } catch (error) {
+        console.error('Error loading pool odds:', error);
+        
+        // Fallback: show initial odds
+        const currentEvent = events.find(e => e.id === eventId);
+        if (currentEvent) {
+            const numOptions = currentEvent.options.length;
+            const initialOdds = numOptions;
+            
+            currentEvent.options.forEach((option, index) => {
+                const oddsEl = document.getElementById(`odds-${index}`);
+                if (oddsEl) oddsEl.textContent = initialOdds.toFixed(1);
+            });
+        }
+    }
+}
+
+function showVFRModal(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+    
+    let modal = document.getElementById('vfr-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'vfr-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('vfr-modal')">&times;</span>
+                <h2>VOTE FOR RESULT</h2>
+                <p>Which option won?</p>
+                <div id="vfr-options"></div>
+                <button id="submit-vfr" class="primary-btn" onclick="submitVFR()">SUBMIT VOTE</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    const optionsHtml = event.options.map((option, index) => `
+        <label class="vfr-option">
+            <input type="radio" name="vfr-choice" value="${option}">
+            <span>${option}</span>
+        </label>
+    `).join('');
+    
+    document.getElementById('vfr-options').innerHTML = optionsHtml;
+    window.currentVFREventId = eventId;
+    showModal('vfr-modal');
+}
+
+// REPLACE the submitVFR function with this improved version:
+async function submitVFR() {
+    const selectedOption = document.querySelector('input[name="vfr-choice"]:checked');
+    if (!selectedOption) {
+        showNotification('Please select a result', 'error');
+        return;
+    }
+    
+    try {
+        // Check if user already voted
+        const existingVote = await db.collection('event_votes')
+            .where('userId', '==', currentUser.id)
+            .where('eventId', '==', window.currentVFREventId)
+            .get();
+            
+        if (!existingVote.empty) {
+            showNotification('You have already voted for this event', 'warning');
+            return;
+        }
+        
+        // Submit vote (this will auto-create the collection if it doesn't exist)
+        await db.collection('event_votes').add({
+            userId: currentUser.id,
+            userNickname: currentUser.nickname,
+            eventId: window.currentVFREventId, // Just store the event document ID
+            selectedWinner: selectedOption.value,
+            timestamp: firebase.firestore.Timestamp.now(),
+            userHadBet: await userHadBetOnEvent(window.currentVFREventId)
+        });
+        
+        closeModal('vfr-modal');
+        showNotification('Vote submitted successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error submitting VFR:', error);
+        showNotification('Failed to submit vote', 'error');
+    }
+}
+
+async function userHadBetOnEvent(eventId) {
+    try {
+        const betsQuery = await db.collection('betting_slips')
+            .where('userId', '==', currentUser.id)
+            .where('eventId', '==', eventId)
+            .get(); // Remove status filter to include all bet statuses
+        return !betsQuery.empty;
+    } catch (error) {
+        console.error('Error checking user bets:', error);
+        return false;
+    }
+}
+
+
 // EVC Functions
 function goToEVC() {
     window.location.href = 'evc.html';
@@ -789,12 +1216,14 @@ function watchAd() {
     
     const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
     const iframe = document.getElementById('ad-video');
-    // Fixed autoplay parameters - removed mute=0 and added autoplay=1
     iframe.src = adUrl + '?autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0&enablejsapi=1';
-    iframe.style.pointerEvents = 'none'; // Disable all interactions
+    iframe.style.pointerEvents = 'none';
     iframe.allow = 'autoplay; fullscreen';
     
     showModal('ad-modal');
+    
+    // Log ad_click immediately when modal opens
+    logActivity('ad_click', { userId: currentUser.id, adUrl });
     
     const claimBtn = document.getElementById('claim-reward');
     claimBtn.classList.add('hidden');
@@ -810,10 +1239,11 @@ function watchAd() {
             clearInterval(window.currentAdTimer);
             window.currentAdTimer = null;
             claimBtn.classList.remove('hidden');
+            
+            // Log ad_view only when timer completes (user watched full ad)
+            logActivity('ad_view', { userId: currentUser.id, adUrl });
         }
     }, 1000);
-    
-    logActivity('ad_view', { userId: currentUser.id, adUrl });
 }
 
 function claimAdReward() {
@@ -931,12 +1361,20 @@ function showProfile() {
     showTab('balance');
 }
 
-function showTab(tabName) {
+// REPLACE the showTab function with this fixed version:
+async function showTab(tabName) {
     const content = document.getElementById('tab-content');
     const tabBtns = document.querySelectorAll('.tab-btn');
     
+    // Remove active class from all tabs
     tabBtns.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    
+    // Find and activate the clicked tab
+    const clickedTab = Array.from(tabBtns).find(btn => btn.onclick.toString().includes(tabName));
+    if (clickedTab) clickedTab.classList.add('active');
+    
+    // Show loading while content loads
+    content.innerHTML = '<div class="loading-content">Loading...</div>';
     
     switch(tabName) {
         case 'balance':
@@ -949,18 +1387,24 @@ function showTab(tabName) {
             content.innerHTML = createSettingsTab();
             break;
         case 'notifications':
-            loadUserNotifications().then(notifs => {
-                createNotificationsTab().then(html => {
-                    content.innerHTML = html;
-                });
-            });
+            try {
+                const notifs = await loadUserNotifications();
+                const html = await createNotificationsTab();
+                content.innerHTML = html;
+            } catch (error) {
+                content.innerHTML = '<div class="error-content">Error loading notifications</div>';
+            }
             break;
-
         case 'complaints':
             content.innerHTML = createComplaintsTab();
             break;
         case 'slips':
-            content.innerHTML = createSlipsTab();
+            try {
+                const slipsHtml = await createSlipsTab();
+                content.innerHTML = slipsHtml;
+            } catch (error) {
+                content.innerHTML = '<div class="error-content">Error loading betting slips</div>';
+            }
             break;
     }
 }
@@ -1097,32 +1541,104 @@ function createHistoryTab() {
     `;
 }
 
+// REPLACE the createSlipsTab function (remove async from the function signature):
 function createSlipsTab() {
-    return `
-        <div class="slips-tab">
-            <div class="slip-item">
-                <div class="slip-info">
-                    <h4>Event: Sample Cricket Match</h4>
-                    <p>Bet: ₹100 on Team A</p>
-                </div>
-                <span class="slip-status queued">QUEUED</span>
-            </div>
-            <div class="slip-item">
-                <div class="slip-info">
-                    <h4>Event: Football Championship</h4>
-                    <p>Bet: ₹250 on Team B</p>
-                </div>
-                <span class="slip-status placed">PLACED</span>
-            </div>
-            <div class="slip-item">
-                <div class="slip-info">
-                    <h4>Event: Tennis Final</h4>
-                    <p>Bet: ₹150 on Player X</p>
-                </div>
-                <span class="slip-status rejected">REJECTED</span>
-            </div>
-        </div>
-    `;
+    if (!currentUser) {
+        return Promise.resolve('<div class="slips-tab"><p>Please login to view betting slips</p></div>');
+    }
+    
+    return new Promise(async (resolve) => {
+        try {
+            const slipsQuery = await db.collection('betting_slips')
+                .where('userId', '==', currentUser.id)
+                .orderBy('timestamp', 'desc')
+                .limit(20)
+                .get();
+                
+            if (slipsQuery.empty) {
+                resolve(`
+                    <div class="slips-tab">
+                        <div class="slip-item">
+                            <div class="slip-info">
+                                <p>No betting slips yet.</p>
+                                <p>Place bets to see your slips here!</p>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                return;
+            }
+            
+            let slipsHtml = '<div class="slips-tab">';
+            slipsQuery.docs.forEach(doc => {
+                const slip = doc.data();
+                const timestamp = slip.timestamp.toDate().toLocaleString();
+                
+                // Determine status display
+                let statusDisplay = slip.status || 'placed';
+                let statusClass = statusDisplay.toLowerCase();
+                
+                // Map status for display
+                switch(statusDisplay.toLowerCase()) {
+                    case 'placed':
+                        statusDisplay = 'PLACED';
+                        break;
+                    case 'rejected':
+                        statusDisplay = 'REJECTED';
+                        statusClass = 'rejected';
+                        break;
+                    case 'queued':
+                        statusDisplay = 'QUEUED';
+                        statusClass = 'queued';
+                        break;
+                    case 'won':
+                        statusDisplay = 'WON';
+                        statusClass = 'won';
+                        break;
+                    case 'lost':
+                        statusDisplay = 'LOST';
+                        statusClass = 'lost';
+                        break;
+                    default:
+                        statusDisplay = statusDisplay.toUpperCase();
+                }
+                
+                slipsHtml += `
+                    <div class="slip-item">
+                        <div class="slip-info">
+                            <h4>Event: ${slip.eventTitle}</h4>
+                            <p>Bet: ${formatCurrency(slip.betAmount, slip.currency)} on ${slip.selectedOption}</p>
+                            <p>Odds: ${slip.odds} | Potential Win: ${formatCurrency(slip.potentialWinning, slip.currency)}</p>
+                            <p>Time: ${timestamp}</p>
+                            <p>Type: ${slip.betType || 'pool'}</p>
+                        </div>
+                        <span class="slip-status ${statusClass}">${statusDisplay}</span>
+                    </div>
+                `;
+            });
+            slipsHtml += '</div>';
+            
+            resolve(slipsHtml);
+            
+        } catch (error) {
+            console.error('Error loading betting slips:', error);
+            resolve('<div class="slips-tab"><p>Error loading betting slips</p></div>');
+        }
+    });
+}
+
+// ADD this function to update slip status (for admin use later):
+async function updateSlipStatus(slipId, newStatus) {
+    try {
+        await db.collection('betting_slips').doc(slipId).update({
+            status: newStatus,
+            statusUpdatedAt: firebase.firestore.Timestamp.now()
+        });
+        
+        console.log(`Slip ${slipId} status updated to ${newStatus}`);
+    } catch (error) {
+        console.error('Error updating slip status:', error);
+    }
 }
 
 async function submitComplaint(event) {
@@ -1278,31 +1794,51 @@ function testBuyIn() {
     closeModal('buyin-modal');
     showNotification(`Added ${formatCurrency(amount, currentUser.currency)} to wallet!`, 'success');
     
-    // Log buy-in
-    logActivity('buyin', { userId: currentUser.id, amount, method: 'test' });
+    // Log buy-in - THIS SHOULD ALREADY BE HERE
+    logActivity('buyin', { 
+        userId: currentUser.id, 
+        amount, 
+        method: 'test',
+        newBalance: currentUser.balance 
+    });
 }
 
 // Stats and Real-time Updates
 async function loadStats() {
     try {
         const stats = await db.collection('stats').doc('global').get();
+        let activePlayers = 0;
+        let totalPot = 0;
+        
         if (stats.exists) {
             const data = stats.data();
-            
-            // Update all stat displays
-            const activePlayersEls = ['active-players', 'active-players-sticky', 'active-players-bottom'];
-            const totalPotEls = ['total-pot', 'total-pot-sticky', 'total-pot-bottom'];
-            
-            activePlayersEls.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = data.activePlayers || 0;
-            });
-            
-            totalPotEls.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = formatCurrency(data.totalPot || 0, 'INR');
-            });
+            activePlayers = data.activePlayers || 0;
         }
+        
+        // Calculate total pot from active visible events
+        const activeEventsSnapshot = await db.collection('events')
+            .where('status', '==', 'active')
+            .where('display_status', '==', 'visible')
+            .get();
+            
+        activeEventsSnapshot.docs.forEach(doc => {
+            const eventData = doc.data();
+            totalPot += eventData.totalPot || 0;
+        });
+        
+        // Update all stat displays
+        const activePlayersEls = ['active-players', 'active-players-sticky', 'active-players-bottom'];
+        const totalPotEls = ['total-pot', 'total-pot-sticky', 'total-pot-bottom'];
+        
+        activePlayersEls.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = activePlayers;
+        });
+        
+        totalPotEls.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = formatCurrency(totalPot, 'INR');
+        });
     } catch (error) {
         console.error('Error loading stats:', error);
     }
@@ -1462,6 +1998,27 @@ async function logActivity(action, data) {
         console.error('Error logging activity:', error);
     }
 }
+
+// ADD THE FUNCTION HERE:
+async function initializeCollections() {
+    try {
+        // Check if betting_pools collection exists by trying to get it
+        const poolsTest = await db.collection('betting_pools').limit(1).get();
+        console.log('betting_pools collection exists or was created');
+        
+        // Check if betting_slips collection exists
+        const slipsTest = await db.collection('betting_slips').limit(1).get();
+        console.log('betting_slips collection exists or was created');
+        
+        // Check if event_votes collection exists
+        const votesTest = await db.collection('event_votes').limit(1).get();
+        console.log('event_votes collection exists or was created');
+        
+    } catch (error) {
+        console.error('Error initializing collections:', error);
+    }
+}
+
 
 // Daily Bonus
 function claimDailyBonus() {

@@ -1,0 +1,50 @@
+.option-card.selected {
+    border: 2px solid var(--accent-color);
+    background: rgba(158, 240, 26, 0.2);
+}
+
+.selected-option {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background: rgba(158, 240, 26, 0.1);
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.vfr-btn {
+    background: #ff6b00;
+    color: white;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    margin: 1rem 0;
+    cursor: pointer;
+    width: 100%;
+}
+
+.vfr-option {
+    display: block;
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.vfr-option input {
+    margin-right: 1rem;
+}
+
+.pool-amount, .odds, .bet-count {
+    font-size: 0.9rem;
+    color: #888;
+    margin: 0.25rem 0;
+}
+
+.betting-options {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
