@@ -158,6 +158,28 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+
+async function loadUserNotifications() {
+    if (!currentUser) return [];
+
+    try {
+        const snapshot = await db
+            .collection("notifications")
+            .where("userId", "==", currentUser.id)
+            .orderBy("timestamp", "desc")
+            .limit(50)
+            .get();
+
+
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Error loading notifications:", error);
+        return [];
+    }
+}
+
+
+
 // Add mobile detection function
 function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
@@ -927,8 +949,13 @@ function showTab(tabName) {
             content.innerHTML = createSettingsTab();
             break;
         case 'notifications':
-            content.innerHTML = createNotificationsTab();
+            loadUserNotifications().then(notifs => {
+                createNotificationsTab().then(html => {
+                    content.innerHTML = html;
+                });
+            });
             break;
+
         case 'complaints':
             content.innerHTML = createComplaintsTab();
             break;
@@ -1015,19 +1042,30 @@ function changeProfilePic() {
     });
 }
 
-function createNotificationsTab() {
+async function createNotificationsTab() {
+    const notifications = await loadUserNotifications();
+
+    if (!notifications.length) {
+        return `<div class="notifications-tab"><p>No notifications yet</p></div>`;
+    }
+
     return `
         <div class="notifications-tab">
-            <div class="notification-item" onclick="openNotificationModal('Start betting and earning rewards to unlock exclusive features and bonuses.', 'Welcome to PredictKing!')">
-                <div class="notification-content">
-                    <h4>Welcome to PredictKing!</h4>
-                    <p>Start betting and earning rewards.</p>
-                    <span class="notification-time">2 hours ago</span>
+            ${notifications.map(n => `
+                <div class="notification-item" onclick="openNotificationModal('${n.message}', '${n.title}'); markNotificationAsRead('${n.id}')">
+                    <div class="notification-content">
+                        <h4>${n.title}</h4>
+                        <p>${n.message}</p>
+                        <span class="notification-time">
+                            ${n.timestamp?.toDate().toLocaleString() || ''}
+                        </span>
+                    </div>
                 </div>
-            </div>
+            `).join("")}
         </div>
     `;
 }
+
 
 function createComplaintsTab() {
     return `
@@ -1096,38 +1134,63 @@ async function submitComplaint(event) {
     }
     
     const complaintText = document.getElementById('complaint-text').value.trim();
-    
     if (!complaintText) {
         showNotification('Please enter your complaint', 'error');
         return;
     }
-    
+
     try {
         showBuffering();
-        
-        // Add to admin inbox (complaints collection)
-        await db.collection('admin_complaints').add({
-            userId: currentUser.id,
-            userNickname: currentUser.nickname,
-            userDisplayName: currentUser.displayName,
-            complaintText: complaintText,
-            status: 'pending',
-            timestamp: firebase.firestore.Timestamp.now(),
-            read: false
+
+        const userRef = db.collection("users").doc(currentUser.id);
+
+        // Run in transaction so complaintCount is safe
+        await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            let complaintCount = userDoc.exists && userDoc.data().complaintCount ? userDoc.data().complaintCount : 0;
+            complaintCount += 1;
+
+            // Update complaintCount in user document
+            transaction.update(userRef, { complaintCount });
+
+            // Save complaint
+            const complaintRef = db.collection("admin_complaints").doc();
+            transaction.set(complaintRef, {
+                userId: currentUser.id,
+                userNickname: currentUser.nickname,
+                userDisplayName: currentUser.displayName,
+                complaintText: complaintText,
+                complaintNumber: complaintCount,
+                status: 'pending',
+                timestamp: firebase.firestore.Timestamp.now(),
+                read: false
+            });
+
+            // Also add notification for the user
+            const notifRef = db.collection("notifications").doc();
+            transaction.set(notifRef, {
+                userId: currentUser.id,
+                title: "Complaint Submitted",
+                message: `Your complaint has been submitted. Complaint #${complaintCount}`,
+                type: "system",
+                read: false,
+                timestamp: firebase.firestore.Timestamp.now()
+            });
         });
-        
+
         // Clear the form
         document.getElementById('complaint-text').value = '';
-        
+
         showNotification('Complaint submitted successfully!', 'success');
         hideBuffering();
-        
+
     } catch (error) {
         console.error('Error submitting complaint:', error);
         showNotification('Failed to submit complaint', 'error');
         hideBuffering();
     }
 }
+
 
 
 // Leaderboard Functions
@@ -1286,6 +1349,57 @@ function showNotification(message, type = 'info') {
         }, 600);
     }, 2500);
 }
+
+async function showNotifications() {
+    if (!currentUser) {
+        showNotification("Please login first", "error");
+        return;
+    }
+
+    let modal = document.getElementById("notifications-modal");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "notifications-modal";
+        modal.className = "modal";
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('notifications-modal')">&times;</span>
+                <h2>NOTIFICATIONS</h2>
+                <div id="notifications-list" class="notifications-tab"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // load notifications dynamically
+    const notifications = await loadUserNotifications();
+    const list = document.getElementById("notifications-list");
+
+    if (!notifications.length) {
+        list.innerHTML = "<p>No notifications yet</p>";
+    } else {
+        list.innerHTML = notifications.map(n => `
+            <div class="notification-item" onclick="openNotificationModal('${n.message}', '${n.title}'); markNotificationAsRead('${n.id}')">
+                <div class="notification-content">
+                    <h4>${n.title}</h4>
+                    <p>${n.message}</p>
+                    <span class="notification-time">${n.timestamp?.toDate().toLocaleString() || ''}</span>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    showModal("notifications-modal");
+}
+
+async function markNotificationAsRead(notificationId) {
+    try {
+        await db.collection("notifications").doc(notificationId).update({ read: true });
+    } catch (error) {
+        console.error("Error marking notification as read:", error);
+    }
+}
+
 
 function showBuffering() {
     // Add buffering indicator
