@@ -50,7 +50,7 @@ function checkViewportSize() {
                 padding: 2rem;
                 z-index: 10000;
             ">
-                <div style="font-size: 4rem; margin-bottom: 2rem;">♛</div>
+                <div style="font-size: 4rem; margin-bottom: 2rem;">â™›</div>
                 <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: 2px;">PREDICTKING</h1>
                 <h2 style="font-size: 1.5rem; margin-bottom: 2rem; color: #888;">Please Use Mobile Device</h2>
                 <p style="font-size: 1.1rem; max-width: 500px; line-height: 1.6;">
@@ -64,15 +64,21 @@ function checkViewportSize() {
 // Monitor viewport changes
 window.addEventListener('resize', checkViewportSize);
 
-// Profile picture defaults
+// Profile picture defaults with working URLs
 const defaultProfilePics = {
     male: [
-        "https://i.ibb.co/VYvcGYh0/00e3ef3b309ca5bd6280aa9f3eeb3e97.jpg", // Add more male profile pic URLs here
-        // Add 50+ more male profile pic URLs
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=male1&backgroundColor=b6e3f4",
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=male2&backgroundColor=c0aede",
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=male3&backgroundColor=d1d4f9",
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=male4&backgroundColor=ffd93d",
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=male5&backgroundColor=ffb3ba"
     ],
     female: [
-        "https://i.ibb.co/6R0b2tFc/cute-cool-boy-dabbing-pose-cartoon-icon-illustration-people-fashion-icon-concept-isolated-generat-ai.jpg", // Add more female profile pic URLs here  
-        // Add 50+ more female profile pic URLs
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=female1&backgroundColor=ffb3ba",
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=female2&backgroundColor=ffdfba",
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=female3&backgroundColor=ffffba",
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=female4&backgroundColor=baffc9",
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=female5&backgroundColor=bae1ff"
     ]
 };
 
@@ -101,6 +107,24 @@ function getRandomProfilePic(gender) {
     usedSet.add(selectedPic);
     
     return selectedPic;
+}
+
+// Handle file upload for profile pictures
+function handleProfilePicUpload(file, gender) {
+    return new Promise((resolve) => {
+        if (!file) {
+            // If no file uploaded, use random default
+            resolve(getRandomProfilePic(gender));
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Convert to base64 and resolve
+            resolve(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 // Initialization
@@ -366,6 +390,23 @@ if (registerForm) {
     });
 }
 
+// ADD THE PROFILE PICTURE HANDLER HERE:
+// Profile picture upload handler
+const profilePicInput = document.getElementById('profile-pic');
+if (profilePicInput) {
+    profilePicInput.addEventListener('change', function() {
+        const file = this.files[0];
+        const button = document.querySelector('.file-upload-btn');
+        
+        if (file) {
+            button.textContent = `📷 ${file.name}`;
+            button.style.color = 'var(--primary-color)';
+        } else {
+            button.textContent = '📷 Upload Profile Picture';
+            button.style.color = '';
+        }
+    });
+}
 
 
 // Find the loginUser function and add 'async' before 'function':
@@ -421,13 +462,18 @@ async function updateActivePlayersCount(change) {
 
 
 async function registerUser() {
+    const gender = document.getElementById('gender').value;
+    const profilePicFile = document.getElementById('profile-pic').files[0];
+    
+    // Handle profile picture
+    const profilePic = await handleProfilePicUpload(profilePicFile, gender);
+    
     const formData = {
         nickname: document.getElementById('nickname').value,
         displayName: document.getElementById('display-name').value,
-        gender: document.getElementById('gender').value,
-        currency: document.getElementById('currency').value,
+        gender: gender,
         instagram: document.getElementById('instagram').value,
-        profilePic: getRandomProfilePic(document.getElementById('gender').value),
+        profilePic: profilePic,
         registrationDate: firebase.firestore.Timestamp.now(),
         kycStatus: 'pending',
         repScore: 'GOOD',
@@ -456,6 +502,9 @@ async function registerUser() {
         // Create user
         const docRef = await db.collection('users').add(formData);
         
+        // Trigger browser password save
+        triggerPasswordSave(formData.nickname, loginCode);
+        
         // Show login code
         document.getElementById('generated-code').value = loginCode;
         closeModal('register-modal');
@@ -470,6 +519,35 @@ async function registerUser() {
         showNotification('Registration failed', 'error');
         hideBuffering();
     }
+}
+
+// ADD this new function after registerUser:
+function triggerPasswordSave(username, password) {
+    // Create a hidden form to trigger browser's password save
+    const form = document.createElement('form');
+    form.style.display = 'none';
+    
+    const usernameInput = document.createElement('input');
+    usernameInput.type = 'text';
+    usernameInput.name = 'username';
+    usernameInput.value = username;
+    usernameInput.autocomplete = 'username';
+    
+    const passwordInput = document.createElement('input');
+    passwordInput.type = 'password';
+    passwordInput.name = 'password';
+    passwordInput.value = password;
+    passwordInput.autocomplete = 'current-password';
+    
+    form.appendChild(usernameInput);
+    form.appendChild(passwordInput);
+    document.body.appendChild(form);
+    
+    // Trigger the browser's password save dialog
+    setTimeout(() => {
+        form.submit();
+        document.body.removeChild(form);
+    }, 100);
 }
 
 async function generateSHA256(text) {
@@ -583,44 +661,159 @@ function showWallet() {
         return;
     }
     
-    document.getElementById('wallet-balance').textContent = formatCurrency(currentUser.balance, currentUser.currency);
+    const walletBalance = currentUser.balance - currentUser.debt;
+    const balanceEl = document.getElementById('wallet-balance');
+    
+    balanceEl.textContent = formatCurrency(walletBalance);
+    
+    // Set color based on wallet balance
+    if (walletBalance < 0) {
+        balanceEl.style.color = '#ffc857'; // Debt color
+    } else {
+        balanceEl.style.color = 'var(--primary-color)'; // Theme color
+    }
+    
     showModal('wallet-modal');
 }
 
 function updateEVCWalletBalance() {
     const evcWalletBalance = document.getElementById('wallet-balance');
     if (evcWalletBalance && currentUser) {
-        evcWalletBalance.textContent = formatCurrency(currentUser.balance, currentUser.currency);
+        const walletBalance = currentUser.balance - currentUser.debt;
+        evcWalletBalance.textContent = formatCurrency(walletBalance);
+        
+        // Set color based on wallet balance
+        if (walletBalance < 0) {
+            evcWalletBalance.style.color = '#ffc857'; // Debt color
+        } else {
+            evcWalletBalance.style.color = 'var(--primary-color)'; // Theme color
+        }
     }
 }
 
 function updateBalance() {
     if (currentUser) {
-        const balanceText = currentUser.debt > 0 ? 
-            `-${formatCurrency(currentUser.debt, currentUser.currency)}` :
-            formatCurrency(currentUser.balance, currentUser.currency);
+        const walletBalance = currentUser.balance - currentUser.debt;
+        const balanceText = formatCurrency(walletBalance);
         
         const balanceEl = document.getElementById('balance');
         if (balanceEl) {
             balanceEl.textContent = balanceText;
             balanceEl.style.display = 'none'; // Always hide on homepage
-            if (currentUser.debt > 0) {
-                balanceEl.style.color = '#ff0a54';
+            
+            // Set color based on wallet balance
+            if (walletBalance < 0) {
+                balanceEl.style.color = '#ffc857'; // Debt color
+            } else {
+                balanceEl.style.color = 'var(--primary-color)'; // Theme color
             }
         }
     }
 }
 
-function formatCurrency(amount, currency) {
-    const symbols = { INR: '₹', USD: '$', EUR: '€' };
-    return `${symbols[currency] || '₹'}${amount}`;
+// Quero (₮Ξ) - Universal currency for PredictKing
+// Etymology: "Quero" derives from Latin "quaero" meaning "I seek/desire"
+// symbolizing the player's quest for victory and rewards in prediction gaming
+function formatCurrency(amount) {
+    const flooredAmount = Math.floor(amount); // Floor the amount to remove decimals
+    return `₮Ξ${flooredAmount}`;
+}
+
+// ADD this function after formatCurrency:
+function checkUserDebt() {
+    if (!currentUser) return false;
+    
+    const walletBalance = currentUser.balance - currentUser.debt;
+    return walletBalance < 0; // Returns true if user is in debt
+}
+
+function showAmberNotification(message) {
+    const notification = document.getElementById('notification');
+    const text = document.getElementById('notification-text');
+    
+    // Clear any existing timers
+    if (window.notificationTimer) {
+        clearTimeout(window.notificationTimer);
+    }
+    if (window.notificationHideTimer) {
+        clearTimeout(window.notificationHideTimer);
+    }
+    
+    text.textContent = message;
+    notification.className = 'notification warning'; // Use warning class for amber color
+    
+    // Swoosh animation from left to right
+    notification.classList.remove('hidden', 'hide');
+    notification.classList.add('show');
+    
+    // Set timers with proper cleanup
+    window.notificationTimer = setTimeout(() => {
+        notification.classList.remove('show');
+        notification.classList.add('hide');
+        
+        window.notificationHideTimer = setTimeout(() => {
+            notification.classList.add('hidden');
+            notification.classList.remove('hide');
+            window.notificationTimer = null;
+            window.notificationHideTimer = null;
+        }, 600);
+    }, 3000); // Longer display time for debt warning
+}
+
+async function settleDebtAutomatically(userId, amountToAdd) {
+    try {
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await userRef.get();
+        const userData = userDoc.data();
+        
+        const currentBalance = userData.balance || 0;
+        const currentDebt = userData.debt || 0;
+        
+        if (currentDebt > 0) {
+            const totalAvailable = currentBalance + amountToAdd;
+            
+            if (totalAvailable >= currentDebt) {
+                // Can settle all debt
+                const remainingBalance = totalAvailable - currentDebt;
+                await userRef.update({
+                    balance: Math.floor(remainingBalance),
+                    debt: 0
+                });
+                
+                showNotification(`Debt of ${formatCurrency(currentDebt, userData.currency)} settled! Remaining balance: ${formatCurrency(remainingBalance, userData.currency)}`, 'success');
+                
+                return { balance: Math.floor(remainingBalance), debt: 0 };
+            } else {
+                // Partial debt settlement
+                const remainingDebt = currentDebt - totalAvailable;
+                await userRef.update({
+                    balance: 0,
+                    debt: Math.floor(remainingDebt)
+                });
+                
+                showNotification(`Partial debt settlement: ${formatCurrency(totalAvailable, userData.currency)} applied. Remaining debt: ${formatCurrency(remainingDebt, userData.currency)}`, 'info');
+                
+                return { balance: 0, debt: Math.floor(remainingDebt) };
+            }
+        } else {
+            // No debt, just add to balance
+            const newBalance = currentBalance + amountToAdd;
+            await userRef.update({
+                balance: Math.floor(newBalance)
+            });
+            
+            return { balance: Math.floor(newBalance), debt: 0 };
+        }
+    } catch (error) {
+        console.error('Error settling debt:', error);
+        throw error;
+    }
 }
 
 // Events and Betting Functions
 async function loadEvents() {
     try {
         const eventsSnapshot = await db.collection('events')
-            .where('status', 'in', ['active', 'settled'])
             .where('display_status', '==', 'visible')
             .get();
         events = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -659,9 +852,11 @@ function createEventCard(event) {
                 <div class="event-details">
                     <span class="event-time">${formatEventTime(event.startTime)}</span>
                     <span class="event-participants">${event.totalBets || 0} bets</span>
+                    ${event.status === 'settled' && event.winner ? 
+                        `<div class="event-winner" style="color: var(--primary-color); font-weight: bold; margin-top: 4px;">${event.winner} WON</div>` : ''}
             </div>
             <div class="event-pot">
-                Total Pot: ${formatCurrency(event.totalPot || 0, 'INR')}
+                Total Pot: ${formatCurrency(event.totalPot || 0)}
             </div>
         </div>
     `;
@@ -676,22 +871,16 @@ async function showEventModal(event) {
         return;
     }
     
-    if (currentUser.kycStatus !== 'approved') {
-        showNotification('Account awaiting approval (≤8hrs)', 'warning');
-        return;
-    }
-    
-    // Check for debt
-    if (currentUser.debt > 0) {
-        showNotification(`Clear your debt of ${formatCurrency(currentUser.debt, currentUser.currency)} to start betting`, 'error');
+    // Check if user is in debt FIRST
+    if (checkUserDebt()) {
+        showAmberNotification('Clear your debt first!');
+        
+        // Show debt resolution modal instead of event modal
+        showDebtResolutionModal();
         return;
     }
     
     window.currentEventId = event.id;
-    
-    document.getElementById('event-title').textContent = event.title;
-    document.getElementById('event-time').textContent = formatEventTime(event.startTime);
-    document.getElementById('event-status').textContent = event.status;
     
     const now = new Date();
     const eventStart = event.startTime ? event.startTime.toDate() : new Date(0);
@@ -701,30 +890,124 @@ async function showEventModal(event) {
     const userHasWagered = await userHadBetOnEvent(event.id);
     
     let vfrButton = '';
-    if (hasStarted && event.status === 'active' && userHasWagered) {
-        vfrButton = `<button class="vfr-btn" onclick="showVFRModal('${event.id}')">VOTE FOR RESULT</button>`;
+    let bettingContent = '';
+    let statusDisplay = '';
+    
+    // Handle any status - not just 'settled'
+    if (event.status === 'settled' && event.winner) {
+        // Show winner in theme color
+        statusDisplay = `<span style="color: var(--primary-color); font-weight: bold;">${event.winner} WON</span>`;
+        bettingContent = `
+            <div class="event-settled">
+                <h3>Event Settled</h3>
+                <p>This event has ended and betting is closed.</p>
+                <div class="winner-announcement" style="color: var(--primary-color); font-size: 1.2rem; font-weight: bold; margin: 1rem 0;">
+                    🏆 ${event.winner} WON
+                </div>
+            </div>
+        `;
+    } else if (event.status !== 'active') {
+        // Handle other statuses (cancelled, postponed, etc.)
+        statusDisplay = `<span style="color: #ffc857; font-weight: bold;">${event.status.toUpperCase()}</span>`;
+        bettingContent = `
+            <div class="event-not-active">
+                <h3>Event Status: ${event.status.toUpperCase()}</h3>
+                <p>Betting is currently not available for this event.</p>
+            </div>
+        `;
+    } else {
+        // Active event - show normal betting interface
+        statusDisplay = 'ACTIVE';
+        
+        if (currentUser.kycStatus !== 'approved') {
+            bettingContent = `
+                <div class="kyc-required">
+                    <h3>Account Approval Required</h3>
+                    <p>Your account is awaiting approval (~8hrs)</p>
+                </div>
+            `;
+        } else if (currentUser.balance - currentUser.debt <= 0) {
+            bettingContent = `
+                <div class="insufficient-balance">
+                    <h3>Insufficient Balance</h3>
+                    <p>Add funds to your wallet to start betting</p>
+                </div>
+            `;
+        } else {
+            if (hasStarted && userHasWagered) {
+                vfrButton = `<button class="vfr-btn" onclick="showVFRModal('${event.id}')">VOTE FOR RESULT</button>`;
+            }
+            
+            bettingContent = `
+                <div class="betting-tabs">
+                    <button class="tab-btn" onclick="showBettingTab('pool')">Pool Betting</button>
+                    <button class="tab-btn" onclick="showBettingTab('1v1')">1v1 Betting</button>
+                </div>
+                <div id="betting-content">
+                    <div class="select-betting-type">
+                        <h3>Select Betting Type</h3>
+                        <p>Please select Pool Betting or 1v1 Betting to continue</p>
+                    </div>
+                </div>
+            `;
+        }
     }
     
     document.getElementById('event-modal').querySelector('.modal-content').innerHTML = `
         <span class="close" onclick="closeModal('event-modal')">&times;</span>
         <h2 id="event-title">${event.title}</h2>
         <p>Start Time: <span id="event-time">${formatEventTime(event.startTime)}</span></p>
-        <p>Status: <span id="event-status">${event.status}</span></p>
+        <p>Status: <span id="event-status">${statusDisplay}</span></p>
         ${vfrButton}
-        <div class="betting-tabs">
-            <button class="tab-btn" onclick="showBettingTab('pool')">Pool Betting</button>
-            <button class="tab-btn" onclick="showBettingTab('1v1')">1v1 Betting</button>
-        </div>
-        <div id="betting-content">
-            <div class="select-betting-type">
-                <h3>Select Betting Type</h3>
-                <p>Please select Pool Betting or 1v1 Betting to continue</p>
-            </div>
-        </div>
+        ${bettingContent}
     `;
     
     showModal('event-modal');
     logActivity('event_view', { userId: currentUser.id, eventId: event.id });
+}
+
+// ADD this new function after showEventModal:
+function showDebtResolutionModal() {
+    const debtAmount = currentUser.debt;
+    
+    let modal = document.getElementById('debt-resolution-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'debt-resolution-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('debt-resolution-modal')">&times;</span>
+                <h2 style="color: #ffc857;">Clear Your Debt First!</h2>
+                <div class="debt-info" style="background: rgba(255, 200, 87, 0.1); padding: 1.5rem; border-radius: 8px; margin: 1rem 0;">
+                    <h3 style="color: #ffc857; margin-bottom: 1rem;">Outstanding Debt</h3>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #ffc857; margin-bottom: 1rem;">
+                        ${formatCurrency(debtAmount)}
+                    </div>
+                    <p style="color: #FFF3DA; margin-bottom: 1.5rem;">
+                        You cannot place bets while you have outstanding debt. Please clear your debt to continue wagering.
+                    </p>
+                    <div class="debt-resolution-buttons">
+                        <button class="primary-btn" onclick="closeModal('debt-resolution-modal'); watchAd();" style="margin-right: 1rem;">
+                            WATCH ADS
+                        </button>
+                        <button class="secondary-btn" onclick="closeModal('debt-resolution-modal'); showBuyIn();">
+                            BUY IN
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        // Update debt amount in existing modal
+        const debtAmountEl = modal.querySelector('.debt-info div');
+        if (debtAmountEl) {
+            debtAmountEl.textContent = formatCurrency(debtAmount);
+        }
+    }
+    
+    showModal('debt-resolution-modal');
 }
 
 // REPLACE the showBettingTab function with this improved version:
@@ -766,7 +1049,7 @@ function createPoolBettingUI() {
                         <h4>${option}</h4>
                         <div class="odds" id="odds-${index}">Loading...</div>
                         <div class="bet-count" id="bets-${index}">0 bets</div>
-                        <div class="pool-amount" id="pool-${index}">₹0</div>
+                        <div class="pool-amount" id="pool-${index}">â‚¹0</div>
                     </div>
                 `).join('')}
             </div>
@@ -874,17 +1157,17 @@ function createPriceLadder() {
             <span>Back Team B</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(100, 'team_a')">
-            <span>₹100</span>
+            <span>â‚¹100</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(200, 'team_a')">
-            <span>₹200</span>
+            <span>â‚¹200</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(500, 'team_a')">
-            <span>₹500</span>
+            <span>â‚¹500</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
@@ -905,9 +1188,21 @@ function selectBettingOption(option, index) {
 }
 
 // REPLACE the confirmPoolBet function with this version that includes proper status:
+// REPLACE the entire confirmPoolBet function with this corrected version:
 async function confirmPoolBet() {
+    console.log('Selected option:', selectedBettingOption, 'Index:', selectedOptionIndex);
+    
     if (!currentUser) {
         showNotification('Please login to bet', 'error');
+        return;
+    }
+    
+    // Check if user is in debt
+    if (checkUserDebt()) {
+        showAmberNotification('Clear your debt first!');
+        setTimeout(() => {
+            showWallet();
+        }, 1000);
         return;
     }
     
@@ -922,7 +1217,8 @@ async function confirmPoolBet() {
         return;
     }
     
-    if (betAmount > currentUser.balance) {
+    const walletBalance = currentUser.balance - currentUser.debt;
+    if (betAmount > walletBalance) {
         showNotification('Insufficient balance', 'error');
         return;
     }
@@ -933,27 +1229,32 @@ async function confirmPoolBet() {
         const eventId = window.currentEventId;
         const currentEvent = events.find(e => e.id === eventId);
         
-        // Create betting slip with proper status
-        const bettingSlip = {
-            userId: currentUser.id,
-            userNickname: currentUser.nickname,
-            userDisplayName: currentUser.displayName,
-            eventId: eventId,
-            eventTitle: currentEvent.title,
-            eventStartTime: currentEvent.startTime,
-            selectedOption: selectedBettingOption,
-            betAmount: betAmount,
-            currency: currentUser.currency,
-            timestamp: firebase.firestore.Timestamp.now(),
-            status: 'placed', // Initial status
-            betType: 'pool',
-            odds: null,
-            potentialWinning: null
-        };
+        if (!currentEvent) {
+            showNotification('Event not found', 'error');
+            hideBuffering();
+            return;
+        }
+        
+        // Get current odds that user sees (these will be locked in)
+        const currentOddsElement = document.getElementById(`odds-${selectedOptionIndex}`);
+        if (!currentOddsElement) {
+            showNotification('Error getting odds. Please try again.', 'error');
+            hideBuffering();
+            return;
+        }
+        
+        const lockedOdds = parseFloat(currentOddsElement.textContent);
+        if (isNaN(lockedOdds) || lockedOdds <= 0) {
+            showNotification('Invalid odds. Please try again.', 'error');
+            hideBuffering();
+            return;
+        }
+        
+        const potentialWinning = Math.floor(betAmount * lockedOdds);
         
         // Use transaction to ensure consistency
-        await db.runTransaction(async (transaction) => {
-            // Get or create betting pool
+        const result = await db.runTransaction(async (transaction) => {
+            // Get current pool state
             const poolRef = db.collection('betting_pools').doc(eventId);
             const poolDoc = await transaction.get(poolRef);
             
@@ -966,6 +1267,7 @@ async function confirmPoolBet() {
                     eventOptions: currentEvent.options,
                     totalPool: 0,
                     totalBets: 0,
+                    totalWagered: 0,
                     optionPools: {},
                     optionBetCounts: {},
                     vigPercentage: currentEvent.vigPercentage || 5,
@@ -973,29 +1275,54 @@ async function confirmPoolBet() {
                     createdAt: firebase.firestore.Timestamp.now()
                 };
                 
-                // Initialize option pools
-                currentEvent.options.forEach(option => {
-                    poolData.optionPools[option] = 0;
-                    poolData.optionBetCounts[option] = 0;
-                });
+                // Initialize option pools safely
+                if (currentEvent.options && Array.isArray(currentEvent.options)) {
+                    currentEvent.options.forEach((option) => {
+                        poolData.optionPools[option] = 100; // Base amount
+                        poolData.optionBetCounts[option] = 0;
+                    });
+                }
             } else {
                 poolData = poolDoc.data();
+                // Ensure the required properties exist
+                if (!poolData.optionPools) poolData.optionPools = {};
+                if (!poolData.optionBetCounts) poolData.optionBetCounts = {};
+                if (!poolData.totalWagered) poolData.totalWagered = poolData.totalPool || 0;
             }
+            
+            // Create betting slip with LOCKED odds (what user saw)
+            const bettingSlip = {
+                userId: currentUser.id,
+                userNickname: currentUser.nickname,
+                userDisplayName: currentUser.displayName,
+                eventId: eventId,
+                eventTitle: currentEvent.title,
+                eventStartTime: currentEvent.startTime,
+                selectedOption: selectedBettingOption,
+                betAmount: betAmount,
+                currency: currentUser.currency,
+                timestamp: firebase.firestore.Timestamp.now(),
+                status: 'placed',
+                betType: 'pool',
+                odds: lockedOdds, // User's locked odds
+                potentialWinning: potentialWinning
+            };
             
             // Update pool with new bet
             poolData.totalPool += betAmount;
             poolData.totalBets += 1;
+            poolData.totalWagered += betAmount; // Track total wagered
+            
+            // Safely update option pools
+            if (!poolData.optionPools[selectedBettingOption]) {
+                poolData.optionPools[selectedBettingOption] = 100; // Initialize if missing
+            }
+            if (!poolData.optionBetCounts[selectedBettingOption]) {
+                poolData.optionBetCounts[selectedBettingOption] = 0; // Initialize if missing
+            }
+            
             poolData.optionPools[selectedBettingOption] += betAmount;
             poolData.optionBetCounts[selectedBettingOption] += 1;
-            
-            // Calculate odds (after vig)
-            const totalAfterVig = poolData.totalPool * (1 - poolData.vigPercentage / 100);
-            const optionPool = poolData.optionPools[selectedBettingOption];
-            const odds = totalAfterVig / optionPool;
-            const potentialWinning = betAmount * odds;
-            
-            bettingSlip.odds = parseFloat(odds.toFixed(2));
-            bettingSlip.potentialWinning = parseFloat(potentialWinning.toFixed(2));
             
             // Update user balance
             const userRef = db.collection('users').doc(currentUser.id);
@@ -1017,6 +1344,8 @@ async function confirmPoolBet() {
                 totalPot: poolData.totalPool,
                 totalBets: poolData.totalBets
             });
+            
+            return bettingSlip;
         });
         
         // Update local user data
@@ -1028,7 +1357,7 @@ async function confirmPoolBet() {
         closeModal('event-modal');
         
         showNotification(
-            `Bet placed: ${formatCurrency(betAmount, currentUser.currency)} on ${selectedBettingOption}. Potential win: ${formatCurrency(bettingSlip.potentialWinning, currentUser.currency)}`,
+            `Bet placed: ${formatCurrency(betAmount, currentUser.currency)} on ${selectedBettingOption}. Locked odds: ${result.odds}. Potential win: ${formatCurrency(result.potentialWinning, currentUser.currency)}`,
             'success'
         );
         
@@ -1038,10 +1367,15 @@ async function confirmPoolBet() {
             eventId: eventId,
             amount: betAmount,
             option: selectedBettingOption,
-            odds: bettingSlip.odds,
-            potentialWinning: bettingSlip.potentialWinning,
+            lockedOdds: result.odds,
+            potentialWinning: result.potentialWinning,
             status: 'placed'
         });
+        
+        // Refresh odds for all users after a short delay
+        setTimeout(() => {
+            loadPoolOdds(eventId);
+        }, 1000);
         
     } catch (error) {
         console.error('Error placing bet:', error);
@@ -1055,55 +1389,121 @@ async function loadPoolOdds(eventId) {
         const poolDoc = await db.collection('betting_pools').doc(eventId).get();
         const currentEvent = events.find(e => e.id === eventId);
         
+        if (!currentEvent || !currentEvent.options) {
+            console.error('Event or options not found');
+            return;
+        }
+
         let poolData;
+        let calculatedOdds = {};
+        
         if (!poolDoc.exists) {
-            // No bets placed yet, show initial odds
-            const numOptions = currentEvent.options.length;
-            const initialOdds = numOptions; // Equal probability initially
-            
+            // No bets placed yet, show initial odds with vig built in
             currentEvent.options.forEach((option, index) => {
                 const oddsEl = document.getElementById(`odds-${index}`);
                 const betsEl = document.getElementById(`bets-${index}`);
                 const poolEl = document.getElementById(`pool-${index}`);
                 
-                if (oddsEl) oddsEl.textContent = initialOdds.toFixed(1);
+                const initialOdds = currentEvent.initialOdds && currentEvent.initialOdds[option] 
+                    ? currentEvent.initialOdds[option] 
+                    : 2.0;
+                
+                calculatedOdds[option] = initialOdds;
+                
+                if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                 if (betsEl) betsEl.textContent = '0 bets';
                 if (poolEl) poolEl.textContent = '₹0';
             });
-            return;
+        } else {
+            poolData = poolDoc.data();
+            
+            // Safety checks
+            if (!poolData.optionPools) poolData.optionPools = {};
+            if (!poolData.optionBetCounts) poolData.optionBetCounts = {};
+            
+            const totalPool = poolData.totalPool || 0;
+            const vigPercentage = poolData.vigPercentage || 5;
+            
+            // Calculate overround to maintain vig
+            const targetOverround = 100 + vigPercentage; // e.g., 105% for 5% vig
+            
+            currentEvent.options.forEach((option, index) => {
+                const optionPool = poolData.optionPools[option] || 0;
+                const betCount = poolData.optionBetCounts[option] || 0;
+                
+                let odds = currentEvent.initialOdds && currentEvent.initialOdds[option] 
+                    ? currentEvent.initialOdds[option] 
+                    : 2.0;
+                
+                // Only recalculate if there are actual bets and pool is significant
+                if (totalPool > 0 && optionPool > 0) {
+                    // Calculate implied probability for this option
+                    const impliedProbability = (optionPool / totalPool) * 100;
+                    
+                    // Adjust for overround to maintain vig
+                    const adjustedProbability = (impliedProbability / 100) * (targetOverround / 100);
+                    
+                    // Convert back to odds, ensuring minimum of 1.01
+                    odds = Math.max(1.01, 1 / adjustedProbability);
+                }
+                
+                calculatedOdds[option] = odds;
+                const poolAmount = Math.max(0, optionPool);
+                
+                const oddsEl = document.getElementById(`odds-${index}`);
+                const betsEl = document.getElementById(`bets-${index}`);
+                const poolEl = document.getElementById(`pool-${index}`);
+                
+                if (oddsEl) oddsEl.textContent = odds.toFixed(2);
+                if (betsEl) betsEl.textContent = `${betCount} bets`;
+                if (poolEl) poolEl.textContent = `₹${poolAmount}`;
+            });
         }
         
-        poolData = poolDoc.data();
-        const totalAfterVig = poolData.totalPool * (1 - poolData.vigPercentage / 100);
-        
-        poolData.eventOptions.forEach((option, index) => {
-            const optionPool = poolData.optionPools[option] || 1;
-            const odds = totalAfterVig / optionPool;
-            const betCount = poolData.optionBetCounts[option] || 0;
-            const poolAmount = poolData.optionPools[option] || 0;
-            
-            const oddsEl = document.getElementById(`odds-${index}`);
-            const betsEl = document.getElementById(`bets-${index}`);
-            const poolEl = document.getElementById(`pool-${index}`);
-            
-            if (oddsEl) oddsEl.textContent = odds.toFixed(2);
-            if (betsEl) betsEl.textContent = `${betCount} bets`;
-            if (poolEl) poolEl.textContent = `₹${poolAmount}`;
+        // UPDATE: Save currentOdds to event document in Firestore
+        await db.collection('events').doc(eventId).update({
+            currentOdds: calculatedOdds,
+            updatedAt: firebase.firestore.Timestamp.now()
         });
+        
+        // Update local events array
+        const eventIndex = events.findIndex(e => e.id === eventId);
+        if (eventIndex !== -1) {
+            events[eventIndex].currentOdds = calculatedOdds;
+        }
         
     } catch (error) {
         console.error('Error loading pool odds:', error);
         
-        // Fallback: show initial odds
+        // Fallback to initial odds
         const currentEvent = events.find(e => e.id === eventId);
-        if (currentEvent) {
-            const numOptions = currentEvent.options.length;
-            const initialOdds = numOptions;
-            
+        if (currentEvent && currentEvent.options) {
+            let fallbackOdds = {};
             currentEvent.options.forEach((option, index) => {
                 const oddsEl = document.getElementById(`odds-${index}`);
-                if (oddsEl) oddsEl.textContent = initialOdds.toFixed(1);
+                const betsEl = document.getElementById(`bets-${index}`);
+                const poolEl = document.getElementById(`pool-${index}`);
+                
+                const initialOdds = currentEvent.initialOdds && currentEvent.initialOdds[option] 
+                    ? currentEvent.initialOdds[option] 
+                    : 2.0;
+                
+                fallbackOdds[option] = initialOdds;
+                
+                if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
+                if (betsEl) betsEl.textContent = '0 bets';
+                if (poolEl) poolEl.textContent = '₹0';
             });
+            
+            // Still try to update Firestore even in fallback
+            try {
+                await db.collection('events').doc(eventId).update({
+                    currentOdds: fallbackOdds,
+                    updatedAt: firebase.firestore.Timestamp.now()
+                });
+            } catch (updateError) {
+                console.error('Error updating fallback odds:', updateError);
+            }
         }
     }
 }
@@ -1180,6 +1580,147 @@ async function submitVFR() {
     }
 }
 
+async function settleEvent(eventId, winningOption) {
+    try {
+        const settlement = await db.runTransaction(async (transaction) => {
+            // Get pool data
+            const poolRef = db.collection('betting_pools').doc(eventId);
+            const poolDoc = await transaction.get(poolRef);
+            
+            if (!poolDoc.exists) {
+                throw new Error('Pool not found');
+            }
+            
+            const poolData = poolDoc.data();
+            const totalPot = poolData.totalPool || 0;
+            const vigPercentage = poolData.vigPercentage || 5;
+            
+            // Get all bets for this event
+            const allBetsQuery = await db.collection('betting_slips')
+                .where('eventId', '==', eventId)
+                .where('status', '==', 'placed')
+                .get();
+            
+            let winnersWin = 0;
+            let losersLose = 0;
+            const winnerUpdates = [];
+            
+            // Process all bets
+            for (const betDoc of allBetsQuery.docs) {
+                const bet = betDoc.data();
+                
+                if (bet.selectedOption === winningOption) {
+                    // Winner - calculate payout using their locked odds
+                    const winAmount = Math.floor(bet.betAmount * bet.odds);
+                    winnersWin += winAmount;
+                    
+                    // Update betting slip
+                    transaction.update(betDoc.ref, {
+                        status: 'placed & won',
+                        actualWinning: winAmount,
+                        settledAt: firebase.firestore.Timestamp.now()
+                    });
+                    
+                    // Update user balance
+                    const userRef = db.collection('users').doc(bet.userId);
+                    const userDoc = await transaction.get(userRef);
+                    const currentBalance = userDoc.data().balance || 0;
+                    const currentWinnings = userDoc.data().totalWinnings || 0;
+                    
+                    transaction.update(userRef, {
+                        balance: currentBalance + winAmount,
+                        totalWinnings: currentWinnings + winAmount
+                    });
+                    
+                    winnerUpdates.push({
+                        userId: bet.userId,
+                        winAmount: winAmount
+                    });
+                } else {
+                    // Loser
+                    losersLose += bet.betAmount;
+                    
+                    // Update betting slip
+                    transaction.update(betDoc.ref, {
+                        status: 'placed & lost',
+                        settledAt: firebase.firestore.Timestamp.now()
+                    });
+                }
+            }
+            
+            // Calculate actual vig
+            const myVig = totalPot - winnersWin;
+            
+            // Create settlement record
+            const settlementData = {
+                eventId: eventId,
+                eventTitle: poolData.eventTitle,
+                winner: winningOption,
+                totalPot: totalPot,
+                winnersWin: winnersWin,
+                losersLose: losersLose,
+                myVig: myVig,
+                vigPercentage: vigPercentage,
+                totalBetsSettled: allBetsQuery.docs.length,
+                settledAt: firebase.firestore.Timestamp.now()
+            };
+            
+            const settlementRef = db.collection('event_settlements').doc(eventId);
+            transaction.set(settlementRef, settlementData);
+            
+            // Update event status
+            const eventRef = db.collection('events').doc(eventId);
+            transaction.update(eventRef, {
+                status: 'settled',
+                winner: winningOption,
+                settledAt: firebase.firestore.Timestamp.now()
+            });
+            
+            return settlementData;
+        });
+        
+        console.log('Event settled:', settlement);
+        return settlement;
+        
+    } catch (error) {
+        console.error('Error settling event:', error);
+        throw error;
+    }
+}
+
+// Function to check if bookmaking algorithm is working correctly
+function validateBookmakingProfit(totalPot, winnersWin, vigPercentage) {
+    const actualVig = totalPot - winnersWin;
+    const expectedMinimumVig = totalPot * (vigPercentage / 100);
+    
+    const isHealthy = actualVig >= expectedMinimumVig;
+    const actualVigPercentage = totalPot > 0 ? (actualVig / totalPot) * 100 : 0;
+    
+    return {
+        isHealthy: isHealthy,
+        actualVig: actualVig,
+        expectedMinimumVig: expectedMinimumVig,
+        actualVigPercentage: actualVigPercentage,
+        difference: actualVig - expectedMinimumVig
+    };
+}
+
+
+// Calculate fair odds with built-in vig for initial event setup
+function calculateInitialOddsWithVig(probabilities, vigPercentage) {
+    // probabilities should be an object like {A: 0.5, B: 0.5} totaling 1.0
+    const targetOverround = 1 + (vigPercentage / 100); // e.g., 1.05 for 5% vig
+    
+    const fairOdds = {};
+    for (const option in probabilities) {
+        // Convert probability to odds with vig built in
+        const adjustedProbability = probabilities[option] * targetOverround;
+        fairOdds[option] = Math.max(1.01, 1 / adjustedProbability);
+    }
+    
+    return fairOdds;
+}
+
 async function userHadBetOnEvent(eventId) {
     try {
         const betsQuery = await db.collection('betting_slips')
@@ -1246,32 +1787,38 @@ function watchAd() {
     }, 1000);
 }
 
-function claimAdReward() {
+async function claimAdReward() {
     if (!currentUser) return;
     
     const reward = adminSettings.perAdReward;
-    currentUser.balance += reward;
     
-    // Update in Firebase
-    db.collection('users').doc(currentUser.id).update({
-        balance: currentUser.balance
-    });
-    
-    updateBalance();
-    updateEVCWalletBalance();
-    
-    // Clean up and close modal
-    cleanupAdTimer();
-    closeModal('ad-modal');
-    
-    showNotification(`Earned ${formatCurrency(reward, currentUser.currency)}!`, 'success');
-    
-    // Log reward claim
-    logActivity('ad_reward_claimed', { 
-        userId: currentUser.id, 
-        reward,
-        newBalance: currentUser.balance 
-    });
+    try {
+        // Auto settle debt
+        const result = await settleDebtAutomatically(currentUser.id, reward);
+        currentUser.balance = result.balance;
+        currentUser.debt = result.debt;
+        
+        updateBalance();
+        updateEVCWalletBalance();
+        
+        // Clean up and close modal
+        cleanupAdTimer();
+        closeModal('ad-modal');
+        
+        showNotification(`Earned ${formatCurrency(reward, currentUser.currency)}!`, 'success');
+        
+        // Log reward claim
+        logActivity('ad_reward_claimed', { 
+            userId: currentUser.id, 
+            reward,
+            newBalance: currentUser.balance,
+            debtSettled: result.debt < (currentUser.debt || 0)
+        });
+        
+    } catch (error) {
+        console.error('Error claiming ad reward:', error);
+        showNotification('Failed to claim reward', 'error');
+    }
 }
 
 async function showRecentEarnings() {
@@ -1312,7 +1859,7 @@ async function showRecentEarnings() {
                 earningsHTML += `
                     <div class="earning-item">
                         <div class="earning-action">${actionText}</div>
-                        <div class="earning-amount">+${formatCurrency(amount, currentUser.currency)}</div>
+                        <div class="earning-amount">+${formatCurrency(amount)}</div>
                         <div class="earning-time">${timestamp}</div>
                     </div>
                 `;
@@ -1410,8 +1957,10 @@ async function showTab(tabName) {
 }
 
 function createBalanceTab() {
+    const walletBalance = currentUser.balance - currentUser.debt;
+    const balanceColor = walletBalance < 0 ? '#ffc857' : 'var(--primary-color)';
     const debtDisplay = currentUser.debt > 0 ? 
-        `<div class="debt-warning">Debt: ${formatCurrency(currentUser.debt, currentUser.currency)}</div>` : '';
+        `<div class="debt-warning">Debt: ${formatCurrency(currentUser.debt)}</div>` : '';
     
     return `
         <div class="balance-tab">
@@ -1419,8 +1968,8 @@ function createBalanceTab() {
                 <img src="${currentUser.profilePic || getRandomProfilePic(currentUser.gender)}" alt="Profile" class="profile-image ${currentUser.gender}">
             </div>
             <div class="balance-info">
-                <h3>Current Balance</h3>
-                <div class="balance-amount">${formatCurrency(currentUser.balance, currentUser.currency)}</div>
+                <h3>Wallet Balance</h3>
+                <div class="balance-amount" style="color: ${balanceColor};">${formatCurrency(walletBalance)}</div>
                 ${debtDisplay}
                 <div class="rep-score ${currentUser.repScore.toLowerCase()}">
                     Rep Score: ${currentUser.repScore}
@@ -1429,7 +1978,7 @@ function createBalanceTab() {
             <div class="balance-stats">
                 <div class="stat">
                     <label>Total Winnings:</label>
-                    <span>${formatCurrency(currentUser.totalWinnings || 0, currentUser.currency)}</span>
+                    <span>${formatCurrency(currentUser.totalWinnings || 0)}</span>
                 </div>
                 <div class="stat">
                     <label>Total Bets:</label>
@@ -1451,9 +2000,9 @@ function createSettingsTab() {
             <div class="setting-item">
                 <label for="currency-change">Currency:</label>
                 <select id="currency-change">
-                    <option value="INR" ${currentUser.currency === 'INR' ? 'selected' : ''}>₹ INR</option>
+                    <option value="INR" ${currentUser.currency === 'INR' ? 'selected' : ''}>â‚¹ INR</option>
                     <option value="USD" ${currentUser.currency === 'USD' ? 'selected' : ''}>$ USD</option>
-                    <option value="EUR" ${currentUser.currency === 'EUR' ? 'selected' : ''}>€ EUR</option>
+                    <option value="EUR" ${currentUser.currency === 'EUR' ? 'selected' : ''}>â‚¬ EUR</option>
                 </select>
                 <button onclick="updateCurrency()">UPDATE</button>
             </div>
@@ -1470,20 +2019,41 @@ function createSettingsTab() {
 }
 
 function changeProfilePic() {
-    const newPic = getRandomProfilePic(currentUser.gender);
+    // Create file input
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
     
-    // Update in Firebase
-    db.collection('users').doc(currentUser.id).update({
-        profilePic: newPic
-    }).then(() => {
-        currentUser.profilePic = newPic;
-        showNotification('Profile picture updated!', 'success');
-        // Refresh settings tab
-        showTab('settings');
-    }).catch(error => {
-        console.error('Error updating profile pic:', error);
-        showNotification('Failed to update profile picture', 'error');
-    });
+    fileInput.onchange = async function() {
+        const file = this.files[0];
+        if (file) {
+            try {
+                showBuffering();
+                
+                const newPic = await handleProfilePicUpload(file, currentUser.gender);
+                
+                // Update in Firebase
+                await db.collection('users').doc(currentUser.id).update({
+                    profilePic: newPic
+                });
+                
+                currentUser.profilePic = newPic;
+                showNotification('Profile picture updated!', 'success');
+                showTab('settings'); // Refresh settings tab
+                hideBuffering();
+                
+            } catch (error) {
+                console.error('Error updating profile pic:', error);
+                showNotification('Failed to update profile picture', 'error');
+                hideBuffering();
+            }
+        }
+    };
+    
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
 }
 
 async function createNotificationsTab() {
@@ -1579,36 +2149,34 @@ function createSlipsTab() {
                 let statusClass = statusDisplay.toLowerCase();
                 
                 // Map status for display
-                switch(statusDisplay.toLowerCase()) {
-                    case 'placed':
-                        statusDisplay = 'PLACED';
-                        break;
-                    case 'rejected':
-                        statusDisplay = 'REJECTED';
-                        statusClass = 'rejected';
-                        break;
-                    case 'queued':
-                        statusDisplay = 'QUEUED';
-                        statusClass = 'queued';
-                        break;
-                    case 'won':
-                        statusDisplay = 'WON';
-                        statusClass = 'won';
-                        break;
-                    case 'lost':
-                        statusDisplay = 'LOST';
-                        statusClass = 'lost';
-                        break;
-                    default:
-                        statusDisplay = statusDisplay.toUpperCase();
+                if (statusDisplay.includes('&')) {
+                    const parts = statusDisplay.split('&').map(p => p.trim());
+                    const mainStatus = parts[0].toUpperCase();
+                    const resultStatus = parts[1].toUpperCase();
+                    
+                    let resultColor = '#FFF3DA';
+                    if (resultStatus === 'WON') resultColor = '#9ef01a';
+                    if (resultStatus === 'LOST') resultColor = '#ff0a54';
+                    
+                    statusDisplay = `${mainStatus} & <span style="color: ${resultColor};">${resultStatus}</span>`;
+                    statusClass = 'compound-status';
+                } else {
+                    switch(statusDisplay.toLowerCase()) {
+                        case 'placed': statusDisplay = 'PLACED'; break;
+                        case 'rejected': statusDisplay = 'REJECTED'; statusClass = 'rejected'; break;
+                        case 'queued': statusDisplay = 'QUEUED'; statusClass = 'queued'; break;
+                        case 'won': statusDisplay = 'WON'; statusClass = 'won'; break;
+                        case 'lost': statusDisplay = 'LOST'; statusClass = 'lost'; break;
+                        default: statusDisplay = statusDisplay.toUpperCase();
+                    }
                 }
                 
                 slipsHtml += `
                     <div class="slip-item">
                         <div class="slip-info">
                             <h4>Event: ${slip.eventTitle}</h4>
-                            <p>Bet: ${formatCurrency(slip.betAmount, slip.currency)} on ${slip.selectedOption}</p>
-                            <p>Odds: ${slip.odds} | Potential Win: ${formatCurrency(slip.potentialWinning, slip.currency)}</p>
+                            <p>Bet: ${formatCurrency(slip.betAmount)} on ${slip.selectedOption}</p>
+                            <p>Odds: ${slip.odds} | Potential Win: ${formatCurrency(slip.potentialWinning)}</p>
                             <p>Time: ${timestamp}</p>
                             <p>Type: ${slip.betType || 'pool'}</p>
                         </div>
@@ -1769,7 +2337,7 @@ function showBuyIn() {
     showModal('buyin-modal');
 }
 
-function testBuyIn() {
+async function testBuyIn() {
     const amount = parseInt(document.getElementById('buyin-amount').value);
     if (!amount || amount <= 0) {
         showNotification('Enter valid amount', 'error');
@@ -1781,26 +2349,39 @@ function testBuyIn() {
         return;
     }
     
-    currentUser.balance += amount;
-    currentUser.dailyBuyinUsed += amount;
-    
-    // Update in Firebase
-    db.collection('users').doc(currentUser.id).update({
-        balance: currentUser.balance,
-        dailyBuyinUsed: currentUser.dailyBuyinUsed
-    });
-    
-    updateBalance();
-    closeModal('buyin-modal');
-    showNotification(`Added ${formatCurrency(amount, currentUser.currency)} to wallet!`, 'success');
-    
-    // Log buy-in - THIS SHOULD ALREADY BE HERE
-    logActivity('buyin', { 
-        userId: currentUser.id, 
-        amount, 
-        method: 'test',
-        newBalance: currentUser.balance 
-    });
+    try {
+        showBuffering();
+        
+        // Auto settle debt
+        const result = await settleDebtAutomatically(currentUser.id, amount);
+        currentUser.balance = result.balance;
+        currentUser.debt = result.debt;
+        currentUser.dailyBuyinUsed += amount;
+        
+        // Update daily buyin usage
+        await db.collection('users').doc(currentUser.id).update({
+            dailyBuyinUsed: currentUser.dailyBuyinUsed
+        });
+        
+        updateBalance();
+        updateEVCWalletBalance();
+        closeModal('buyin-modal');
+        hideBuffering();
+        
+        // Log buy-in
+        logActivity('buyin', { 
+            userId: currentUser.id, 
+            amount, 
+            method: 'test',
+            newBalance: currentUser.balance,
+            debtSettled: result.debt < (currentUser.debt || 0)
+        });
+        
+    } catch (error) {
+        console.error('Error processing buy-in:', error);
+        showNotification('Buy-in failed', 'error');
+        hideBuffering();
+    }
 }
 
 // Stats and Real-time Updates
@@ -2013,6 +2594,10 @@ async function initializeCollections() {
         // Check if event_votes collection exists
         const votesTest = await db.collection('event_votes').limit(1).get();
         console.log('event_votes collection exists or was created');
+        
+        // Check if event_settlements collection exists
+        const settlementsTest = await db.collection('event_settlements').limit(1).get();
+        console.log('event_settlements collection exists or was created');
         
     } catch (error) {
         console.error('Error initializing collections:', error);

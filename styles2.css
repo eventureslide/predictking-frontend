@@ -48,3 +48,26 @@
     gap: 1rem;
     margin-bottom: 2rem;
 }
+
+.event-winner {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.slip-status.compound-status {
+    font-size: 0.9rem;
+}
+
+/* Theme-specific primary colors for JavaScript access */
+:root {
+    --primary-color: #FFF3DA;
+}
+
+.male-theme {
+    --primary-color: #9ef01a;
+}
+
+.female-theme {
+    --primary-color: #ff0a54;
+}
