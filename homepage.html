@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="styles2.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 </head>
 <body>
@@ -83,29 +83,56 @@
     <div id="main-app" class="main-app hidden">
         <!-- Header -->
         <header class="header">
-            <div class="header-left">
-                <div class="crown-icon" onclick="goHome()">♛</div>
-                <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
-            </div>
-            <div class="header-right">
+            <div class="header-main">
                 <!-- Logged Out Layout -->
-                <div class="header-buttons logged-out-layout">
-                    <div class="logged-out-buttons-row">
-                        <button class="login-btn-left" onclick="showLogin()">LOGIN</button>
-                        <button class="header-btn center-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
-                        <button class="live-chat-btn-right" onclick="showLiveChat()">LIVE CHAT</button>
+                <div class="header-logged-out logged-out-only">
+                    <div class="header-top">
+                        <div class="crown-icon" onclick="goHome()">♛</div>
+                        <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
                     </div>
+                    <button class="login-btn-standalone" onclick="showLogin()">LOGIN</button>
                 </div>
                 
                 <!-- Logged In Layout -->
-                <div class="header-buttons logged-in-layout hidden">
-                    <div class="logged-in-buttons-grid">
-                        <button class="header-btn" onclick="showProfile()" title="Profile">👤</button>
-                        <button class="header-btn" onclick="showLeaderboard()" title="Leaderboard">🏆</button>
-                        <button class="header-btn" onclick="showWallet()" title="Wallet">💰</button>
-                        <button class="header-btn" onclick="showNotifications()" title="Notifications">🔔</button>
-                        <button class="header-btn" onclick="showCasino()" title="Casino">🎰</button>
-                        <button class="header-btn" onclick="showLiveChat()" title="Live Chat">💬</button>
+                <div class="header-logged-in logged-in-only">
+                    <div class="crown-icon" onclick="goHome()">♛</div>
+                    <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
+                </div>
+            </div>
+            
+            <!-- Central Toggle Navigation -->
+            <div class="nav-toggle-container">
+                <button class="nav-toggle-btn" onclick="toggleNavigation()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <div class="nav-icons-container">
+                    <!-- Logged Out Icons (2 icons) -->
+                    <div class="nav-icon logged-out-1 logged-out-only" onclick="showLeaderboard()" title="Leaderboard">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="nav-icon logged-out-2 logged-out-only" onclick="showLiveChat()" title="Live Chat">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    
+                    <!-- Logged In Icons (6 icons) -->
+                    <div class="nav-icon logged-in-1 logged-in-only" onclick="showProfile()" title="Profile">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="nav-icon logged-in-2 logged-in-only" onclick="showLeaderboard()" title="Leaderboard">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="nav-icon logged-in-3 logged-in-only" onclick="showWallet()" title="Wallet">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="nav-icon logged-in-4 logged-in-only" onclick="showNotifications()" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="nav-icon logged-in-5 logged-in-only" onclick="showCasino()" title="Casino">
+                        <i class="fas fa-dice"></i>
+                    </div>
+                    <div class="nav-icon logged-in-6 logged-in-only" onclick="showLiveChat()" title="Live Chat">
+                        <i class="fas fa-comments"></i>
                     </div>
                 </div>
             </div>
@@ -296,6 +323,7 @@
     </div>
 
     <!-- Buy-in Modal -->
+    <!-- Buy-in Modal -->
     <div id="buyin-modal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('buyin-modal')">&times;</span>
@@ -306,6 +334,9 @@
                     <button class="payment-btn" onclick="showQR('crypto')">Crypto Payment</button>
                     <button class="payment-btn" onclick="showQR('upi')">UPI Payment</button>
                     <button class="payment-btn test-btn" onclick="testBuyIn()">TEST BUY-IN</button>
+                    <button class="reset-limit-btn hidden" onclick="watchAdForBuyinReset()">
+                        <span class="pulsing-text">RESET BUY-IN LIMIT</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -320,5 +351,25 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="app.js"></script>
+
+    <!-- Ad Modal -->
+    <div id="ad-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cleanupAdTimer(); closeModal('ad-modal')">&times;</span>
+            <h2>Watch Advertisement</h2>
+            <div class="ad-container">
+                <iframe id="ad-video" width="100%" height="300" frameborder="0" allowfullscreen allow="autoplay; fullscreen"></iframe>
+            </div>
+            <div class="ad-controls">
+                <div class="ad-progress">
+                    <span id="ad-timer">30</span> seconds remaining
+                </div>
+                <button id="claim-reward" class="primary-btn hidden" onclick="claimAdReward()">CLAIM REWARD</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Popup -->
+
 </body>
 </html>

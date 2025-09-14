@@ -557,26 +557,38 @@ async function generateSHA256(text) {
     return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/* Replace with: */
+// Make sure this is called after login check
+function updateLayoutBasedOnLoginStatus() {
+    if (currentUser) {
+        showLoggedInLayout();
+    } else {
+        showLoggedOutLayout();
+    }
+}
+
+// Call this in your checkLoginStatus success callback
 function checkLoginStatus() {
     return new Promise((resolve) => {
         const savedCode = localStorage.getItem('userCode');
         if (savedCode) {
-            loginUser(savedCode, true).then(() => { // Pass true for silent login
-                // Update EVC page UI after login
-                if (window.location.pathname.includes('evc.html')) {
-                    const loginRequiredBtn = document.getElementById('login-required');
-                    const walletBtn = document.getElementById('wallet-btn');
-                    if (loginRequiredBtn) loginRequiredBtn.classList.add('hidden');
-                    if (walletBtn) walletBtn.classList.remove('hidden');
-                }
-                resolve();
-            }).catch(() => resolve());
+            loginUser(savedCode, true)  // silent login
+                .then(() => { 
+                    updateLayoutBasedOnLoginStatus(); // Add this line
+                    resolve();
+                })
+                .catch(() => {
+                    updateLayoutBasedOnLoginStatus(); // Add this line
+                    resolve();
+                });
         } else {
+            updateLayoutBasedOnLoginStatus(); // Add this line
             resolve();
         }
     });
 }
+
+
+
 
 function updateUIForLoggedInUser() {
     const loginBtn = document.getElementById('login-btn');
@@ -988,7 +1000,7 @@ function showDebtResolutionModal() {
                         You cannot place bets while you have outstanding debt. Please clear your debt to continue wagering.
                     </p>
                     <div class="debt-resolution-buttons">
-                        <button class="primary-btn" onclick="closeModal('debt-resolution-modal'); watchAd();" style="margin-right: 1rem;">
+                        <button class="primary-btn" onclick="closeModal('debt-resolution-modal'); watchAdForDebtClear();" style="margin-right: 1rem;">
                             WATCH ADS
                         </button>
                         <button class="secondary-btn" onclick="closeModal('debt-resolution-modal'); showBuyIn();">
@@ -1008,6 +1020,67 @@ function showDebtResolutionModal() {
     }
     
     showModal('debt-resolution-modal');
+}
+
+function watchAdForDebtClear() {
+    if (!currentUser) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    
+    // Set flag to track this is for debt clearing
+    window.adPurpose = 'debt_clear';
+    
+    if (window.currentAdTimer) {
+        clearInterval(window.currentAdTimer);
+        window.currentAdTimer = null;
+    }
+    
+    const iframe = document.getElementById('ad-video');
+    if (!iframe) {
+        console.error('Ad video iframe not found');
+        showNotification('Ad system error. Please try again.', 'error');
+        return;
+    }
+    
+    const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
+    iframe.src = adUrl + '?autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0&enablejsapi=1';
+    iframe.style.pointerEvents = 'none';
+    iframe.allow = 'autoplay; fullscreen';
+    
+    showModal('ad-modal');
+    
+    // Log ad_click immediately when modal opens
+    logActivity('ad_click', { userId: currentUser.id, adUrl, purpose: 'debt_clear' });
+    
+    const claimBtn = document.getElementById('claim-reward');
+    if (claimBtn) {
+        claimBtn.classList.add('hidden');
+    }
+    
+    let timeLeft = 32;
+    const timerEl = document.getElementById('ad-timer');
+    if (timerEl) {
+        timerEl.textContent = timeLeft;
+    }
+    
+    window.currentAdTimer = setInterval(() => {
+        timeLeft--;
+        if (timerEl) {
+            timerEl.textContent = timeLeft;
+        }
+        
+        if (timeLeft <= 0) {
+            clearInterval(window.currentAdTimer);
+            window.currentAdTimer = null;
+            if (claimBtn) {
+                claimBtn.classList.remove('hidden');
+            }
+            
+            // Log ad_view only when timer completes (user watched full ad)
+            logActivity('ad_view', { userId: currentUser.id, adUrl, purpose: 'debt_clear' });
+        }
+    }, 1000);
 }
 
 // REPLACE the showBettingTab function with this improved version:
@@ -1791,28 +1864,67 @@ async function claimAdReward() {
     if (!currentUser) return;
     
     const reward = adminSettings.perAdReward;
+    const adPurpose = window.adPurpose || 'regular';
     
     try {
-        // Auto settle debt
-        const result = await settleDebtAutomatically(currentUser.id, reward);
-        currentUser.balance = result.balance;
-        currentUser.debt = result.debt;
-        
-        updateBalance();
-        updateEVCWalletBalance();
+        if (adPurpose === 'buyin_reset') {
+            // Reset daily buyin limit
+            await db.collection('users').doc(currentUser.id).update({
+                dailyBuyinUsed: 0,
+                lastBuyinReset: firebase.firestore.Timestamp.now()
+            });
+            
+            currentUser.dailyBuyinUsed = 0;
+            
+            showNotification(`Buy-in limit reset! You can now buy in up to ${formatCurrency(adminSettings.dailyBuyinLimit)}`, 'success');
+            
+            // Log buyin reset
+            logActivity('buyin_limit_reset', { 
+                userId: currentUser.id, 
+                resetAt: new Date(),
+                previousLimit: adminSettings.dailyBuyinLimit
+            });
+            
+            // After resetting, show buyin modal again
+            setTimeout(() => {
+                showBuyIn();
+            }, 1500);
+            
+        } else if (adPurpose === 'debt_clear') {
+            // Auto settle debt
+            const result = await settleDebtAutomatically(currentUser.id, reward);
+            currentUser.balance = result.balance;
+            currentUser.debt = result.debt;
+            
+            updateBalance();
+            updateEVCWalletBalance();
+            
+            showNotification(`Earned ${formatCurrency(reward)}! Keep watching ads to clear more debt.`, 'success');
+            
+        } else {
+            // Regular ad reward
+            const result = await settleDebtAutomatically(currentUser.id, reward);
+            currentUser.balance = result.balance;
+            currentUser.debt = result.debt;
+            
+            updateBalance();
+            updateEVCWalletBalance();
+            
+            showNotification(`Earned ${formatCurrency(reward)}!`, 'success');
+        }
         
         // Clean up and close modal
+        window.adPurpose = null;
         cleanupAdTimer();
         closeModal('ad-modal');
-        
-        showNotification(`Earned ${formatCurrency(reward, currentUser.currency)}!`, 'success');
         
         // Log reward claim
         logActivity('ad_reward_claimed', { 
             userId: currentUser.id, 
             reward,
+            purpose: adPurpose,
             newBalance: currentUser.balance,
-            debtSettled: result.debt < (currentUser.debt || 0)
+            debtSettled: currentUser.debt < (currentUser.debt || 0)
         });
         
     } catch (error) {
@@ -1966,6 +2078,10 @@ function createBalanceTab() {
         <div class="balance-tab">
             <div class="profile-pic-display">
                 <img src="${currentUser.profilePic || getRandomProfilePic(currentUser.gender)}" alt="Profile" class="profile-image ${currentUser.gender}">
+                <div class="profile-names">
+                    <div class="display-name">${currentUser.displayName}</div>
+                    <div class="nickname">@${currentUser.nickname}</div>
+                </div>
             </div>
             <div class="balance-info">
                 <h3>Wallet Balance</h3>
@@ -1996,15 +2112,6 @@ function createSettingsTab() {
                 <label for="display-name-change">Display Name:</label>
                 <input type="text" id="display-name-change" value="${currentUser.displayName}">
                 <button onclick="updateDisplayName()">UPDATE</button>
-            </div>
-            <div class="setting-item">
-                <label for="currency-change">Currency:</label>
-                <select id="currency-change">
-                    <option value="INR" ${currentUser.currency === 'INR' ? 'selected' : ''}>â‚¹ INR</option>
-                    <option value="USD" ${currentUser.currency === 'USD' ? 'selected' : ''}>$ USD</option>
-                    <option value="EUR" ${currentUser.currency === 'EUR' ? 'selected' : ''}>â‚¬ EUR</option>
-                </select>
-                <button onclick="updateCurrency()">UPDATE</button>
             </div>
             <div class="setting-item">
                 <label>Current Profile Picture:</label>
@@ -2345,7 +2452,13 @@ async function testBuyIn() {
     }
     
     if (currentUser.dailyBuyinUsed + amount > adminSettings.dailyBuyinLimit) {
-        showNotification('Daily buy-in limit reached. Watch an ad to reset.', 'warning');
+        // Show reset limit button instead of generic message
+        const resetBtn = document.querySelector('.reset-limit-btn');
+        if (resetBtn) {
+            resetBtn.classList.remove('hidden');
+            resetBtn.classList.add('pulsing-attract');
+        }
+        showNotification('Daily buy-in limit reached. Reset your limit by watching an ad!', 'warning');
         return;
     }
     
@@ -2382,6 +2495,68 @@ async function testBuyIn() {
         showNotification('Buy-in failed', 'error');
         hideBuffering();
     }
+}
+
+function watchAdForBuyinReset() {
+    if (!currentUser) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    
+    // Set flag to track this is for buyin reset
+    window.adPurpose = 'buyin_reset';
+    
+    if (window.currentAdTimer) {
+        clearInterval(window.currentAdTimer);
+        window.currentAdTimer = null;
+    }
+    
+    const iframe = document.getElementById('ad-video');
+    if (!iframe) {
+        console.error('Ad video iframe not found');
+        showNotification('Ad system error. Please try again.', 'error');
+        return;
+    }
+    
+    const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
+    iframe.src = adUrl + '?autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0&enablejsapi=1';
+    iframe.style.pointerEvents = 'none';
+    iframe.allow = 'autoplay; fullscreen';
+    
+    closeModal('buyin-modal');
+    showModal('ad-modal');
+    
+    // Log ad_click immediately when modal opens
+    logActivity('ad_click', { userId: currentUser.id, adUrl, purpose: 'buyin_reset' });
+    
+    const claimBtn = document.getElementById('claim-reward');
+    if (claimBtn) {
+        claimBtn.classList.add('hidden');
+    }
+    
+    let timeLeft = 32;
+    const timerEl = document.getElementById('ad-timer');
+    if (timerEl) {
+        timerEl.textContent = timeLeft;
+    }
+    
+    window.currentAdTimer = setInterval(() => {
+        timeLeft--;
+        if (timerEl) {
+            timerEl.textContent = timeLeft;
+        }
+        
+        if (timeLeft <= 0) {
+            clearInterval(window.currentAdTimer);
+            window.currentAdTimer = null;
+            if (claimBtn) {
+                claimBtn.classList.remove('hidden');
+            }
+            
+            // Log ad_view only when timer completes (user watched full ad)
+            logActivity('ad_view', { userId: currentUser.id, adUrl, purpose: 'buyin_reset' });
+        }
+    }, 1000);
 }
 
 // Stats and Real-time Updates
@@ -2676,6 +2851,77 @@ function updateThemeBasedOnUser() {
             setTheme('female');
         }
     }
+}
+
+// Navigation toggle functionality
+let navigationOpen = false;
+
+// Make sure this function exists and works for EVC page
+function toggleNavigation() {
+    const toggleBtn = document.querySelector('.nav-toggle-btn');
+    
+    // Check if we're on EVC page or main page
+    const isEVCPage = document.body.classList.contains('evc-page') || 
+                      window.location.pathname.includes('evc.html');
+    
+    let visibleIcons;
+    
+    if (isEVCPage) {
+        // EVC page always shows 2 icons
+        visibleIcons = document.querySelectorAll('.nav-icon.evc-1, .nav-icon.evc-2');
+    } else {
+        // Main page depends on login status
+        if (currentUser) {
+            visibleIcons = document.querySelectorAll('.nav-icon.logged-in-only:not(.hidden)');
+        } else {
+            visibleIcons = document.querySelectorAll('.nav-icon.logged-out-only:not(.hidden)');
+        }
+    }
+    
+    navigationOpen = !navigationOpen;
+    
+    if (navigationOpen) {
+        toggleBtn.classList.add('active');
+        visibleIcons.forEach(icon => {
+            icon.classList.add('visible');
+        });
+    } else {
+        toggleBtn.classList.remove('active');
+        visibleIcons.forEach(icon => {
+            icon.classList.remove('visible');
+        });
+    }
+}
+function showLoggedInLayout() {
+    // Hide logged out elements
+    document.querySelectorAll('.logged-out-only').forEach(el => el.classList.add('hidden'));
+    
+    // Show logged in elements  
+    document.querySelectorAll('.logged-in-only').forEach(el => el.classList.remove('hidden'));
+    
+    // Close navigation if open
+    closeNavigation();
+}
+
+function showLoggedOutLayout() {
+    // Hide logged in elements
+    document.querySelectorAll('.logged-in-only').forEach(el => el.classList.add('hidden'));
+    
+    // Show logged out elements
+    document.querySelectorAll('.logged-out-only').forEach(el => el.classList.remove('hidden'));
+    
+    // Close navigation if open
+    closeNavigation();
+}
+
+function closeNavigation() {
+    navigationOpen = false;
+    const toggleBtn = document.querySelector('.nav-toggle-btn');
+    if (toggleBtn) toggleBtn.classList.remove('active');
+    
+    document.querySelectorAll('.nav-icon').forEach(icon => {
+        icon.classList.remove('visible');
+    });
 }
 
 

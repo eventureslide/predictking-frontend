@@ -71,3 +71,181 @@
 .female-theme {
     --primary-color: #ff0a54;
 }
+
+/* Reset Buy-in Limit Button */
+/* Reset Buy-in Limit Button - Theme Based */
+.reset-limit-btn {
+    border: 2px solid var(--neon);
+    background: transparent;
+    color: var(--neon);
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    margin-top: 1rem;
+    width: 100%;
+    animation: fillUnfill 2s infinite;
+}
+
+.reset-limit-btn:hover {
+    transform: translateY(-2px);
+}
+
+@keyframes fillUnfill {
+    0%, 100% { 
+        background: transparent;
+        color: var(--neon);
+    }
+    50% { 
+        background: var(--neon);
+        color: #141414;
+    }
+}
+
+.reset-limit-btn {
+    border: 2px solid var(--neon);
+    background: transparent;
+    color: var(--neon);
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    margin-top: 1rem;
+    width: 100%;
+    animation: fillUnfill 2s 2 forwards; /* 2s duration, 2 iterations (4s total), stay in final state */
+}
+
+/* Remove unused animations */
+.pulsing-attract {
+    /* Animation removed */
+}
+
+.pulsing-text {
+    /* Animation removed */
+}
+
+/* Profile Names Display */
+.profile-names {
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+.display-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 0.2rem;
+}
+
+.nickname {
+    font-size: 0.9rem;
+    color: #888;
+    font-style: italic;
+}
+
+.profile-pic-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* Icon-specific theme colors */
+.nav-icon i {
+    color: inherit;
+}
+
+/* Theme-based icon colors */
+.default-theme .nav-icon i {
+    color: #FFF3DA;
+}
+
+.male-theme .nav-icon i {
+    color: #9ef01a;
+}
+
+.female-theme .nav-icon i {
+    color: #ff0a54;
+}
+
+/* Icon hover states */
+.default-theme .nav-icon:hover i {
+    color: #141414;
+}
+
+.male-theme .nav-icon:hover i {
+    color: #141414;
+}
+
+.female-theme .nav-icon:hover i {
+    color: #141414;
+}
+
+/* Toggle button icon colors */
+.default-theme .nav-toggle-btn i {
+    color: #141414;
+}
+
+.male-theme .nav-toggle-btn i {
+    color: #141414;
+}
+
+.female-theme .nav-toggle-btn i {
+    color: #141414;
+}
+
+/* Betting Modal Spacing Improvements */
+.betting-options {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 0 0.5rem;
+}
+
+.option-card {
+    padding: 1.5rem;
+    margin-bottom: 0.8rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.betting-content {
+    padding: 1rem 0;
+}
+
+.betting-content > * {
+    margin-bottom: 1.2rem;
+}
+
+.betting-content h3 {
+    margin-bottom: 1.5rem;
+    margin-top: 1rem;
+}
+
+.betting-content .primary-btn {
+    margin-top: 1.5rem;
+}
+
+.selected-option {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(158, 240, 26, 0.1);
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.pool-amount, .odds, .bet-count {
+    font-size: 0.9rem;
+    color: #888;
+    margin: 0.5rem 0;
+    line-height: 1.4;
+}

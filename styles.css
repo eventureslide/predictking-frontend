@@ -174,9 +174,10 @@ input, textarea, .code-display input, .notification {
 }
 
 /* Header */
+/* Header */
 .header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
     padding: 1rem;
     background: rgba(20, 20, 20, 0.95);
@@ -189,170 +190,261 @@ input, textarea, .code-display input, .notification {
     box-sizing: border-box;
 }
 
-.header-left {
+.header-main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.header-logged-out {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-top {
     display: flex;
     align-items: center;
     gap: 1rem;
     cursor: pointer;
 }
 
-.header-left .crown-icon {
-    font-size: 2rem;
+.header-logged-in {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+}
+
+.header-logged-out .crown-icon, 
+.header-logged-in .crown-icon {
+    font-size: var(--logo-crown-size); /* Now uses global variable */
     transition: all 0.3s ease;
     color: var(--neon) !important;
 }
 
-.header-left .logo {
-    font-size: 1.5rem;
+.header-logged-out .logo, 
+.header-logged-in .logo {
+    font-size: var(--logo-text-size); /* Now uses global variable */
     font-weight: 900;
     color: var(--neon) !important;
 }
 
-.header-right {
-    display: flex;
-    align-items: center;
-    margin-right: 1rem;
-}
-
-/* Header Layout Styles - FIXED TO SINGLE HORIZONTAL LINE */
-.logged-out-layout {
-    width: 100%;
-}
-
-.logged-out-buttons-row {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    width: 100%;
-    max-width: 100%;
-    margin: 1.5rem 0 0 0;
-    flex-wrap: nowrap;
-}
-
-.logged-in-layout {
-    margin-top: 1.5rem;
-}
-
-.logged-in-buttons-grid {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap;
-    gap: 0.3rem;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    overflow-x: auto;
-}
-
-/* Header Button Styles - No Borders */
-.login-btn-left, .live-chat-btn-right {
+/* Login Button - Always Visible */
+.login-btn-standalone {
     background: transparent !important;
-    border: none !important;
+    border: 2px solid var(--neon) !important;
     color: var(--neon) !important;
-    padding: 0.6rem 0.8rem;
+    padding: 0.6rem 1.2rem;
     border-radius: 8px;
     cursor: pointer;
     font-family: 'Orbitron', monospace;
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     transition: all 0.3s ease;
     text-transform: uppercase;
     outline: none !important;
     -webkit-tap-highlight-color: transparent !important;
-    white-space: nowrap;
-    flex-shrink: 0;
-    min-width: fit-content;
 }
 
-.login-btn-left:hover, .live-chat-btn-right:hover {
-    background: rgba(255, 243, 218, 0.2) !important;
+.login-btn-standalone:hover {
+    background: var(--neon) !important;
+    color: #141414 !important;
     transform: translateY(-2px);
 }
 
-.center-btn {
+/* Central Toggle Button */
+.nav-toggle-container {
+    position: relative;
     display: flex;
-    align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    align-items: center;
+    width: 100%;
+    height: 60px;
 }
 
-.header-btn {
-    background: transparent !important;
-    border: none !important;
-    color: var(--neon) !important;
-    padding: 0.8rem;
-    border-radius: 8px;
+.nav-toggle-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--neon);
+    border: none;
     cursor: pointer;
-    font-family: 'Orbitron', monospace;
-    font-size: 1.2rem;
-    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: auto;
-    height: 3rem;
-    text-align: center;
-    outline: none !important;
-    -webkit-tap-highlight-color: transparent !important;
-    flex-shrink: 0;
-    min-width: 3rem;
+    font-size: 1.5rem;
+    color: #141414;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    z-index: 100; /* Higher than nav icons */
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-.header-btn:hover {
-    background: rgba(255, 243, 218, 0.2) !important;
-    transform: translateY(-2px);
+.nav-toggle-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* EVC Header Buttons - FIXED TO SINGLE HORIZONTAL LINE */
-.evc-header-right {
-    display: flex !important;
-    flex-direction: row !important;
+.nav-toggle-btn.active {
+    transform: rotate(180deg);
+}
+
+/* Navigation Icons Container */
+/* Navigation Icons Container */
+.nav-icons-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 60px;
+    pointer-events: none;
+}
+
+.nav-icon {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: rgba(20, 20, 20, 0.9);
+    border: 2px solid var(--neon);
+    border-radius: 50%;
+    display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    color: var(--neon);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+    pointer-events: none;
+    z-index: 25; /* Lower than toggle button */
 }
 
-.evc-buttons {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 0.5rem;
-    align-items: center;
+.nav-icon:hover {
+    background: var(--neon);
+    color: #141414;
+    transform: translate(-50%, -50%) scale(1.1);
 }
 
-/* Theme-specific header styles */
-.male-theme .header-left .crown-icon,
-.male-theme .header-left .logo {
-    color: #9ef01a !important;
+.nav-icon.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: all;
 }
 
-.male-theme .header-btn,
-.male-theme .login-btn-left,
-.male-theme .live-chat-btn-right {
-    color: #9ef01a !important;
+/* Icon Positions - Logged Out (2 icons) */
+.nav-icon.logged-out-1 {
+    top: 50%;
+    left: calc(50% - 65px); /* Toggle button radius (25px) + icon radius (20px) + 20px extra space */
+    transition-delay: 0.1s;
 }
 
-.male-theme .header-btn:hover,
-.male-theme .login-btn-left:hover,
-.male-theme .live-chat-btn-right:hover {
-    background: rgba(158, 240, 26, 0.2) !important;
+.nav-icon.logged-out-2 {
+    top: 50%;
+    left: calc(50% + 65px);
+    transition-delay: 0.15s;
 }
 
-.female-theme .header-left .crown-icon,
-.female-theme .header-left .logo {
-    color: #ff0a54 !important;
+/* Icon Positions - Logged In (6 icons) */
+.nav-icon.logged-in-1 {
+    top: 50%;
+    left: calc(50% - 195px); /* Furthest left */
+    transition-delay: 0.1s;
 }
 
-.female-theme .header-btn,
-.female-theme .login-btn-left,
-.female-theme .live-chat-btn-right {
-    color: #ff0a54 !important;
+.nav-icon.logged-in-2 {
+    top: 50%;
+    left: calc(50% - 130px);
+    transition-delay: 0.15s;
 }
 
-.female-theme .header-btn:hover,
-.female-theme .login-btn-left:hover,
-.female-theme .live-chat-btn-right:hover {
-    background: rgba(255, 10, 84, 0.2) !important;
+.nav-icon.logged-in-3 {
+    top: 50%;
+    left: calc(50% - 65px); /* Same as logged-out-1 */
+    transition-delay: 0.2s;
+}
+
+.nav-icon.logged-in-4 {
+    top: 50%;
+    left: calc(50% + 65px); /* Same as logged-out-2 */
+    transition-delay: 0.25s;
+}
+
+.nav-icon.logged-in-5 {
+    top: 50%;
+    left: calc(50% + 130px);
+    transition-delay: 0.3s;
+}
+
+.nav-icon.logged-in-6 {
+    top: 50%;
+    left: calc(50% + 195px); /* Furthest right */
+    transition-delay: 0.35s;
+}
+
+/* EVC Page Icon Positions (2 icons) */
+.nav-icon.evc-1 {
+    top: 50%;
+    left: calc(50% - 65px);
+    transition-delay: 0.1s;
+}
+
+.nav-icon.evc-2 {
+    top: 50%;
+    left: calc(50% + 65px);
+    transition-delay: 0.15s;
+}
+
+/* Theme-specific colors for toggle button and icons */
+.male-theme .nav-toggle-btn {
+    background: #9ef01a;
+    color: #141414;
+}
+
+.male-theme .nav-icon {
+    border-color: #9ef01a;
+    color: #9ef01a;
+}
+
+.male-theme .nav-icon:hover {
+    background: #9ef01a;
+    color: #141414;
+}
+
+.female-theme .nav-toggle-btn {
+    background: #ff0a54;
+    color: #141414;
+}
+
+.female-theme .nav-icon {
+    border-color: #ff0a54;
+    color: #ff0a54;
+}
+
+.female-theme .nav-icon:hover {
+    background: #ff0a54;
+    color: #141414;
+}
+
+.default-theme .nav-toggle-btn {
+    background: #FFF3DA;
+    color: #141414;
+}
+
+.default-theme .nav-icon {
+    border-color: #FFF3DA;
+    color: #FFF3DA;
+}
+
+.default-theme .nav-icon:hover {
+    background: #FFF3DA;
+    color: #141414;
 }
 
 /* Primary and Secondary Button Styles */
@@ -596,6 +688,7 @@ input, textarea, .code-display input, .notification {
     height: 100px;
     display: flex;
     align-items: center;
+    min-height: 65px; /* Minimum height to prevent collapse */
 }
 
 .bottom-content {
@@ -606,6 +699,7 @@ input, textarea, .code-display input, .notification {
     max-width: 1200px;
     margin: 0 auto;
     height: 100%;
+    flex-wrap: nowrap; /* Prevent wrapping */
 }
 
 .stats-compact {
@@ -613,22 +707,40 @@ input, textarea, .code-display input, .notification {
     flex-direction: column;
     gap: 0.5rem;
     align-items: flex-start;
+    flex-shrink: 1; /* Allow shrinking */
+    min-width: 0; /* Allow shrinking below content size */
 }
 
 .stat-item-compact {
     display: flex;
     align-items: center;
     gap: 0.8rem;
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+.evc-btn-compact {
+    padding: 1rem 2rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    height: 60px;
+    white-space: nowrap;
+    flex-shrink: 0; /* Don't shrink initially */
+    min-width: 140px; /* Minimum button width */
 }
 
 .stat-label-compact {
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: #ccc;
     font-weight: 600;
 }
 
 .stat-value-compact {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 900;
     color: var(--neon);
 }
@@ -1387,6 +1499,40 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* EVC Page Styles */
+
+/* EVC Header Specific Styles */
+/* UNIVERSAL LOGO SIZE CONTROL - Adjust these values to change logo size on ALL pages */
+:root {
+    --logo-crown-size: 2.5rem;  /* Adjust this to change crown size globally */
+    --logo-text-size: 1.5rem;   /* Adjust this to change logo text size globally */
+}
+
+/* EVC Header Specific Styles */
+.evc-header .header-main {
+    margin-bottom: 1rem;
+}
+
+.evc-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    cursor: pointer;
+    width: 100%;
+}
+
+.evc-header .crown-icon {
+    font-size: var(--logo-crown-size); /* Now uses global variable */
+    transition: all 0.3s ease;
+    color: var(--neon) !important;
+}
+
+.evc-header .logo {
+    font-size: var(--logo-text-size); /* Now uses global variable */
+    font-weight: 900;
+    color: var(--neon) !important;
+}
+
 .evc-header h2 {
     color: var(--neon);
     text-align: center;
@@ -1618,152 +1764,231 @@ input:focus, select:focus, textarea:focus {
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .header {
-        flex-direction: column;
         padding: 1rem 0.5rem;
-        gap: 0.5rem;
-        align-items: center;
     }
     
-    .logged-out-buttons-row {
-        width: 100%;
-        max-width: 100%;
-        justify-content: space-between;
-        gap: 0.3rem;
-        margin-top: 1rem;
-        flex-wrap: nowrap !important;
-    }
-    
-    .logged-in-buttons-grid {
-        justify-content: center;
-        gap: 0.2rem;
-        max-width: 100%;
-        flex-wrap: nowrap !important;
-        overflow-x: auto;
-    }
-    
-    .login-btn-left, .live-chat-btn-right {
-        padding: 0.5rem 0.6rem;
-        font-size: 0.7rem;
-        flex: 1;
-        min-width: 60px;
-    }
-    
-    .center-btn {
-        width: 2.5rem;
-        height: 2.5rem;
-        font-size: 1rem;
-        flex-shrink: 0;
-    }
-    
-    .header-btn {
-        width: 2.5rem;
-        height: 2.5rem;
-        font-size: 1rem;
-        padding: 0.5rem;
-        flex-shrink: 0;
-    }
-    
-    .bottom-sticky-section {
-        height: 80px;
-        padding: 0.8rem 1rem;
-    }
-    
-    .main-content {
-        padding: 1rem 0.5rem;
-        padding-bottom: 100px;
-    }
-    
-    .events-grid {
-        grid-template-columns: 1fr;
-        padding: 0 0.5rem;
-        gap: 1rem;
-    }
-    
-    .stats-compact {
-        gap: 0.3rem;
-    }
-    
-    .evc-btn-compact {
-        padding: 0.8rem 1.5rem;
-        font-size: 0.9rem;
-        height: 50px;
-    }
-    
-    .leaderboard-row {
-        grid-template-columns: 40px 50px 1fr 60px;
-        gap: 0.3rem;
-        padding: 0.8rem 0.3rem;
-        font-size: 0.8rem;
-    }
-    
-    .earning-options {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-    
-    .earning-card {
-        padding: 1.5rem;
-    }
-    
-    .card-icon {
-        font-size: 2.5rem;
-    }
-    
-    .modal h2 {
+    .nav-toggle-btn {
+        width: 45px;
+        height: 45px;
         font-size: 1.3rem;
+    }
+    
+    .nav-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+    
+    /* Adjust icon positions for mobile - Logged Out */
+    .nav-icon.logged-out-1 {
+        left: calc(50% - 55px);
+    }
+    
+    .nav-icon.logged-out-2 {
+        left: calc(50% + 55px);
+    }
+    
+    /* Adjust icon positions for mobile - Logged In */
+    .nav-icon.logged-in-1 {
+        left: calc(50% - 165px);
+    }
+    
+    .nav-icon.logged-in-2 {
+        left: calc(50% - 110px);
+    }
+    
+    .nav-icon.logged-in-3 {
+        left: calc(50% - 55px);
+    }
+    
+    .nav-icon.logged-in-4 {
+        left: calc(50% + 55px);
+    }
+    
+    .nav-icon.logged-in-5 {
+        left: calc(50% + 110px);
+    }
+    
+    .nav-icon.logged-in-6 {
+        left: calc(50% + 165px);
+    }
+    
+    /* EVC Page Mobile Positions */
+    .nav-icon.evc-1 {
+        left: calc(50% - 55px);
+    }
+    
+    .nav-icon.evc-2 {
+        left: calc(50% + 55px);
     }
 }
 
 @media (max-width: 480px) {
-    .logged-out-buttons-row {
-        gap: 0.2rem;
-        flex-wrap: nowrap !important;
+    .nav-toggle-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
     }
     
-    .login-btn-left, .live-chat-btn-right {
-        font-size: 0.65rem;
-        padding: 0.4rem 0.5rem;
-        min-width: 50px;
-    }
-    
-    .center-btn {
-        width: 2rem;
-        height: 2rem;
+    .nav-icon {
+        width: 30px;
+        height: 30px;
         font-size: 0.9rem;
     }
     
-    .logged-in-buttons-grid {
-        gap: 0.1rem;
-        flex-wrap: nowrap !important;
+    /* Further adjust positions for very small screens */
+    .nav-icon.logged-out-1 {
+        left: calc(50% - 50px);
     }
     
-    .header-btn {
-        width: 2rem;
-        height: 2rem;
-        font-size: 0.9rem;
-        padding: 0.3rem;
+    .nav-icon.logged-out-2 {
+        left: calc(50% + 50px);
     }
     
-    .stats-compact {
-        gap: 0.2rem;
+    .nav-icon.logged-in-1 {
+        left: calc(50% - 150px);
     }
     
+    .nav-icon.logged-in-2 {
+        left: calc(50% - 100px);
+    }
+    
+    .nav-icon.logged-in-3 {
+        left: calc(50% - 50px);
+    }
+    
+    .nav-icon.logged-in-4 {
+        left: calc(50% + 50px);
+    }
+    
+    .nav-icon.logged-in-5 {
+        left: calc(50% + 100px);
+    }
+    
+    .nav-icon.logged-in-6 {
+        left: calc(50% + 150px);
+    }
+    
+    .nav-icon.evc-1 {
+        left: calc(50% - 50px);
+    }
+    
+    .nav-icon.evc-2 {
+        left: calc(50% + 50px);
+    }
+}
+
+
+/* Bottom Sticky Section Responsive - After existing mobile rules */
+@media (max-width: 600px) {
     .evc-btn-compact {
-        padding: 0.6rem 1.2rem;
-        font-size: 0.8rem;
-        height: 45px;
+        padding: 0.7rem 1.3rem;
+        font-size: 0.85rem;
+        height: 50px;
     }
     
-    .main-content {
-        padding-bottom: 90px;
+    .stat-label-compact, .stat-value-compact {
+        font-size: 0.85rem;
     }
     
-    .loading-screen .logo {
-        font-size: clamp(1.8rem, 10vw, 2.5rem);
-    }
-    
-    .modal h2 {
+    .stat-value-compact {
         font-size: 1.1rem;
     }
 }
 
+@media (max-width: 500px) {
+    .evc-btn-compact {
+        padding: 0.6rem 1.1rem;
+        font-size: 0.8rem;
+        height: 45px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .stat-label-compact {
+        font-size: 0.8rem;
+    }
+    
+    .stat-value-compact {
+        font-size: 1rem;
+    }
+    
+    .bottom-sticky-section {
+        height: 75px;
+        padding: 0.6rem 0.8rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .evc-btn-compact {
+        padding: 0.5rem 0.9rem;
+        font-size: 0.75rem;
+        height: 40px;
+        min-width: 100px;
+    }
+    
+    .stat-label-compact {
+        font-size: 0.75rem;
+    }
+    
+    .stat-value-compact {
+        font-size: 0.95rem;
+    }
+    
+    .bottom-sticky-section {
+        height: 70px;
+        padding: 0.5rem 0.6rem;
+    }
+    
+    .stat-item-compact {
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 350px) {
+    .evc-btn-compact {
+        padding: 0.4rem 0.7rem;
+        font-size: 0.7rem;
+        height: 38px;
+        min-width: 90px;
+    }
+    
+    .stat-label-compact {
+        font-size: 0.7rem;
+    }
+    
+    .stat-value-compact {
+        font-size: 0.9rem;
+    }
+    
+    .stats-compact {
+        gap: 0.3rem;
+    }
+    
+    .stat-item-compact {
+        gap: 0.4rem;
+    }
+}
+
+@media (max-width: 320px) {
+    .evc-btn-compact {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.65rem;
+        height: 35px;
+        min-width: 80px;
+    }
+    
+    .stat-label-compact {
+        font-size: 0.65rem;
+    }
+    
+    .stat-value-compact {
+        font-size: 0.85rem;
+    }
+    
+    .bottom-sticky-section {
+        height: 65px;
+        padding: 0.4rem 0.5rem;
+    }
+}
