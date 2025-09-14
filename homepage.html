@@ -232,8 +232,10 @@
     </div>
 
     <!-- SHA256 Code Modal -->
+    <!-- SHA256 Code Modal -->
     <div id="code-modal" class="modal">
         <div class="modal-content">
+            <span class="close" onclick="closeModal('code-modal')">&times;</span>  <!-- REPLACE THIS LINE -->
             <h2>Your Login Code</h2>
             <p>Save this code securely. You'll need it to login:</p>
             <div class="code-display">
@@ -243,11 +245,13 @@
                     <button onclick="downloadCode()" class="secondary-btn">DOWNLOAD</button>
                 </div>
                 <p style="font-size: 0.9rem; color: #ffc857; text-align: center; margin-top: 1rem;">
-                    Use Save Password feature it will be more than helpful!<br>
-                    You cannot afford to forget this code
+                    <strong>IMPORTANT:</strong> Save this code now! You cannot recover it later.<br>
+                    Use your browser's Save Password feature when prompted.
                 </p>
             </div>
-            <button class="primary-btn" onclick="closeModal('code-modal')">GOT IT</button>
+            <div style="text-align: center; margin-top: 1rem;">
+                <button class="primary-btn" onclick="finishRegistration()">I'VE SAVED MY CODE</button>
+            </div>
         </div>
     </div>
 

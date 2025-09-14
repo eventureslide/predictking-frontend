@@ -249,3 +249,99 @@
     margin: 0.5rem 0;
     line-height: 1.4;
 }
+
+/* SHA256 Button Styles */
+.sha-reveal-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Orbitron', monospace;
+    font-weight: bold;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Default theme */
+.default-theme .sha-reveal-btn {
+    background: #FFF3DA;
+    color: #141414;
+}
+
+.default-theme .sha-reveal-btn:hover {
+    background: rgba(255, 243, 218, 0.8);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 243, 218, 0.3);
+}
+
+/* Male theme */
+.male-theme .sha-reveal-btn {
+    background: #9ef01a;
+    color: #141414;
+}
+
+.male-theme .sha-reveal-btn:hover {
+    background: rgba(158, 240, 26, 0.8);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(158, 240, 26, 0.3);
+}
+
+/* Female theme */
+.female-theme .sha-reveal-btn {
+    background: #ff0a54;
+    color: #FFF3DA;
+}
+
+.female-theme .sha-reveal-btn:hover {
+    background: rgba(255, 10, 84, 0.8);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 10, 84, 0.3);
+}
+
+/* SHA Display Container */
+.sha-display {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 243, 218, 0.2);
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.sha-display.hidden {
+    display: none;
+}
+
+.sha-display input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 243, 218, 0.3);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: #FFF3DA;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+.copy-sha-btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255, 243, 218, 0.2);
+    color: #FFF3DA;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.copy-sha-btn:hover {
+    background: rgba(255, 243, 218, 0.3);
+    transform: translateY(-1px);
+}

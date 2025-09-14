@@ -127,7 +127,6 @@ function handleProfilePicUpload(file, gender) {
     });
 }
 
-// Initialization
 document.addEventListener('DOMContentLoaded', function() {
     // Double-check mobile access
     if (!isMobileDevice()) {
@@ -148,6 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ]).then(() => {
             updateThemeBasedOnUser();
             hideEVCLoadingScreen();
+            showPostRefreshWelcomeMessage(); // ADD this line
         });
         return;
     }
@@ -181,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         updateThemeBasedOnUser();
         startRealTimeUpdates();
+        showPostRefreshWelcomeMessage(); // ADD this line
     });
 });
 
@@ -378,6 +379,9 @@ if (loginForm) {
     loginForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const code = document.getElementById('login-code').value;
+        // Set flag to refresh after manual login AND store welcome message flag
+        window.shouldRefreshAfterLogin = true;
+        localStorage.setItem('showWelcomeMessage', 'true');
         loginUser(code);
     });
 }
@@ -432,10 +436,20 @@ async function loginUser(code, silentLogin = false) {
         if (!silentLogin) {
             await updateActivePlayersCount(1);
             logActivity('login', { userId: currentUser.id });
-            showNotification('Welcome back!', 'success');
+            // Store flag to show welcome message after refresh
+            localStorage.setItem('showWelcomeMessage', 'true');
         }
         
         hideBuffering();
+        
+        // Refresh page after successful login if needed
+        if (window.shouldRefreshAfterLogin || !silentLogin) {
+            setTimeout(() => {
+                window.shouldRefreshAfterLogin = false; // Reset flag
+                window.location.reload();
+            }, 300); // Faster refresh
+        }
+        
         return currentUser;
     } catch (error) {
         console.error('Login error:', error);
@@ -488,66 +502,79 @@ async function registerUser() {
     try {
         showBuffering();
         
-        // Generate SHA256 login code
-        const loginCode = await generateSHA256(formData.nickname + Date.now());
+        // Generate SHA256 login code with better error handling
+        let loginCode;
+        try {
+            loginCode = await generateSHA256(formData.nickname + Date.now());
+        } catch (hashError) {
+            console.error('Hash generation error:', hashError);
+            // Fallback to simpler hash if crypto.subtle fails
+            loginCode = btoa(formData.nickname + Date.now() + Math.random()).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+        }
         formData.loginCode = loginCode;
 
         // Check if nickname exists
         const nicknameQuery = await db.collection('users').where('nickname', '==', formData.nickname).get();
         if (!nicknameQuery.empty) {
             showNotification('Nickname already exists', 'error');
+            hideBuffering();
             return;
         }
 
         // Create user
         const docRef = await db.collection('users').add(formData);
         
-        // Trigger browser password save
-        triggerPasswordSave(formData.nickname, loginCode);
+        // Store user ID for later reference
+        window.currentUserId = docRef.id;
         
-        // Show login code
+        // Store login code in browser storage immediately
+        localStorage.setItem('userCode', loginCode);
+        localStorage.setItem('savedUsername', formData.nickname);
+        localStorage.setItem('userSHA256', loginCode); // Store for profile access
+        
+        // Store in cookies as backup (expires in 1 year)
+        const expiryDate = new Date();
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+        document.cookie = `predictking_code=${loginCode}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
+        document.cookie = `predictking_username=${formData.nickname}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
+        
+        // Show login code modal
         document.getElementById('generated-code').value = loginCode;
         closeModal('register-modal');
         showModal('code-modal');
         
+        // Set registration variables but DON'T auto-login
+        window.registrationInProgress = true;
+        window.currentRegistrationCode = loginCode;
+        window.currentRegistrationUsername = formData.nickname;
+        
         // Log registration
         logActivity('registration', { userId: docRef.id, nickname: formData.nickname });
         
+        // Trigger browser password save after modal is shown - this should prompt save dialog
+        setTimeout(() => {
+            triggerPasswordSaveForRegistration(formData.nickname, loginCode);
+        }, 1500);
+        
         hideBuffering();
+        showNotification('Account created successfully! IMPORTANT: Save your login code now!', 'success');
+        
     } catch (error) {
         console.error('Registration error:', error);
-        showNotification('Registration failed', 'error');
+        showNotification('Registration failed. Please try again.', 'error');
         hideBuffering();
     }
 }
 
 // ADD this new function after registerUser:
 function triggerPasswordSave(username, password) {
-    // Create a hidden form to trigger browser's password save
-    const form = document.createElement('form');
-    form.style.display = 'none';
+    // Don't interfere with registration process
+    if (window.registrationInProgress) {
+        return;
+    }
     
-    const usernameInput = document.createElement('input');
-    usernameInput.type = 'text';
-    usernameInput.name = 'username';
-    usernameInput.value = username;
-    usernameInput.autocomplete = 'username';
-    
-    const passwordInput = document.createElement('input');
-    passwordInput.type = 'password';
-    passwordInput.name = 'password';
-    passwordInput.value = password;
-    passwordInput.autocomplete = 'current-password';
-    
-    form.appendChild(usernameInput);
-    form.appendChild(passwordInput);
-    document.body.appendChild(form);
-    
-    // Trigger the browser's password save dialog
-    setTimeout(() => {
-        form.submit();
-        document.body.removeChild(form);
-    }, 100);
+    // Use the enhanced registration function for consistency
+    triggerPasswordSaveForRegistration(username, password);
 }
 
 async function generateSHA256(text) {
@@ -571,17 +598,17 @@ function checkLoginStatus() {
     return new Promise((resolve) => {
         const savedCode = localStorage.getItem('userCode');
         if (savedCode) {
-            loginUser(savedCode, true)  // silent login
+            loginUser(savedCode, true)  // silent login - no refresh
                 .then(() => { 
-                    updateLayoutBasedOnLoginStatus(); // Add this line
+                    updateLayoutBasedOnLoginStatus();
                     resolve();
                 })
                 .catch(() => {
-                    updateLayoutBasedOnLoginStatus(); // Add this line
+                    updateLayoutBasedOnLoginStatus();
                     resolve();
                 });
         } else {
-            updateLayoutBasedOnLoginStatus(); // Add this line
+            updateLayoutBasedOnLoginStatus();
             resolve();
         }
     });
@@ -2119,6 +2146,14 @@ function createSettingsTab() {
                 <button onclick="changeProfilePic()">CHANGE PICTURE</button>
             </div>
             <div class="setting-item">
+                <label>Login Code Access:</label>
+                <button class="sha-reveal-btn" onclick="showMySHA256()">SHOW MY SHA256</button>
+                <div id="sha-display" class="sha-display hidden">
+                    <input type="text" id="user-sha-code" readonly>
+                    <button onclick="copySHAFromSettings()" class="copy-sha-btn">COPY</button>
+                </div>
+            </div>
+            <div class="setting-item">
                 <button class="danger-btn" onclick="logout()">LOGOUT</button>
             </div>
         </div>
@@ -2608,6 +2643,23 @@ function startRealTimeUpdates() {
     setInterval(loadEvents, 60000);
 }
 
+// ADD THE FUNCTION HERE:
+// Show welcome message after page refresh if needed
+function showPostRefreshWelcomeMessage() {
+    const welcomeFlag = localStorage.getItem('showWelcomeMessage');
+    if (welcomeFlag) {
+        localStorage.removeItem('showWelcomeMessage'); // Clear flag
+        
+        setTimeout(() => {
+            if (welcomeFlag === 'registration') {
+                showNotification('Welcome to PredictKing! Your account is ready.', 'success');
+            } else if (welcomeFlag === 'true') {
+                showNotification('Welcome back!', 'success');
+            }
+        }, 500); // Show after everything loads
+    }
+}
+
 // Utility Functions
 function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
@@ -2925,14 +2977,285 @@ function closeNavigation() {
 }
 
 
+// Enhanced password save function for registration
+function triggerPasswordSaveForRegistration(username, password) {
+    try {
+        // Create a visible form to properly trigger browser's save password dialog
+        const form = document.createElement('form');
+        form.id = 'password-save-form';
+        form.style.position = 'fixed';
+        form.style.top = '-200px';
+        form.style.left = '50%';
+        form.style.transform = 'translateX(-50%)';
+        form.style.zIndex = '10001';
+        form.style.background = 'transparent';
+        form.style.border = 'none';
+        form.action = '/login'; // Fake action
+        form.method = 'post';
+        form.autocomplete = 'on';
+        
+        const usernameInput = document.createElement('input');
+        usernameInput.type = 'text';
+        usernameInput.name = 'username';
+        usernameInput.id = 'temp-username';
+        usernameInput.value = username;
+        usernameInput.autocomplete = 'username';
+        usernameInput.style.opacity = '0.01';
+        usernameInput.style.height = '1px';
+        
+        const passwordInput = document.createElement('input');
+        passwordInput.type = 'password';
+        passwordInput.name = 'password';
+        passwordInput.id = 'temp-password';
+        passwordInput.value = password;
+        passwordInput.autocomplete = 'new-password';
+        passwordInput.style.opacity = '0.01';
+        passwordInput.style.height = '1px';
+        
+        form.appendChild(usernameInput);
+        form.appendChild(passwordInput);
+        document.body.appendChild(form);
+        
+        // Simulate a login attempt to trigger password manager
+        setTimeout(() => {
+            usernameInput.focus();
+            setTimeout(() => {
+                passwordInput.focus();
+                setTimeout(() => {
+                    // Create a submit event
+                    const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                    form.dispatchEvent(submitEvent);
+                    
+                    // Prevent actual submission
+                    form.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        console.log('Password manager should be triggered');
+                    });
+                    
+                    // Clean up
+                    setTimeout(() => {
+                        if (document.body.contains(form)) {
+                            document.body.removeChild(form);
+                        }
+                    }, 3000);
+                }, 100);
+            }, 100);
+        }, 100);
+        
+    } catch (error) {
+        console.error('Error triggering password save:', error);
+    }
+}
+
+// Function to complete registration process
+// Function to complete registration process
+function finishRegistration() {
+    if (!window.currentRegistrationCode) {
+        closeModal('code-modal');
+        showNotification('Registration completed!', 'success');
+        return;
+    }
+    
+    // Final attempt to save credentials
+    if (window.currentRegistrationUsername && window.currentRegistrationCode) {
+        // Store in multiple locations for maximum safety
+        localStorage.setItem('userCode', window.currentRegistrationCode);
+        localStorage.setItem('savedUsername', window.currentRegistrationUsername);
+        localStorage.setItem('userSHA256', window.currentRegistrationCode); // Store for profile access
+        
+        // Update cookies
+        const expiryDate = new Date();
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+        document.cookie = `predictking_code=${window.currentRegistrationCode}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
+        
+        // Try to save in sessionStorage as well
+        try {
+            sessionStorage.setItem('tempUserCode', window.currentRegistrationCode);
+        } catch (e) {
+            console.log('SessionStorage not available');
+        }
+    }
+    
+    closeModal('code-modal');
+    window.registrationInProgress = false;
+    
+    // Store flag to show welcome message after refresh for new registration
+    localStorage.setItem('showWelcomeMessage', 'registration');
+    
+    showNotification('Registration completed! Logging you in...', 'success');
+    
+    // Auto-login the user with their new code after a shorter delay
+    setTimeout(() => {
+        if (window.currentRegistrationCode) {
+            // Set flag to indicate this login should trigger refresh
+            window.shouldRefreshAfterLogin = true;
+            loginUser(window.currentRegistrationCode, false);
+        }
+        // Clear the temporary variables
+        window.currentRegistrationCode = null;
+        window.currentRegistrationUsername = null;
+    }, 800);
+}
+
+// Function to recover saved codes from browser storage
+function recoverSavedCredentials() {
+    // Try localStorage first
+    let savedCode = localStorage.getItem('userCode');
+    let savedUsername = localStorage.getItem('savedUsername');
+    
+    if (savedCode) {
+        return { code: savedCode, username: savedUsername };
+    }
+    
+    // Try cookies
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'predictking_code') {
+            savedCode = value;
+        }
+        if (name === 'predictking_username') {
+            savedUsername = value;
+        }
+    }
+    
+    if (savedCode) {
+        return { code: savedCode, username: savedUsername };
+    }
+    
+    // Try sessionStorage as last resort
+    try {
+        savedCode = sessionStorage.getItem('tempUserCode');
+        if (savedCode) {
+            return { code: savedCode, username: null };
+        }
+    } catch (e) {
+        console.log('SessionStorage not available');
+    }
+    
+    return null;
+}
+
+// Enhanced copy function that also shows recovery info
+function copyCode() {
+    const codeInput = document.getElementById('generated-code');
+    codeInput.select();
+    codeInput.setSelectionRange(0, 99999); // For mobile devices
+    
+    try {
+        document.execCommand('copy');
+        showNotification('Code copied! Also saved in your browser automatically.', 'success');
+    } catch (err) {
+        // Fallback for newer browsers
+        navigator.clipboard.writeText(codeInput.value).then(() => {
+            showNotification('Code copied! Also saved in your browser automatically.', 'success');
+        }).catch(() => {
+            showNotification('Please manually select and copy the code', 'warning');
+        });
+    }
+}
+
+// Function to show user's SHA256 code in settings
+function showMySHA256() {
+    const shaDisplay = document.getElementById('sha-display');
+    const shaCodeInput = document.getElementById('user-sha-code');
+    const shaButton = document.querySelector('.sha-reveal-btn');
+    
+    if (shaDisplay.classList.contains('hidden')) {
+        // Try to get SHA256 from storage
+        let userSHA = localStorage.getItem('userSHA256') || localStorage.getItem('userCode');
+        
+        if (!userSHA) {
+            // Try from cookies
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'predictking_code') {
+                    userSHA = value;
+                    break;
+                }
+            }
+        }
+        
+        if (userSHA) {
+            shaCodeInput.value = userSHA;
+            shaDisplay.classList.remove('hidden');
+            shaButton.textContent = 'HIDE SHA256';
+        } else {
+            showNotification('SHA256 code not found in browser storage', 'error');
+        }
+    } else {
+        shaDisplay.classList.add('hidden');
+        shaButton.textContent = 'SHOW MY SHA256';
+        shaCodeInput.value = '';
+    }
+}
+
+// Function to copy SHA256 from settings
+function copySHAFromSettings() {
+    const shaCodeInput = document.getElementById('user-sha-code');
+    if (!shaCodeInput.value) {
+        showNotification('No code to copy', 'error');
+        return;
+    }
+    
+    shaCodeInput.select();
+    shaCodeInput.setSelectionRange(0, 99999);
+    
+    try {
+        document.execCommand('copy');
+        showNotification('SHA256 code copied to clipboard!', 'success');
+    } catch (err) {
+        navigator.clipboard.writeText(shaCodeInput.value).then(() => {
+            showNotification('SHA256 code copied to clipboard!', 'success');
+        }).catch(() => {
+            showNotification('Failed to copy. Please select and copy manually.', 'error');
+        });
+    }
+}
+
+
 // Close modals when clicking outside
 // Close modals when clicking outside
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
         const modalId = event.target.id;
+        
+        // Special handling for code modal during registration OR regular close
+        if (modalId === 'code-modal') {
+            if (window.registrationInProgress) {
+                finishRegistration(); // Handles registration completion
+            } else {
+                // Regular code modal close - still trigger refresh if user was logging in
+                event.target.style.display = 'none';
+                if (window.shouldRefreshAfterLogin) {
+                    setTimeout(() => {
+                        window.shouldRefreshAfterLogin = false;
+                        window.location.reload();
+                    }, 300);
+                }
+            }
+            return;
+        }
+        
         if (modalId === 'ad-modal') {
             cleanupAdTimer();
         }
         event.target.style.display = 'none';
+    }
+}
+
+// Handle code modal close button specifically
+function closeCodeModal() {
+    if (window.registrationInProgress) {
+        finishRegistration();
+    } else {
+        closeModal('code-modal');
+        if (window.shouldRefreshAfterLogin) {
+            setTimeout(() => {
+                window.shouldRefreshAfterLogin = false;
+                window.location.reload();
+            }, 300);
+        }
     }
 }
