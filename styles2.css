@@ -88,11 +88,16 @@
     text-transform: uppercase;
     margin-top: 1rem;
     width: 100%;
-    animation: fillUnfill 2s infinite;
+    /* NO animation by default */
 }
 
 .reset-limit-btn:hover {
     transform: translateY(-2px);
+}
+
+/* Animation class that gets added only when popup is shown */
+.reset-limit-btn.pulsing-attract {
+    animation: fillUnfill 1s 1 forwards; /* 1 second duration, 1 iteration only */
 }
 
 @keyframes fillUnfill {
@@ -106,22 +111,8 @@
     }
 }
 
-.reset-limit-btn {
-    border: 2px solid var(--neon);
-    background: transparent;
-    color: var(--neon);
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: 'Orbitron', monospace;
-    font-weight: 700;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    margin-top: 1rem;
-    width: 100%;
-    animation: fillUnfill 2s 2 forwards; /* 2s duration, 2 iterations (4s total), stay in final state */
-}
+
+
 
 /* Remove unused animations */
 .pulsing-attract {
@@ -345,3 +336,4 @@
     background: rgba(255, 243, 218, 0.3);
     transform: translateY(-1px);
 }
+

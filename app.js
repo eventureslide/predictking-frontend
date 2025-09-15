@@ -147,7 +147,8 @@ document.addEventListener('DOMContentLoaded', function() {
         ]).then(() => {
             updateThemeBasedOnUser();
             hideEVCLoadingScreen();
-            showPostRefreshWelcomeMessage(); // ADD this line
+            startActivePlayerTracking(); // Start tracking for EVC page
+            showPostRefreshWelcomeMessage();
         });
         return;
     }
@@ -181,7 +182,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         updateThemeBasedOnUser();
         startRealTimeUpdates();
-        showPostRefreshWelcomeMessage(); // ADD this line
+        startActivePlayerTracking(); // Start tracking active devices
+        showPostRefreshWelcomeMessage();
     });
 });
 
@@ -434,7 +436,7 @@ async function loginUser(code, silentLogin = false) {
         
         // Only increase active players count for actual login, not refresh
         if (!silentLogin) {
-            await updateActivePlayersCount(1);
+            // await updateActivePlayersCount(1);
             logActivity('login', { userId: currentUser.id });
             // Store flag to show welcome message after refresh
             localStorage.setItem('showWelcomeMessage', 'true');
@@ -459,20 +461,368 @@ async function loginUser(code, silentLogin = false) {
 }
 
 
-async function updateActivePlayersCount(change) {
+// Real-time logged-in active players tracking with robust error handling
+let heartbeatInterval = null;
+let deviceId = null;
+let isPageActive = true;
+let isTracking = false;
+let heartbeatRetryCount = 0;
+let maxRetries = 3;
+
+// Generate unique device ID for this specific device/browser instance
+function generateDeviceId() {
+    let storedDeviceId = localStorage.getItem('predictking_device_id');
+    if (!storedDeviceId) {
+        storedDeviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 12);
+        localStorage.setItem('predictking_device_id', storedDeviceId);
+    }
+    return storedDeviceId;
+}
+
+// Start tracking this logged-in device as active
+function startActivePlayerTracking() {
+    // Only track if user is logged in
+    if (!currentUser) {
+        stopActivePlayerTracking();
+        return;
+    }
+    
+    if (isTracking) return; // Already tracking
+    
+    deviceId = generateDeviceId();
+    isTracking = true;
+    heartbeatRetryCount = 0;
+    
+    // Register this logged-in device immediately
+    registerLoggedInDevice();
+    
+    // Send heartbeat every 15 seconds
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(sendHeartbeatWithRetry, 15000);
+    
+    // Handle page visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange, false);
+    
+    // Handle page unload (when user closes tab/browser)
+    window.addEventListener('beforeunload', handlePageUnload, false);
+    window.addEventListener('unload', handlePageUnload, false);
+    window.addEventListener('pagehide', handlePageUnload, false);
+    
+    // Additional cleanup for mobile browsers
+    document.addEventListener('freeze', handlePageUnload, false);
+    document.addEventListener('resume', handlePageResume, false);
+}
+
+// Register this logged-in device as active (always use SET to avoid document not found)
+async function registerLoggedInDevice() {
+    if (!currentUser || !deviceId) return;
+    
     try {
-        const statsRef = db.collection('stats').doc('global');
-        const stats = await statsRef.get();
-        const currentCount = stats.exists ? (stats.data().activePlayers || 0) : 0;
+        // Use SET instead of UPDATE to create document if it doesn't exist
+        await db.collection('active_logged_devices').doc(deviceId).set({
+            deviceId: deviceId,
+            userId: currentUser.id,
+            userNickname: currentUser.nickname,
+            userDisplayName: currentUser.displayName,
+            lastHeartbeat: firebase.firestore.Timestamp.now(),
+            pageUrl: window.location.pathname,
+            userAgent: navigator.userAgent.substring(0, 100),
+            isActive: true,
+            loginTime: firebase.firestore.Timestamp.now(),
+            createdAt: firebase.firestore.Timestamp.now()
+        });
         
-        await statsRef.set({
-            activePlayers: Math.max(0, currentCount + change),
-            totalPot: stats.exists ? stats.data().totalPot || 0 : 0
-        }, { merge: true });
+        heartbeatRetryCount = 0; // Reset retry count on success
+        
+        // Update active count immediately
+        await updateLoggedInPlayersCount();
+        
     } catch (error) {
-        console.error('Error updating active players:', error);
+        console.error('Error registering logged-in device:', error);
+        // Retry registration after a delay
+        setTimeout(() => registerLoggedInDevice(), 2000);
     }
 }
+
+// Send heartbeat with automatic retry and fallback to SET if UPDATE fails
+async function sendHeartbeatWithRetry() {
+    if (!currentUser || !deviceId || !isTracking) return;
+    
+    try {
+        await sendHeartbeat();
+        heartbeatRetryCount = 0; // Reset on success
+    } catch (error) {
+        console.error('Heartbeat failed, retrying...', error);
+        heartbeatRetryCount++;
+        
+        if (heartbeatRetryCount <= maxRetries) {
+            // Retry with exponential backoff
+            const delay = Math.min(1000 * Math.pow(2, heartbeatRetryCount - 1), 10000);
+            setTimeout(async () => {
+                try {
+                    // Use SET as fallback to recreate document
+                    await registerLoggedInDevice();
+                } catch (retryError) {
+                    console.error('Retry failed:', retryError);
+                }
+            }, delay);
+        } else {
+            // Max retries reached, re-register completely
+            console.log('Max retries reached, re-registering device...');
+            heartbeatRetryCount = 0;
+            await registerLoggedInDevice();
+        }
+    }
+}
+
+// Send heartbeat to keep logged-in device alive
+async function sendHeartbeat() {
+    if (!currentUser || !deviceId || !isTracking) return;
+    
+    // Always use SET with merge to avoid document not found errors
+    await db.collection('active_logged_devices').doc(deviceId).set({
+        deviceId: deviceId,
+        userId: currentUser.id,
+        userNickname: currentUser.nickname,
+        userDisplayName: currentUser.displayName,
+        lastHeartbeat: firebase.firestore.Timestamp.now(),
+        pageUrl: window.location.pathname,
+        isActive: isPageActive
+    }, { merge: true }); // merge: true updates existing fields or creates document
+    
+    // Update active count periodically
+    await updateLoggedInPlayersCount();
+}
+
+// Handle when page becomes hidden/visible
+function handleVisibilityChange() {
+    const wasActive = isPageActive;
+    isPageActive = !document.hidden;
+    
+    if (!currentUser) return; // Only track logged-in users
+    
+    if (!isPageActive && wasActive) {
+        // Page became hidden - mark as inactive but keep document alive
+        if (deviceId) {
+            db.collection('active_logged_devices').doc(deviceId).set({
+                deviceId: deviceId,
+                userId: currentUser.id,
+                isActive: false,
+                lastHeartbeat: firebase.firestore.Timestamp.now()
+            }, { merge: true }).catch(console.error);
+        }
+        
+        // Stop heartbeat when page is hidden
+        if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+            heartbeatInterval = null;
+        }
+        
+    } else if (isPageActive && !wasActive) {
+        // Page became visible again - reactivate
+        if (deviceId) {
+            db.collection('active_logged_devices').doc(deviceId).set({
+                deviceId: deviceId,
+                userId: currentUser.id,
+                isActive: true,
+                lastHeartbeat: firebase.firestore.Timestamp.now()
+            }, { merge: true }).catch(console.error);
+        }
+        
+        // Restart heartbeat
+        if (!heartbeatInterval) {
+            heartbeatInterval = setInterval(sendHeartbeatWithRetry, 15000);
+            sendHeartbeatWithRetry(); // Send immediately
+        }
+    }
+    
+    // Update count when visibility changes
+    updateLoggedInPlayersCount();
+}
+
+// Handle when user closes tab/browser or navigates away
+function handlePageUnload() {
+    if (!deviceId || !currentUser) return;
+    
+    // Immediately remove this logged-in device
+    try {
+        // Use sendBeacon for reliable cleanup on page unload
+        if (navigator.sendBeacon && typeof window.fetch !== 'undefined') {
+            const data = JSON.stringify({ 
+                action: 'cleanup_device',
+                deviceId: deviceId,
+                userId: currentUser.id
+            });
+            navigator.sendBeacon('/api/cleanup-device', data);
+        }
+        
+        // Also try direct deletion (synchronous call)
+        db.collection('active_logged_devices').doc(deviceId).delete();
+        
+    } catch (error) {
+        // Ignore errors during unload
+    }
+    
+    // Stop tracking
+    stopActivePlayerTracking();
+}
+
+// Handle when page resumes (for mobile)
+function handlePageResume() {
+    if (currentUser && !isTracking) {
+        startActivePlayerTracking();
+    } else if (currentUser && !heartbeatInterval) {
+        heartbeatInterval = setInterval(sendHeartbeatWithRetry, 15000);
+        sendHeartbeatWithRetry(); // Send immediately
+    }
+}
+
+// Stop tracking this device
+function stopActivePlayerTracking() {
+    isTracking = false;
+    
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+    }
+    
+    // Remove event listeners
+    document.removeEventListener('visibilitychange', handleVisibilityChange, false);
+    window.removeEventListener('beforeunload', handlePageUnload, false);
+    window.removeEventListener('unload', handlePageUnload, false);
+    window.removeEventListener('pagehide', handlePageUnload, false);
+    document.removeEventListener('freeze', handlePageUnload, false);
+    document.removeEventListener('resume', handlePageResume, false);
+}
+
+// Update active logged-in players count by cleaning up old devices
+async function updateLoggedInPlayersCount() {
+    try {
+        const now = firebase.firestore.Timestamp.now();
+        const twoMinutesAgo = new Date(now.toDate().getTime() - 120000); // 2 minute threshold (more generous)
+        const cutoff = firebase.firestore.Timestamp.fromDate(twoMinutesAgo);
+        
+        // Get all logged-in devices
+        const allDevices = await db.collection('active_logged_devices').get();
+        
+        let activeLoggedInDevices = 0;
+        const batch = db.batch();
+        let batchOperations = 0;
+        
+        allDevices.docs.forEach(doc => {
+            const data = doc.data();
+            const lastHeartbeat = data.lastHeartbeat;
+            
+            // If device is too old or explicitly inactive, delete it
+            if (!lastHeartbeat || lastHeartbeat < cutoff || !data.isActive) {
+                if (batchOperations < 500) { // Firestore batch limit
+                    batch.delete(doc.ref);
+                    batchOperations++;
+                }
+            } else {
+                // Count as active logged-in device
+                activeLoggedInDevices++;
+            }
+        });
+        
+        // Commit deletions if any
+        if (batchOperations > 0) {
+            await batch.commit();
+        }
+        
+        // Update global stats with logged-in players count
+        await db.collection('stats').doc('global').set({
+            activePlayers: activeLoggedInDevices,
+            lastUpdated: firebase.firestore.Timestamp.now()
+        }, { merge: true });
+        
+        // Update UI immediately
+        updateActivePlayersUI(activeLoggedInDevices);
+        
+    } catch (error) {
+        console.error('Error updating logged-in players count:', error);
+        // Don't let this error stop the tracking
+    }
+}
+
+// Update UI with current active logged-in players count
+function updateActivePlayersUI(count) {
+    const activePlayersEls = ['active-players', 'active-players-sticky', 'active-players-bottom'];
+    activePlayersEls.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = count;
+    });
+}
+
+// Enhanced login function that starts tracking
+async function loginUser(code, silentLogin = false) {
+    try {
+        showBuffering();
+        const userQuery = await db.collection('users').where('loginCode', '==', code).get();
+        
+        if (userQuery.empty) {
+            showNotification('Invalid login code', 'error');
+            return;
+        }
+
+        const userData = userQuery.docs[0].data();
+        currentUser = { id: userQuery.docs[0].id, ...userData };
+        
+        localStorage.setItem('userCode', code);
+        updateUIForLoggedInUser();
+        updateThemeBasedOnUser();
+        closeModal('login-modal');
+        
+        // Start tracking this logged-in device
+        setTimeout(() => startActivePlayerTracking(), 500); // Small delay to ensure everything is ready
+        
+        if (!silentLogin) {
+            logActivity('login', { userId: currentUser.id, deviceId: deviceId });
+            localStorage.setItem('showWelcomeMessage', 'true');
+        }
+        
+        hideBuffering();
+        
+        if (window.shouldRefreshAfterLogin || !silentLogin) {
+            setTimeout(() => {
+                window.shouldRefreshAfterLogin = false;
+                window.location.reload();
+            }, 300);
+        }
+        
+        return currentUser;
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification('Login failed', 'error');
+        hideBuffering();
+    }
+}
+
+// Enhanced logout function that stops tracking
+function logout() {
+    // Remove this device from active tracking
+    if (deviceId && currentUser) {
+        db.collection('active_logged_devices').doc(deviceId).delete().catch(console.error);
+    }
+    
+    // Stop tracking
+    stopActivePlayerTracking();
+    
+    currentUser = null;
+    localStorage.removeItem('userCode');
+    
+    closeModal('profile-modal');
+    showNotification('Logged out successfully', 'success');
+    
+    setTimeout(() => {
+        window.location.href = 'homepage.html';
+    }, 1000);
+}
+
+
+
+
+
 
 
 async function registerUser() {
@@ -663,13 +1013,11 @@ function cleanupAdTimer() {
     if (window.currentAdTimer) {
         clearInterval(window.currentAdTimer);
         window.currentAdTimer = null;
-        
-        // If timer was running and modal closes early, it's just a click, not a view
-        // ad_click was already logged, ad_view will NOT be logged
     }
     const claimBtn = document.getElementById('claim-reward');
     if (claimBtn) {
         claimBtn.classList.add('hidden');
+        claimBtn.textContent = 'CLAIM REWARD'; // Reset to default text
     }
     const adVideo = document.getElementById('ad-video');
     if (adVideo) {
@@ -895,7 +1243,7 @@ function createEventCard(event) {
                         `<div class="event-winner" style="color: var(--primary-color); font-weight: bold; margin-top: 4px;">${event.winner} WON</div>` : ''}
             </div>
             <div class="event-pot">
-                Total Pot: ${formatCurrency(event.totalPot || 0)}
+                Pool: ${formatCurrency(event.totalPot || 0)}
             </div>
         </div>
     `;
@@ -1400,11 +1748,11 @@ async function confirmPoolBet() {
                 eventStartTime: currentEvent.startTime,
                 selectedOption: selectedBettingOption,
                 betAmount: betAmount,
-                currency: currentUser.currency,
+                currency: 'INR', // Fixed currency value
                 timestamp: firebase.firestore.Timestamp.now(),
                 status: 'placed',
                 betType: 'pool',
-                odds: lockedOdds, // User's locked odds
+                odds: lockedOdds,
                 potentialWinning: potentialWinning
             };
             
@@ -1457,7 +1805,7 @@ async function confirmPoolBet() {
         closeModal('event-modal');
         
         showNotification(
-            `Bet placed: ${formatCurrency(betAmount, currentUser.currency)} on ${selectedBettingOption}. Locked odds: ${result.odds}. Potential win: ${formatCurrency(result.potentialWinning, currentUser.currency)}`,
+            `Bet placed: ${formatCurrency(betAmount)} on ${selectedBettingOption}. Locked odds: ${result.odds}. Potential win: ${formatCurrency(result.potentialWinning)}`,
             'success'
         );
         
@@ -1902,6 +2250,13 @@ async function claimAdReward() {
             });
             
             currentUser.dailyBuyinUsed = 0;
+            
+            // Hide and reset the button state after successful reset
+            const resetBtn = document.querySelector('.reset-limit-btn');
+            if (resetBtn) {
+                resetBtn.classList.add('hidden');
+                resetBtn.classList.remove('pulsing-attract');
+            }
             
             showNotification(`Buy-in limit reset! You can now buy in up to ${formatCurrency(adminSettings.dailyBuyinLimit)}`, 'success');
             
@@ -2439,16 +2794,19 @@ async function loadLeaderboard() {
             const user = doc.data();
             const position = index + 1;
             
+            // Determine position color based on rep score
+            const positionColor = user.repScore === 'BAD' ? '#ff0a54' : '#9ef01a';
+            
             const row = document.createElement('div');
             row.className = 'leaderboard-row';
             row.innerHTML = `
-                <span class="position">#${position}</span>
-                <img src="${user.profilePic || getRandomProfilePic(user.gender)}" 
-                     alt="Profile" 
-                     class="leaderboard-pic ${user.gender}"
-                     onclick="toggleLeaderboardName(this, '${user.displayName}')">
+                <span class="position" style="color: ${positionColor};">#${position}</span>
+                <div class="leaderboard-profile" onclick="toggleLeaderboardName(this, '${user.displayName}')">
+                    <img src="${user.profilePic || getRandomProfilePic(user.gender)}" 
+                         alt="Profile" 
+                         class="leaderboard-pic ${user.gender}">
+                </div>
                 <span class="winnings">${formatCurrency(user.totalWinnings || 0, user.currency)}</span>
-                <span class="rep-score ${user.repScore.toLowerCase()}">${user.repScore}</span>
             `;
             
             leaderboardEl.appendChild(row);
@@ -2467,7 +2825,9 @@ function toggleLeaderboardName(element, displayName) {
     popup.className = 'leaderboard-name-popup';
     popup.textContent = displayName;
     
+    // Add popup to the leaderboard row instead of inside the profile div
     const row = element.closest('.leaderboard-row');
+    row.style.position = 'relative';
     row.appendChild(popup);
     
     // Remove popup after 2 seconds
@@ -2476,6 +2836,12 @@ function toggleLeaderboardName(element, displayName) {
 
 // Buy-in Functions
 function showBuyIn() {
+    // Ensure button starts with clean state (no animation)
+    const resetBtn = document.querySelector('.reset-limit-btn');
+    if (resetBtn) {
+        resetBtn.classList.remove('pulsing-attract');
+    }
+    
     showModal('buyin-modal');
 }
 
@@ -2487,26 +2853,41 @@ async function testBuyIn() {
     }
     
     if (currentUser.dailyBuyinUsed + amount > adminSettings.dailyBuyinLimit) {
-        // Show reset limit button instead of generic message
         const resetBtn = document.querySelector('.reset-limit-btn');
+        
         if (resetBtn) {
+            // Always show the button (but don't animate yet)
             resetBtn.classList.remove('hidden');
-            resetBtn.classList.add('pulsing-attract');
+            resetBtn.classList.remove('pulsing-attract'); // Clean slate
         }
+        
+        // Show the popup notification first
         showNotification('Daily buy-in limit reached. Reset your limit by watching an ad!', 'warning');
+        
+        // THEN pulse the button 1.5 seconds after the popup
+        setTimeout(() => {
+            if (resetBtn) {
+                resetBtn.classList.add('pulsing-attract');
+                
+                // Remove animation class after it completes (1 second + small buffer)
+                setTimeout(() => {
+                    resetBtn.classList.remove('pulsing-attract');
+                }, 1100);
+            }
+        }, 1500); // 1.5 seconds delay
+        
         return;
     }
     
+    // ... rest of the function remains the same
     try {
         showBuffering();
         
-        // Auto settle debt
         const result = await settleDebtAutomatically(currentUser.id, amount);
         currentUser.balance = result.balance;
         currentUser.debt = result.debt;
         currentUser.dailyBuyinUsed += amount;
         
-        // Update daily buyin usage
         await db.collection('users').doc(currentUser.id).update({
             dailyBuyinUsed: currentUser.dailyBuyinUsed
         });
@@ -2516,7 +2897,6 @@ async function testBuyIn() {
         closeModal('buyin-modal');
         hideBuffering();
         
-        // Log buy-in
         logActivity('buyin', { 
             userId: currentUser.id, 
             amount, 
@@ -2567,6 +2947,8 @@ function watchAdForBuyinReset() {
     const claimBtn = document.getElementById('claim-reward');
     if (claimBtn) {
         claimBtn.classList.add('hidden');
+        // Change button text for buyin reset
+        claimBtn.textContent = 'CLAIM RESET';
     }
     
     let timeLeft = 32;
@@ -2779,7 +3161,7 @@ function downloadCode() {
 }
 
 function logout() {
-    updateActivePlayersCount(-1); // Decrease count
+    //updateActivePlayersCount(-1); // Decrease count
     currentUser = null;
     localStorage.removeItem('userCode');
     

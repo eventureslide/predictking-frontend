@@ -1167,22 +1167,27 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* IMPROVED LEADERBOARD NAME POPUP */
+/* IMPROVED LEADERBOARD NAME POPUP */
 .leaderboard-name-popup {
     position: absolute;
     top: 0;
-    left: 110px;
-    right: 0;
+    left: 140px; /* Increased from 110px to give more clearance */
+    right: 10px; /* Added right margin to prevent text cutoff */
     height: 100%;
     background: var(--neon) !important;
     color: #141414 !important;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* Changed from center to flex-start */
+    padding-left: 15px; /* Added padding for better text positioning */
     font-weight: 700;
     font-size: 0.9rem;
     z-index: 1000;
     border-radius: 4px;
     animation: fadeIn 0.3s ease;
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden; /* Hide overflow if name is too long */
+    text-overflow: ellipsis; /* Show ... if text is too long */
 }
 
 @keyframes fadeIn {
@@ -1992,3 +1997,5 @@ input:focus, select:focus, textarea:focus {
         padding: 0.4rem 0.5rem;
     }
 }
+
+
