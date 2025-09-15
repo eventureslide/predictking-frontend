@@ -1053,11 +1053,18 @@ function showWallet() {
     
     balanceEl.textContent = formatCurrency(walletBalance);
     
-    // Set color based on wallet balance
+    // Set color based on wallet balance and user theme
     if (walletBalance < 0) {
-        balanceEl.style.color = '#ffc857'; // Debt color
+        balanceEl.style.color = '#ffc857'; // Debt color (amber)
     } else {
-        balanceEl.style.color = 'var(--primary-color)'; // Theme color
+        // Use theme-specific colors
+        if (currentUser.gender === 'male') {
+            balanceEl.style.color = '#9ef01a'; // Male theme green
+        } else if (currentUser.gender === 'female') {
+            balanceEl.style.color = '#ff0a54'; // Female theme pink
+        } else {
+            balanceEl.style.color = '#FFF3DA'; // Default warm white
+        }
     }
     
     showModal('wallet-modal');
@@ -1069,11 +1076,18 @@ function updateEVCWalletBalance() {
         const walletBalance = currentUser.balance - currentUser.debt;
         evcWalletBalance.textContent = formatCurrency(walletBalance);
         
-        // Set color based on wallet balance
+        // Set color based on wallet balance and user theme
         if (walletBalance < 0) {
-            evcWalletBalance.style.color = '#ffc857'; // Debt color
+            evcWalletBalance.style.color = '#ffc857'; // Debt color (amber)
         } else {
-            evcWalletBalance.style.color = 'var(--primary-color)'; // Theme color
+            // Use theme-specific colors
+            if (currentUser.gender === 'male') {
+                evcWalletBalance.style.color = '#9ef01a'; // Male theme green
+            } else if (currentUser.gender === 'female') {
+                evcWalletBalance.style.color = '#ff0a54'; // Female theme pink
+            } else {
+                evcWalletBalance.style.color = '#FFF3DA'; // Default warm white for non-gendered users
+            }
         }
     }
 }

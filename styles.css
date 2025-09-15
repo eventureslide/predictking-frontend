@@ -944,6 +944,19 @@ input, textarea, .code-display input, .notification {
     margin-bottom: 1.5rem;
 }
 
+/* Theme-specific balance display colors */
+.default-theme .balance-display {
+    color: #FFF3DA;
+}
+
+.male-theme .balance-display {
+    color: #9ef01a;
+}
+
+.female-theme .balance-display {
+    color: #ff0a54;
+}
+
 .daily-bonus {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--neon);
