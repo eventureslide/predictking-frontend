@@ -37,7 +37,7 @@ html, body {
 
 /* PredictKing Styles - Consolidated */
 body {
-    font-family: 'Orbitron', 'Noto Color Emoji', monospace;
+    font-family: 'Orbitron', 'Noto Emoji', monospace;
     background: #141414;
     color: #FFF3DA;
     min-height: 100vh;
@@ -64,15 +64,6 @@ input, textarea, .code-display input, .notification {
     z-index: 10000;
 }
 
-
-.crown-icon {
-    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', monospace;
-    font-style: normal;
-    font-variant: normal;
-    text-rendering: auto;
-    -webkit-font-smoothing: antialiased;
-}
-
 .logo-container {
     display: flex;
     flex-direction: column;
@@ -85,7 +76,8 @@ input, textarea, .code-display input, .notification {
 
 .loading-screen .crown-icon {
     font-size: 6rem;
-    margin-bottom: 0;
+    margin-top: 0rem;        /* Add this line */
+    margin-bottom: 1.0rem;     /* Change this value */
     line-height: 1;
     color: #FFF3DA !important;
     transition: all 0.3s ease;
@@ -110,17 +102,21 @@ input, textarea, .code-display input, .notification {
 }
 
 .pulsing {
-    animation: pulse 2s infinite;
+  animation: pulse 2s ease-in-out infinite;
+  transform-origin: center;
 }
 
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { 
-        transform: scale(1.05);
-        max-width: calc(100vw - 10px);
-    }
-    100% { transform: scale(1); }
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);  /* Increased expansion */
+    opacity: 0.85;
+  }
 }
+
 
 .loading-bar {
     width: 300px;
@@ -239,7 +235,7 @@ input, textarea, .code-display input, .notification {
     transition: all 0.3s ease;
     color: var(--neon) !important;
     line-height: 0.8;
-    margin-top: -0.0rem; /* Changed from -0.2rem to move slightly lower */
+    margin-top: 0.1rem; /* Changed from -0.2rem to move slightly lower */
 }
 
 .header-logged-out .logo, 
@@ -1534,7 +1530,7 @@ input:focus, select:focus, textarea:focus {
 /* EVC Header Specific Styles */
 /* UNIVERSAL LOGO SIZE CONTROL - Adjust these values to change logo size on ALL pages */
 :root {
-    --logo-crown-size: 2.5rem;  /* Adjust this to change crown size globally */
+    --logo-crown-size: 1.5rem;  /* Adjust this to change crown size globally */
     --logo-text-size: 1.5rem;   /* Adjust this to change logo text size globally */
 }
 
@@ -1550,6 +1546,14 @@ input:focus, select:focus, textarea:focus {
     gap: 1rem;
     cursor: pointer;
     width: 100%;
+}
+
+.crown-icon {
+    font-family: 'Noto Emoji', monospace;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
 }
 
 .evc-header .crown-icon {
