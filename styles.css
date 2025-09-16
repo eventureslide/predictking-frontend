@@ -37,7 +37,7 @@ html, body {
 
 /* PredictKing Styles - Consolidated */
 body {
-    font-family: 'Orbitron', monospace;
+    font-family: 'Orbitron', 'Noto Color Emoji', monospace;
     background: #141414;
     color: #FFF3DA;
     min-height: 100vh;
@@ -62,6 +62,15 @@ input, textarea, .code-display input, .notification {
     justify-content: center;
     align-items: center;
     z-index: 10000;
+}
+
+
+.crown-icon {
+    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', monospace;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
 }
 
 .logo-container {
@@ -687,12 +696,12 @@ input, textarea, .code-display input, .notification {
     background: rgba(20, 20, 20, 0.95);
     backdrop-filter: blur(15px);
     border-top: 2px solid var(--neon);
-    padding: 0.5rem 2rem; /* Reduced top/bottom padding from 1rem */
+    padding: 1rem 2rem;
     z-index: 1000;
-    height: 80px; /* Reduced from 100px */
+    height: 100px;
     display: flex;
     align-items: center;
-    min-height: 55px; /* Reduced from 65px */
+    min-height: 65px;
 }
 
 .bottom-content {
