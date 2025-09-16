@@ -2007,9 +2007,35 @@ input:focus, select:focus, textarea:focus {
 }
 
 
+/* Mobile browser compatibility */
+@supports (padding: max(0px)) {
+    .bottom-sticky-section {
+        padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    }
+}
+
 /* Bottom Sticky with Navigation Integration */
 .bottom-sticky-section {
-    position: relative; /* Changed from fixed to relative positioning */
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+}
+
+/* Disabled EVC button styling */
+.evc-btn-compact.disabled {
+    display:none;
+    background: #666 !important;
+    color: #999 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+.evc-btn-compact.disabled:hover {
+    background: #666 !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
 .nav-toggle-container {

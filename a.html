@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Bar Design</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* Base styles */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -240,7 +241,7 @@
         .team-bg-name {
             position: relative;
             z-index: 2;
-            color: white;
+            color: #FFF3DA;
             font-weight: 900;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
             font-size: 1.3rem;
@@ -622,30 +623,40 @@
 
         .modal-footer .close-modal {
             position: absolute;
-            top: -3rem;
-            right: 1.5rem;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             color: #aaa;
-            font-size: 2rem;
+            font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
             z-index: 10;
             background: #141414;
-            border: none;
-            padding: 0.5rem;
+            border: 3px solid transparent;
+            padding: 0;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 2.5rem;
+            height: 2.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
         }
 
-        .modal-footer .close-modal:hover {
-            color: #FFF3DA;
-            background: #141414;
+        .modal-footer .close-modal.pool-active {
+            border-left-color: #9ef01a;
+            border-top-color: #9ef01a;
         }
 
+        .modal-footer .close-modal.onev1-active {
+            border-right-color: #9ef01a;
+            border-bottom-color: #9ef01a;
+        }
+
+        .modal-footer .close-modal:hover {
+            color: #FFF3DA;
+        }
+        
         .stats-btn {
             background: rgba(255, 255, 255, 0.1);
             color: #FFF3DA;
@@ -694,19 +705,19 @@
 
         .close-stats-x {
             position: absolute;
-            bottom: 1rem;
-            right: 1rem;
+            bottom: 0.5rem;
+            right: 0.5rem;
             color: #aaa;
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: bold;
             cursor: pointer;
-            background: #141414;
+            background: none;
             border: none;
             padding: 0.5rem;
-            border-radius: 50%;
+            border-radius: 0;
             transition: all 0.3s ease;
-            width: 50px;
-            height: 50px;
+            width: auto;
+            height: auto;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -714,7 +725,7 @@
 
         .close-stats-x:hover {
             color: #FFF3DA;
-            background: #141414;
+            background: none;
         }
 
         .stats-modal h3 {
@@ -959,7 +970,7 @@
                         <div class="team-bg-name">1v1</div>
                     </div>
                 </div>
-                <span class="close-modal" onclick="closeBettingModal()">&times;</span>
+                <span class="close-modal" onclick="closeBettingModal()"><i class="fas fa-times"></i></span>
             </div>
         </div>
     </div>
@@ -970,7 +981,7 @@
         <div class="stats-modal-content">
             <h3>Stats</h3>
             <p>Coming Soon!</p>
-            <button class="close-stats-x" onclick="closeStatsModal()">&times;</button>
+            <button class="close-stats-x" onclick="closeStatsModal()"><i class="fas fa-times"></i></button>
         </div>
     </div>
 
@@ -997,6 +1008,7 @@
             const onev1Bg = document.getElementById('onev1-bg');
             const poolSection = document.getElementById('pool-betting');
             const onev1Section = document.getElementById('onev1-betting');
+            const closeButton = document.querySelector('.modal-footer .close-modal');
             
             if (section === 1) {
                 // Pool betting section
@@ -1004,12 +1016,16 @@
                 onev1Bg.classList.remove('active');
                 poolSection.classList.remove('hidden');
                 onev1Section.classList.add('hidden');
+                closeButton.classList.add('pool-active');
+                closeButton.classList.remove('onev1-active');
             } else {
                 // 1v1 betting section
                 poolBg.classList.remove('active');
                 onev1Bg.classList.add('active');
                 poolSection.classList.add('hidden');
                 onev1Section.classList.remove('hidden');
+                closeButton.classList.add('onev1-active');
+                closeButton.classList.remove('pool-active');
             }
         }
 
@@ -1085,6 +1101,13 @@
         function closeStatsModal() {
             document.getElementById('stats-modal').style.display = 'none';
         }
+
+        // Close stats modal when clicking outside
+        document.getElementById('stats-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeStatsModal();
+            }
+        });
     </script>
 </body>
 </html>
