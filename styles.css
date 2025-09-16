@@ -2040,7 +2040,7 @@ input:focus, select:focus, textarea:focus {
 
 .nav-toggle-container {
     position: absolute;
-    top: 50%;
+    top: 55%;  /* to change nav button position*/
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 100;
