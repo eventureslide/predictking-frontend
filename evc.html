@@ -88,21 +88,8 @@
                 </div>
             </div>
             
-            <!-- Central Toggle Navigation for EVC -->
-            <div class="nav-toggle-container">
-                <button class="nav-toggle-btn" onclick="toggleNavigation()">
-                    <i class="fas fa-bars"></i>
-                </button>
-                
-                <div class="nav-icons-container">
-                    <div class="nav-icon evc-1" onclick="goHome()" title="Home">
-                        <i class="fas fa-home"></i>
-                    </div>
-                    <div class="nav-icon evc-2" onclick="showWallet()" title="Wallet">
-                        <i class="fas fa-wallet"></i>
-                    </div>
-                </div>
-            </div>
+           
+            
         </header>
 
         <!-- Main Content -->
@@ -169,7 +156,43 @@
                     <!-- Recent earnings will be displayed here -->
                 </div>
             </div>
+
+            
         </main>
+
+
+        <div class="bottom-sticky-section" id="bottom-sticky">
+            <div class="bottom-content">
+                <div class="stats-compact" id="stats-section">
+                    <div class="stat-item-compact">
+                        <span class="stat-label-compact">Active Players:</span>
+                        <span id="active-players-bottom" class="stat-value-compact">0</span>
+                    </div>
+                    <div class="stat-item-compact">
+                        <span class="stat-label-compact">Total Pot:</span>
+                        <span id="total-pot-bottom" class="stat-value-compact">₹0</span>
+                    </div>
+                </div>
+                <!-- ADD THIS BUTTON -->
+                <button class="evc-btn-compact" id="earn-coins-btn" onclick="goHome()">BACK TO BETTING</button>
+            </div>
+            
+            <!-- Central Toggle Navigation for EVC -->
+            <div class="nav-toggle-container">
+                <button class="nav-toggle-btn" onclick="toggleNavigation()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <div class="nav-icons-container">
+                    <div class="nav-icon evc-1" onclick="goHome()" title="Home">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="nav-icon evc-2" onclick="showWallet()" title="Wallet">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Ad Modal -->

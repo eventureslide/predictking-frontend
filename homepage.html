@@ -100,6 +100,51 @@
                 </div>
             </div>
             
+            
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="events-grid" id="events-grid">
+                <!-- Events will be dynamically loaded here -->
+            </div>
+        </main>
+
+        <!-- EVC Button -->
+        <!-- Stats Bar for Logged Out Mode -->
+        <div id="sticky-stats-bar" class="sticky-stats-bar hidden">
+            <div class="stats-container">
+                <div class="stat-item-sticky">
+                    <span class="stat-label-sticky">Active Players:</span>
+                    <span id="active-players-sticky" class="stat-value-sticky">0</span>
+                </div>
+                <div class="stat-item-sticky">
+                    <span class="stat-label-sticky">Total Pot:</span>
+                    <span id="total-pot-sticky" class="stat-value-sticky">₹0</span>
+                </div>
+            </div>
+            <button class="evc-btn" onclick="goToEVC()">EARN COINS</button>
+        </div>
+
+        <!-- Bottom Sticky Section -->
+        <!-- Bottom Sticky Section -->
+        <!-- Bottom Sticky Section -->
+        <!-- Bottom Sticky Section -->
+        <div class="bottom-sticky-section" id="bottom-sticky">
+            <div class="bottom-content">
+                <div class="stats-compact" id="stats-section">
+                    <div class="stat-item-compact">
+                        <span class="stat-label-compact">Active Players:</span>
+                        <span id="active-players-bottom" class="stat-value-compact">0</span>
+                    </div>
+                    <div class="stat-item-compact">
+                        <span class="stat-label-compact">Total Pot:</span>
+                        <span id="total-pot-bottom" class="stat-value-compact">₹0</span>
+                    </div>
+                </div>
+                <button class="evc-btn-compact" id="earn-coins-btn" onclick="goToEVC()">EARN COINS</button>
+            </div>
+            
             <!-- Central Toggle Navigation -->
             <div class="nav-toggle-container">
                 <button class="nav-toggle-btn" onclick="toggleNavigation()">
@@ -136,50 +181,7 @@
                     </div>
                 </div>
             </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="events-grid" id="events-grid">
-                <!-- Events will be dynamically loaded here -->
-            </div>
-        </main>
-
-        <!-- EVC Button -->
-        <!-- Stats Bar for Logged Out Mode -->
-        <div id="sticky-stats-bar" class="sticky-stats-bar hidden">
-            <div class="stats-container">
-                <div class="stat-item-sticky">
-                    <span class="stat-label-sticky">Active Players:</span>
-                    <span id="active-players-sticky" class="stat-value-sticky">0</span>
-                </div>
-                <div class="stat-item-sticky">
-                    <span class="stat-label-sticky">Total Pot:</span>
-                    <span id="total-pot-sticky" class="stat-value-sticky">₹0</span>
-                </div>
-            </div>
-            <button class="evc-btn" onclick="goToEVC()">EARN COINS</button>
         </div>
-
-        <!-- Bottom Sticky Section -->
-        <!-- Bottom Sticky Section -->
-        <!-- Bottom Sticky Section -->
-        <!-- Bottom Sticky Section -->
-        <div class="bottom-sticky-section" id="bottom-sticky">
-            <div class="bottom-content">
-                <div class="stats-compact">
-                    <div class="stat-item-compact">
-                        <span class="stat-label-compact">Active Players:</span>
-                        <span id="active-players-bottom" class="stat-value-compact">0</span>
-                    </div>
-                    <div class="stat-item-compact">
-                        <span class="stat-label-compact">Total Pot:</span>
-                        <span id="total-pot-bottom" class="stat-value-compact">₹0</span>
-                    </div>
-                </div>
-                <button class="evc-btn-compact" onclick="goToEVC()">EARN COINS</button>
-            </div>
-        </div>  
     </div>
 
 

@@ -1039,6 +1039,11 @@ function cleanupAdTimer() {
     if (timerEl) {
         timerEl.textContent = '30';
     }
+    
+    // Clear any pending buy-in amount if ad is closed without claiming
+    if (window.adPurpose === 'buyin') {
+        window.pendingBuyinAmount = null;
+    }
 }
 
 // Wallet Functions
@@ -2249,6 +2254,7 @@ function watchAd() {
     }, 1000);
 }
 
+
 async function claimAdReward() {
     if (!currentUser) return;
     
@@ -2265,7 +2271,6 @@ async function claimAdReward() {
             
             currentUser.dailyBuyinUsed = 0;
             
-            // Hide and reset the button state after successful reset
             const resetBtn = document.querySelector('.reset-limit-btn');
             if (resetBtn) {
                 resetBtn.classList.add('hidden');
@@ -2274,14 +2279,12 @@ async function claimAdReward() {
             
             showNotification(`Buy-in limit reset! You can now buy in up to ${formatCurrency(adminSettings.dailyBuyinLimit)}`, 'success');
             
-            // Log buyin reset
             logActivity('buyin_limit_reset', { 
                 userId: currentUser.id, 
                 resetAt: new Date(),
                 previousLimit: adminSettings.dailyBuyinLimit
             });
             
-            // After resetting, show buyin modal again
             setTimeout(() => {
                 showBuyIn();
             }, 1500);
@@ -2296,6 +2299,50 @@ async function claimAdReward() {
             updateEVCWalletBalance();
             
             showNotification(`Earned ${formatCurrency(reward)}! Keep watching ads to clear more debt.`, 'success');
+            
+        } else if (adPurpose === 'buyin') {
+            // NEW: Process the buy-in after watching ad
+            const amount = window.pendingBuyinAmount;
+            if (!amount) {
+                showNotification('Buy-in amount not found', 'error');
+                return;
+            }
+            
+            const result = await settleDebtAutomatically(currentUser.id, amount);
+            currentUser.balance = result.balance;
+            currentUser.debt = result.debt;
+            currentUser.dailyBuyinUsed += amount;
+            
+            await db.collection('users').doc(currentUser.id).update({
+                dailyBuyinUsed: currentUser.dailyBuyinUsed
+            });
+            
+            updateBalance();
+            updateEVCWalletBalance();
+            
+            // Clear pending amount
+            window.pendingBuyinAmount = null;
+            
+            // Show success notification with transaction details
+            if (result.debt === 0 && currentUser.debt > 0) {
+                const settledDebt = currentUser.debt;
+                const remainingAmount = amount - settledDebt;
+                showNotification(`Buy-in successful! ${formatCurrency(settledDebt)} debt cleared, ${formatCurrency(remainingAmount)} added to wallet.`, 'success');
+            } else if (result.debt > 0) {
+                const partialDebt = amount;
+                const remainingDebt = result.debt;
+                showNotification(`Buy-in successful! ${formatCurrency(partialDebt)} applied to debt. Remaining debt: ${formatCurrency(remainingDebt)}`, 'success');
+            } else {
+                showNotification(`Buy-in successful! ${formatCurrency(amount)} added to your wallet.`, 'success');
+            }
+            
+            logActivity('buyin', { 
+                userId: currentUser.id, 
+                amount, 
+                method: 'test_after_ad',
+                newBalance: currentUser.balance,
+                debtSettled: result.debt < (currentUser.debt || 0)
+            });
             
         } else {
             // Regular ad reward
@@ -2317,7 +2364,7 @@ async function claimAdReward() {
         // Log reward claim
         logActivity('ad_reward_claimed', { 
             userId: currentUser.id, 
-            reward,
+            reward: adPurpose === 'buyin' ? window.pendingBuyinAmount || reward : reward,
             purpose: adPurpose,
             newBalance: currentUser.balance,
             debtSettled: currentUser.debt < (currentUser.debt || 0)
@@ -2325,7 +2372,7 @@ async function claimAdReward() {
         
     } catch (error) {
         console.error('Error claiming ad reward:', error);
-        showNotification('Failed to claim reward', 'error');
+        showNotification('Failed to process request', 'error');
     }
 }
 
@@ -2870,60 +2917,91 @@ async function testBuyIn() {
         const resetBtn = document.querySelector('.reset-limit-btn');
         
         if (resetBtn) {
-            // Always show the button (but don't animate yet)
             resetBtn.classList.remove('hidden');
-            resetBtn.classList.remove('pulsing-attract'); // Clean slate
+            resetBtn.classList.remove('pulsing-attract');
         }
         
-        // Show the popup notification first
         showNotification('Daily buy-in limit reached. Reset your limit by watching an ad!', 'warning');
         
-        // THEN pulse the button 1.5 seconds after the popup
         setTimeout(() => {
             if (resetBtn) {
                 resetBtn.classList.add('pulsing-attract');
-                
-                // Remove animation class after it completes (1 second + small buffer)
                 setTimeout(() => {
                     resetBtn.classList.remove('pulsing-attract');
                 }, 1100);
             }
-        }, 1500); // 1.5 seconds delay
+        }, 1500);
         
         return;
     }
-    
-    // ... rest of the function remains the same
-    try {
-        showBuffering();
-        
-        const result = await settleDebtAutomatically(currentUser.id, amount);
-        currentUser.balance = result.balance;
-        currentUser.debt = result.debt;
-        currentUser.dailyBuyinUsed += amount;
-        
-        await db.collection('users').doc(currentUser.id).update({
-            dailyBuyinUsed: currentUser.dailyBuyinUsed
-        });
-        
-        updateBalance();
-        updateEVCWalletBalance();
-        closeModal('buyin-modal');
-        hideBuffering();
-        
-        logActivity('buyin', { 
-            userId: currentUser.id, 
-            amount, 
-            method: 'test',
-            newBalance: currentUser.balance,
-            debtSettled: result.debt < (currentUser.debt || 0)
-        });
-        
-    } catch (error) {
-        console.error('Error processing buy-in:', error);
-        showNotification('Buy-in failed', 'error');
-        hideBuffering();
+
+    // NEW: Store the buy-in amount and show ad modal instead of processing immediately
+    window.pendingBuyinAmount = amount;
+    watchAdForBuyIn();
+}
+
+function watchAdForBuyIn() {
+    if (!currentUser) {
+        showNotification('Please login first', 'error');
+        return;
     }
+    
+    // Set flag to track this is for buy-in
+    window.adPurpose = 'buyin';
+    
+    if (window.currentAdTimer) {
+        clearInterval(window.currentAdTimer);
+        window.currentAdTimer = null;
+    }
+    
+    const iframe = document.getElementById('ad-video');
+    if (!iframe) {
+        console.error('Ad video iframe not found');
+        showNotification('Ad system error. Please try again.', 'error');
+        return;
+    }
+    
+    const adUrl = adminSettings.activeAds[Math.floor(Math.random() * adminSettings.activeAds.length)];
+    iframe.src = adUrl + '?autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0&enablejsapi=1';
+    iframe.style.pointerEvents = 'none';
+    iframe.allow = 'autoplay; fullscreen';
+    
+    closeModal('buyin-modal');
+    showModal('ad-modal');
+    
+    // Log ad_click immediately when modal opens
+    logActivity('ad_click', { userId: currentUser.id, adUrl, purpose: 'buyin' });
+    
+    const claimBtn = document.getElementById('claim-reward');
+    if (claimBtn) {
+        claimBtn.classList.add('hidden');
+        // Change button text for buy-in
+        claimBtn.textContent = 'BUY-IN';
+    }
+    
+    let timeLeft = 32;
+    const timerEl = document.getElementById('ad-timer');
+    if (timerEl) {
+        timerEl.textContent = timeLeft;
+    }
+    
+    window.currentAdTimer = setInterval(() => {
+        timeLeft--;
+        if (timerEl) {
+            timerEl.textContent = timeLeft;
+        }
+        
+        if (timeLeft <= 0) {
+            clearInterval(window.currentAdTimer);
+            window.currentAdTimer = null;
+            if (claimBtn) {
+                claimBtn.classList.remove('hidden');
+            }
+            
+            // Log ad_view only when timer completes (user watched full ad)
+            logActivity('ad_view', { userId: currentUser.id, adUrl, purpose: 'buyin' });
+        }
+    }, 1000);
 }
 
 function watchAdForBuyinReset() {
@@ -3304,7 +3382,6 @@ function updateThemeBasedOnUser() {
 // Navigation toggle functionality
 let navigationOpen = false;
 
-// Make sure this function exists and works for EVC page
 function toggleNavigation() {
     const toggleBtn = document.querySelector('.nav-toggle-btn');
     
@@ -3328,18 +3405,45 @@ function toggleNavigation() {
     
     navigationOpen = !navigationOpen;
     
+    const statsSection = document.getElementById('stats-section');
+    const earnCoinsBtn = document.getElementById('earn-coins-btn');
+    
     if (navigationOpen) {
         toggleBtn.classList.add('active');
         visibleIcons.forEach(icon => {
             icon.classList.add('visible');
         });
+        // Hide stats and earn button immediately
+        if (statsSection) statsSection.classList.add('hidden');
+        if (earnCoinsBtn) earnCoinsBtn.classList.add('hidden');
     } else {
         toggleBtn.classList.remove('active');
         visibleIcons.forEach(icon => {
             icon.classList.remove('visible');
         });
+        
+        // Two-step fade-in process after nav icons disappear
+        setTimeout(() => {
+            // Step 1: Remove hidden class and add fade-in class (makes them visible but transparent)
+            if (statsSection) {
+                statsSection.classList.remove('hidden');
+                statsSection.classList.add('fade-in');
+            }
+            if (earnCoinsBtn) {
+                earnCoinsBtn.classList.remove('hidden');
+                earnCoinsBtn.classList.add('fade-in');
+            }
+            
+            // Step 2: Remove fade-in class to trigger fade animation (small delay)
+            setTimeout(() => {
+                if (statsSection) statsSection.classList.remove('fade-in');
+                if (earnCoinsBtn) earnCoinsBtn.classList.remove('fade-in');
+            }, 50);
+            
+        }, 700); // Wait for nav icon animation to complete
     }
 }
+
 function showLoggedInLayout() {
     // Hide logged out elements
     document.querySelectorAll('.logged-out-only').forEach(el => el.classList.add('hidden'));
@@ -3608,6 +3712,17 @@ function copySHAFromSettings() {
             showNotification('Failed to copy. Please select and copy manually.', 'error');
         });
     }
+}
+
+// Add these functions if they don't exist
+function goToEVC() {
+    console.log('Going to EVC page...'); // Debug log
+    window.location.href = 'evc.html';
+}
+
+function goHome() {
+    console.log('Going to homepage...'); // Debug log
+    window.location.href = 'homepage.html';
 }
 
 
