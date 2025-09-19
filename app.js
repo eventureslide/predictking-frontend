@@ -3413,9 +3413,9 @@ function toggleNavigation() {
         visibleIcons.forEach(icon => {
             icon.classList.add('visible');
         });
-        // Hide stats but keep layout space
-        if (statsSection) statsSection.style.visibility = 'hidden';
-        if (earnCoinsBtn && currentUser) earnCoinsBtn.classList.add('hidden');
+        // Hide stats and earn button immediately
+        if (statsSection) statsSection.classList.add('hidden');
+        if (earnCoinsBtn) earnCoinsBtn.classList.add('hidden');
     } else {
         toggleBtn.classList.remove('active');
         visibleIcons.forEach(icon => {
@@ -3423,10 +3423,11 @@ function toggleNavigation() {
         });
         
         // Two-step fade-in process after nav icons disappear
+        // Two-step fade-in process after nav icons disappear
         setTimeout(() => {
             // Step 1: Remove hidden class and add fade-in class (makes them visible but transparent)
             if (statsSection) {
-                statsSection.style.visibility = 'visible';
+                statsSection.classList.remove('hidden');
                 statsSection.classList.add('fade-in');
             }
             // Only show earn coins button if user is logged in
