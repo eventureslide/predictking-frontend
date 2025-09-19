@@ -262,6 +262,7 @@ input, textarea, .code-display input, .notification {
     text-transform: uppercase;
     outline: none !important;
     -webkit-tap-highlight-color: transparent !important;
+    z-index: 1000 !important;
 }
 
 .login-btn-standalone:hover {
@@ -2212,4 +2213,34 @@ input:focus, select:focus, textarea:focus {
     .header-top, .header-logged-in {
         gap: 0.3rem; /* Smaller gap on mobile */
     }
+}
+
+.bottom-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    min-height: 60px; /* or whatever height you need */
+}
+
+.bottom-content > * {
+    flex-shrink: 0; /* Prevent elements from shrinking */
+}
+
+.bottom-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    min-height: 60px;
+}
+
+.stats-compact {
+    flex: 1;
+}
+
+.evc-btn-compact,
+.login-btn-standalone {
+    flex-shrink: 0;
+    margin-left: auto;
 }

@@ -3361,15 +3361,15 @@ function showCasino() {
 function updateThemeBasedOnUser() {
     if (!currentUser) {
         setTheme('default');
-        const loggedOutLayout = document.querySelector('.logged-out-layout');
-        const loggedInLayout = document.querySelector('.logged-in-layout');
-        if (loggedOutLayout) loggedOutLayout.classList.remove('hidden');
-        if (loggedInLayout) loggedInLayout.classList.add('hidden');
+        // Hide logged in elements
+        document.querySelectorAll('.logged-in-only').forEach(el => el.classList.add('hidden'));
+        // Show logged out elements
+        document.querySelectorAll('.logged-out-only').forEach(el => el.classList.remove('hidden'));
     } else {
-        const loggedOutLayout = document.querySelector('.logged-out-layout');
-        const loggedInLayout = document.querySelector('.logged-in-layout');
-        if (loggedOutLayout) loggedOutLayout.classList.add('hidden');
-        if (loggedInLayout) loggedInLayout.classList.remove('hidden');
+        // Show logged in elements
+        document.querySelectorAll('.logged-in-only').forEach(el => el.classList.remove('hidden'));
+        // Hide logged out elements
+        document.querySelectorAll('.logged-out-only').forEach(el => el.classList.add('hidden'));
         
         if (currentUser.gender === 'male') {
             setTheme('male');
@@ -3413,9 +3413,9 @@ function toggleNavigation() {
         visibleIcons.forEach(icon => {
             icon.classList.add('visible');
         });
-        // Hide stats and earn button immediately
-        if (statsSection) statsSection.classList.add('hidden');
-        if (earnCoinsBtn) earnCoinsBtn.classList.add('hidden');
+        // Hide stats but keep layout space
+        if (statsSection) statsSection.style.visibility = 'hidden';
+        if (earnCoinsBtn && currentUser) earnCoinsBtn.classList.add('hidden');
     } else {
         toggleBtn.classList.remove('active');
         visibleIcons.forEach(icon => {
@@ -3426,10 +3426,11 @@ function toggleNavigation() {
         setTimeout(() => {
             // Step 1: Remove hidden class and add fade-in class (makes them visible but transparent)
             if (statsSection) {
-                statsSection.classList.remove('hidden');
+                statsSection.style.visibility = 'visible';
                 statsSection.classList.add('fade-in');
             }
-            if (earnCoinsBtn) {
+            // Only show earn coins button if user is logged in
+            if (earnCoinsBtn && currentUser) {
                 earnCoinsBtn.classList.remove('hidden');
                 earnCoinsBtn.classList.add('fade-in');
             }
@@ -3437,7 +3438,7 @@ function toggleNavigation() {
             // Step 2: Remove fade-in class to trigger fade animation (small delay)
             setTimeout(() => {
                 if (statsSection) statsSection.classList.remove('fade-in');
-                if (earnCoinsBtn) earnCoinsBtn.classList.remove('fade-in');
+                if (earnCoinsBtn && currentUser) earnCoinsBtn.classList.remove('fade-in');
             }, 50);
             
         }, 700); // Wait for nav icon animation to complete

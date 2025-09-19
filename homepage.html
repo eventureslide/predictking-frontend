@@ -91,7 +91,6 @@
                         <div class="crown-icon" onclick="goHome()">👑</div>
                         <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
                     </div>
-                    <button class="login-btn-standalone" onclick="showLogin()">LOGIN</button>
                 </div>
                 
                 <!-- Logged In Layout -->
@@ -122,7 +121,8 @@
                     <span id="total-pot-sticky" class="stat-value-sticky">₹0</span>
                 </div>
             </div>
-            <button class="evc-btn" onclick="goToEVC()">EARN COINS</button>
+            <button class="evc-btn logged-in-only" onclick="goToEVC()">EARN COINS</button>
+            <button class="login-btn-standalone logged-out-only" onclick="showLogin()">LOGIN</button>
         </div>
 
         <!-- Bottom Sticky Section -->
@@ -141,7 +141,8 @@
                         <span id="total-pot-bottom" class="stat-value-compact">₹0</span>
                     </div>
                 </div>
-                <button class="evc-btn-compact" id="earn-coins-btn" onclick="goToEVC()">EARN COINS</button>
+                <button class="evc-btn-compact logged-in-only" id="earn-coins-btn" onclick="goToEVC()">EARN COINS</button>
+                <button class="login-btn-standalone logged-out-only" onclick="showLogin()">LOGIN</button>
             </div>
             
             <!-- Central Toggle Navigation -->
