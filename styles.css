@@ -589,7 +589,7 @@ input, textarea, .code-display input, .notification {
 /* Main Content */
 .main-content {
     flex: 1;
-    padding: 2rem;
+    padding: 2rem 0; /* Remove horizontal padding */
     padding-bottom: 120px;
 }
 
@@ -597,8 +597,8 @@ input, textarea, .code-display input, .notification {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
+    max-width: none;
+    margin: 1rem auto;
 }
 
 .event-card {
@@ -2243,4 +2243,679 @@ input:focus, select:focus, textarea:focus {
 .login-btn-standalone {
     flex-shrink: 0;
     margin-left: auto;
+}
+
+
+/* New Event Bar Design - Fixed Height and Content Positioning */
+.events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+}
+
+.event-bar {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 0.5rem 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin: 0 0.5rem;
+}
+
+.event-bar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    border-color: var(--neon);
+}
+
+.event-bar-header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0;
+}
+
+.event-title-section {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.event-title-text {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-align: center;
+}
+
+.event-profile-mini {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.event-bar-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    margin: 0;  /* or this one*/
+}
+
+.team-section {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+    margin-top: -10px; /* either this one*/
+}
+
+.team-section.team-right {
+    flex-direction: row-reverse;
+}
+
+.team-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--neon);
+    flex-shrink: 0;
+}
+
+.team-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.team-info-right {
+    align-items: flex-end;
+}
+
+.team-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70px;
+    line-height: 1;
+}
+
+.team-odds {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--neon);
+    line-height: 1;
+}
+
+.team-score {
+    font-size: 0.65rem;
+    color: #888;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.center-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    flex-shrink: 0;
+}
+
+.vs-pool-display {
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: var(--primary);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.vs-pool-display.pool-text {
+    color: var(--neon);
+    font-size: 0.75rem;
+}
+
+.event-bar-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.2rem;
+}
+
+.status-section {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.status-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--neon);
+}
+
+.status-text {
+    font-size: 0.65rem;
+    color: #ccc;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1;
+}
+
+/* Mobile Responsive for Event Bars - Updated */
+@media (max-width: 480px) {
+    .event-bar {
+        height: 65px;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .event-bar-content {
+        gap: 0.2rem;
+    }
+    
+    .team-logo {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .team-name {
+        font-size: 0.7rem;
+        max-width: 55px;
+    }
+    
+    .team-odds {
+        font-size: 0.65rem;
+    }
+    
+    .team-score {
+        font-size: 0.6rem;
+    }
+    
+    .center-section {
+        min-width: 50px;
+    }
+    
+    .vs-pool-display {
+        font-size: 0.8rem;
+    }
+    
+    .vs-pool-display.pool-text {
+        font-size: 0.7rem;
+    }
+    
+    .event-title-text {
+        font-size: 0.75rem;
+    }
+    
+    .event-profile-mini {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .status-text {
+        font-size: 0.6rem;
+    }
+}
+
+/* Fullscreen Betting Modal */
+.fullscreen-betting-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(20, 20, 20, 0.98);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.betting-modal-content {
+    width: 100%;
+    height: 100%;
+    max-width: 500px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.betting-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #333;
+}
+
+.betting-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.betting-datetime {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.team-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.team-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid #333;
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.team-option:hover {
+    border-color: var(--neon);
+}
+
+.team-option.selected {
+    border-color: var(--neon);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.team-option-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+}
+
+.team-option-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.team-option-bets {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.team-option-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.team-option-odds {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--neon);
+}
+
+.amount-input-section {
+    margin-bottom: 1.5rem;
+}
+
+.amount-display {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.2rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #333;
+    border-radius: 8px;
+    color: var(--primary);
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+}
+
+.keypad {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.keypad-row {
+    display: flex;
+    gap: 0.8rem;
+}
+
+.keypad-btn {
+    flex: 1;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Orbitron', monospace;
+}
+
+.keypad-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--neon);
+}
+
+.keypad-btn.clear-btn {
+    background: rgba(255, 0, 0, 0.2);
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+.keypad-btn.clear-btn:hover {
+    background: rgba(255, 0, 0, 0.3);
+}
+
+.place-bet-btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    background: var(--neon);
+    color: #141414;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Orbitron', monospace;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.place-bet-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.place-bet-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.stats-btn {
+    width: 100%;
+    padding: 0.8rem;
+    background: transparent;
+    border: 2px solid var(--neon);
+    color: var(--neon);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    transition: all 0.3s ease;
+}
+
+.stats-btn:hover {
+    background: var(--neon);
+    color: #141414;
+}
+
+.modal-tabs {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
+    position: relative;
+    padding: 0 2rem;
+    margin-top: auto;
+}
+
+.tab-item {
+    padding: 0.8rem 1.5rem;
+    background: transparent;
+    border: 1px solid #333;
+    color: var(--primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    flex: 1;
+    text-align: center;
+    max-width: 120px;
+}
+
+.tab-item.active {
+    background: var(--neon);
+    color: #141414;
+    border-color: var(--neon);
+}
+
+.tab-item:hover {
+    border-color: var(--neon);
+}
+
+.modal-close-btn {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(20, 20, 20, 0.9);
+    border: 2px solid var(--neon);
+    color: var(--neon);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.modal-close-btn:hover {
+    background: var(--neon);
+    color: #141414;
+}
+
+.coming-soon-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    gap: 2rem;
+}
+
+.coming-soon-content h2 {
+    color: var(--neon);
+    font-size: 2rem;
+}
+
+.coming-soon-content p {
+    color: var(--primary);
+    font-size: 1.2rem;
+}
+
+.stats-overlay-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stats-modal-content {
+    background: rgba(26, 26, 26, 0.95);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--neon);
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+}
+
+.stats-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--neon);
+    color: var(--neon);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stats-close-btn:hover {
+    background: var(--neon);
+    color: #141414;
+}
+
+/* Mobile Responsive for Event Bars */
+@media (max-width: 480px) {
+    .event-bar-content {
+        gap: 0.3rem;
+    }
+    
+    .team-logo {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .team-name {
+        font-size: 0.8rem;
+        max-width: 60px;
+    }
+    
+    .center-section {
+        min-width: 60px;
+    }
+    
+    .vs-pool-display {
+        font-size: 0.9rem;
+    }
+    
+    .vs-pool-display.pool-text {
+        font-size: 0.75rem;
+    }
+    
+    .betting-modal-content {
+        padding: 0.8rem;
+    }
+    
+    .keypad-btn {
+        padding: 0.8rem;
+        font-size: 1rem;
+    }
+}
+
+
+.tab-content-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.coming-soon-tab-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.coming-soon-tab-content h3 {
+    color: var(--neon);
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.coming-soon-tab-content p {
+    color: var(--primary);
+    font-size: 1.1rem;
+}
+
+.stats-close-btn-bottom {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: 1px solid var(--neon);
+    color: var(--neon);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.stats-close-btn-bottom:hover {
+    background: var(--neon);
+    color: #141414;
+}
+
+.odds-change-indicator {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 0.8em;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.odds-change-indicator.fade-out {
+    opacity: 0;
+}
+
+.odds-increase {
+    color: #9ef01a;
+}
+
+.odds-decrease {
+    color: #ff0a54;
+}
+
+.team-odds {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.team-info-right .team-odds {
+    justify-content: flex-end;
 }

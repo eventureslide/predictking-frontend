@@ -147,7 +147,8 @@ document.addEventListener('DOMContentLoaded', function() {
         ]).then(() => {
             updateThemeBasedOnUser();
             hideEVCLoadingScreen();
-            startActivePlayerTracking(); // Start tracking for EVC page
+            startActivePlayerTracking();
+            startGlobalRealTimeListeners(); // Add this
             showPostRefreshWelcomeMessage();
         });
         return;
@@ -182,7 +183,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         updateThemeBasedOnUser();
         startRealTimeUpdates();
-        startActivePlayerTracking(); // Start tracking active devices
+        startActivePlayerTracking();
+        startGlobalRealTimeListeners(); // Add this for real-time odds
         showPostRefreshWelcomeMessage();
     });
 });
@@ -504,12 +506,31 @@ function startActivePlayerTracking() {
     document.addEventListener('visibilitychange', handleVisibilityChange, false);
     
     // Handle page unload (when user closes tab/browser)
-    window.addEventListener('beforeunload', handlePageUnload, false);
-    window.addEventListener('unload', handlePageUnload, false);
-    window.addEventListener('pagehide', handlePageUnload, false);
-    
+    window.addEventListener('beforeunload', function(event) {
+        handlePageUnload();
+        stopGlobalRealTimeListeners();
+        stopOddsPolling();
+    }, false);
+
+    window.addEventListener('unload', function() {
+        handlePageUnload();
+        stopGlobalRealTimeListeners();
+        stopOddsPolling();
+    }, false);
+
+    window.addEventListener('pagehide', function() {
+        handlePageUnload();
+        stopGlobalRealTimeListeners();
+        stopOddsPolling();
+    }, false);
+
     // Additional cleanup for mobile browsers
-    document.addEventListener('freeze', handlePageUnload, false);
+    document.addEventListener('freeze', function() {
+        handlePageUnload();
+        stopGlobalRealTimeListeners();
+        stopOddsPolling();
+    }, false);
+
     document.addEventListener('resume', handlePageResume, false);
 }
 
@@ -1231,8 +1252,10 @@ async function loadEvents() {
 
 function displayEvents() {
     const grid = document.getElementById('events-grid');
-    if (!grid) return; // Exit if element doesn't exist
+    if (!grid) return;
+    
     grid.innerHTML = '';
+    grid.className = 'events-list'; // Change from grid to list
     
     events.forEach(event => {
         const eventCard = createEventCard(event);
@@ -1242,32 +1265,622 @@ function displayEvents() {
 
 function createEventCard(event) {
     const card = document.createElement('div');
-    card.className = 'event-card';
-    card.onclick = () => showEventModal(event);
+    card.className = 'event-bar';
+    card.onclick = () => handleEventBarClick(event);
     
-    const backgroundImage = event.backgroundImage || 'https://picsum.photos/seed/picsum/200/300';
-    const profilePic = event.profilePic || 'https://picsum.photos/id/237/200/300';
+    // Calculate time remaining for upcoming events
+    let statusText = event.status || 'active';
+    let statusColor = event.statusColor || '#9ef01a';
+    
+    if (event.status && event.status.toLowerCase() === 'upcoming' && event.startTime) {
+        const now = new Date();
+        const startTime = event.startTime.toDate();
+        const timeDiff = startTime - now;
+        
+        if (timeDiff > 0) {
+            const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (hours > 0) {
+                statusText = `T-Minus ${hours}hrs`;
+            } else if (minutes > 0) {
+                statusText = `T-Minus ${minutes}mins`;
+            } else {
+                statusText = 'Starting Soon';
+            }
+        }
+    }
+    
+    // Get team data
+    const teams = event.options || ['Team A', 'Team B'];
+    const team1 = teams[0] || 'Team A';
+    const team2 = teams[1] || 'Team B';
+    
+    // Get odds
+    const currentOdds = event.currentOdds || event.initialOdds || {};
+    const team1Odds = currentOdds[team1] || 2.0;
+    const team2Odds = currentOdds[team2] || 2.0;
+    
+    // Get team logos
+    const team1Logo = event.team1Logo || 'https://api.dicebear.com/7.x/shapes/svg?seed=team1&backgroundColor=9ef01a';
+    const team2Logo = event.team2Logo || 'https://api.dicebear.com/7.x/shapes/svg?seed=team2&backgroundColor=ff0a54';
     
     card.innerHTML = `
-        <div class="event-background" style="background-image: url('${backgroundImage}')"></div>
-        <img src="${profilePic}" alt="Event Profile" class="event-profile-pic">
-        <div class="event-content">
-            <div class="event-spacer"></div>
-            <div class="event-info">
-                <h3>${event.title}</h3>
-                <div class="event-details">
-                    <span class="event-time">${formatEventTime(event.startTime)}</span>
-                    <span class="event-participants">${event.totalBets || 0} bets</span>
-                    ${event.status === 'settled' && event.winner ? 
-                        `<div class="event-winner" style="color: var(--primary-color); font-weight: bold; margin-top: 4px;">${event.winner} WON</div>` : ''}
+        <div class="event-bar-header">
+            <div class="event-title-section">
+                <span class="event-title-text">${event.title}</span>
+                <img src="${event.profilePic}" alt="Event" class="event-profile-mini">
             </div>
-            <div class="event-pot">
-                Pool: ${formatCurrency(event.totalPot || 0)}
+        </div>
+        
+        <div class="event-bar-content">
+            <div class="team-section team-left">
+                <img src="${team1Logo}" alt="Team 1" class="team-logo">
+                <div class="team-info">
+                    <div class="team-name">${team1}</div>
+                    <div class="team-odds">${team1Odds.toFixed(2)}</div>
+                    <div class="team-score">-</div>
+                </div>
+            </div>
+            
+            <div class="center-section">
+                <div class="vs-pool-display" id="vs-${event.id}">VS</div>
+            </div>
+            
+            <div class="team-section team-right">
+                <img src="${team2Logo}" alt="Team 2" class="team-logo">
+                <div class="team-info team-info-right">
+                    <div class="team-name">${team2}</div>
+                    <div class="team-odds">${team2Odds.toFixed(2)}</div>
+                    <div class="team-score">-</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="event-bar-footer">
+            <div class="status-section">
+                <div class="status-indicator" style="background-color: ${statusColor};"></div>
+                <span class="status-text">${statusText}</span>
             </div>
         </div>
     `;
     
+    // Start VS/Pool animation after element is added to DOM
+    setTimeout(() => startVsPoolAnimation(event.id, event.totalPot || 0), 1000);
+    
     return card;
+}
+
+function handleEventBarClick(event) {
+    if (!currentUser) {
+        showNotification('Please login to bet', 'error');
+        return;
+    }
+    
+    // Check user status
+    if (currentUser.kycStatus !== 'approved') {
+        showAmberNotification('Account awaiting approval (~8hrs)');
+        return;
+    }
+    
+    if (checkUserDebt()) {
+        showAmberNotification('Clear your debt first!');
+        return;
+    }
+    
+    const walletBalance = currentUser.balance - currentUser.debt;
+    if (walletBalance <= 0) {
+        showAmberNotification('Insufficient balance! Add funds to start betting.');
+        return;
+    }
+    
+    // Open new betting modal
+    showNewBettingModal(event);
+}
+
+function startVsPoolAnimation(eventId, totalPot) {
+    const element = document.getElementById(`vs-${eventId}`);
+    if (!element) return;
+    
+    let showingVS = true;
+    
+    const updateDisplay = () => {
+        // Get current pot from local event data (updated instantly)
+        const currentEvent = events.find(e => e.id === eventId);
+        const currentPot = currentEvent ? currentEvent.totalPot || 0 : totalPot;
+        
+        if (showingVS) {
+            element.textContent = `Pool ${formatCurrency(currentPot)}`;
+            element.classList.add('pool-text');
+        } else {
+            element.textContent = 'VS';
+            element.classList.remove('pool-text');
+        }
+        showingVS = !showingVS;
+    };
+    
+    updateDisplay(); // Initial display
+    setInterval(updateDisplay, 3000 + Math.random() * 2000);
+}
+
+function showNewBettingModal(event) {
+    window.currentEventId = event.id;
+    window.selectedTeam = null;
+    window.selectedAmount = '';
+    
+    const teams = event.options || ['Team A', 'Team B'];
+    const currentOdds = event.currentOdds || event.initialOdds || {};
+    
+    // Get bet counts (you'll need to implement this)
+    const team1Bets = 0; // TODO: Get from betting_pools collection
+    const team2Bets = 0; // TODO: Get from betting_pools collection
+    
+    const modalHTML = `
+        <div class="fullscreen-betting-modal" id="betting-modal-new">
+            <div class="betting-modal-content">
+                <div class="betting-header">
+                    <div class="betting-title">${event.title}</div>
+                    <div class="betting-datetime">${formatEventTime(event.startTime)}</div>
+                </div>
+                
+                <div class="team-options">
+                    <div class="team-option" onclick="selectTeam('${teams[0]}', 0)">
+                        <div class="team-option-left">
+                            <div class="team-option-name">${teams[0]}</div>
+                            <div class="team-option-bets">${team1Bets} bets</div>
+                        </div>
+                        <img src="${event.team1Logo || 'https://api.dicebear.com/7.x/shapes/svg?seed=team1'}" class="team-option-logo">
+                        <div class="team-option-odds">${(currentOdds[teams[0]] || 2.0).toFixed(2)}</div>
+                    </div>
+                    
+                    <div class="team-option" onclick="selectTeam('${teams[1]}', 1)">
+                        <div class="team-option-left">
+                            <div class="team-option-name">${teams[1]}</div>
+                            <div class="team-option-bets">${team2Bets} bets</div>
+                        </div>
+                        <img src="${event.team2Logo || 'https://api.dicebear.com/7.x/shapes/svg?seed=team2'}" class="team-option-logo">
+                        <div class="team-option-odds">${(currentOdds[teams[1]] || 2.0).toFixed(2)}</div>
+                    </div>
+                </div>
+                
+                <div class="amount-input-section">
+                    <input type="text" id="bet-amount-display" readonly placeholder="Enter amount" class="amount-display">
+                </div>
+                
+                <div class="keypad">
+                    <div class="keypad-row">
+                        <button class="keypad-btn" onclick="addToAmount('1')">1</button>
+                        <button class="keypad-btn" onclick="addToAmount('2')">2</button>
+                        <button class="keypad-btn" onclick="addToAmount('3')">3</button>
+                    </div>
+                    <div class="keypad-row">
+                        <button class="keypad-btn" onclick="addToAmount('4')">4</button>
+                        <button class="keypad-btn" onclick="addToAmount('5')">5</button>
+                        <button class="keypad-btn" onclick="addToAmount('6')">6</button>
+                    </div>
+                    <div class="keypad-row">
+                        <button class="keypad-btn" onclick="addToAmount('7')">7</button>
+                        <button class="keypad-btn" onclick="addToAmount('8')">8</button>
+                        <button class="keypad-btn" onclick="addToAmount('9')">9</button>
+                    </div>
+                    <div class="keypad-row">
+                        <button class="keypad-btn" onclick="addToAmount('0')">0</button>
+                        <button class="keypad-btn" onclick="addToAmount('00')">00</button>
+                        <button class="keypad-btn clear-btn" onclick="clearAmount()">C</button>
+                    </div>
+                </div>
+                
+                <button class="place-bet-btn" id="place-bet-btn" onclick="placeBetNew()" disabled>
+                    Place Bet
+                </button>
+                
+                <button class="stats-btn" onclick="showStatsModal()">Stats</button>
+                
+                <div class="modal-tabs">
+                    <div class="tab-item active" onclick="switchTab('pool')">Pool</div>
+                    <button class="modal-close-btn" onclick="closeNewBettingModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="tab-item" onclick="switchTab('1v1')">1v1</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('betting-modal-new');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+
+    // Start real-time odds updates
+    // Start real-time odds updates for both betting modal types
+    setTimeout(() => {
+        startOddsPolling(event.id);
+        // Also start team options updates
+        const teamOptionsListener = db.collection('events').doc(event.id).onSnapshot((doc) => {
+            if (doc.exists) {
+                const eventData = doc.data();
+                if (eventData.currentOdds) {
+                    updateTeamOptionsOdds(event.id, eventData.currentOdds);
+                }
+            }
+        });
+        window.teamOptionsListener = teamOptionsListener;
+    }, 1000);
+}
+
+function selectTeam(teamName, index) {
+    window.selectedTeam = teamName;
+    
+    // Update UI
+    document.querySelectorAll('.team-option').forEach((option, idx) => {
+        if (idx === index) {
+            option.classList.add('selected');
+        } else {
+            option.classList.remove('selected');
+        }
+    });
+    
+    updatePlaceBetButton();
+}
+
+function updateTeamOptionsOdds(eventId, newOdds) {
+    const currentEvent = events.find(e => e.id === eventId);
+    if (!currentEvent || !currentEvent.options) return;
+    
+    // Update team options in new betting modal
+    const teamOptions = document.querySelectorAll('.team-option');
+    teamOptions.forEach((option, index) => {
+        const teamName = currentEvent.options[index];
+        if (teamName && newOdds[teamName]) {
+            const oddsEl = option.querySelector('.team-option-odds');
+            if (oddsEl) {
+                const oldOdds = parseFloat(oddsEl.textContent) || 0;
+                // Only show indicator if odds actually changed significantly
+                if (Math.abs(oldOdds - newOdds[teamName]) > 0.01) {
+                    updateOddsWithIndicator(oddsEl, oldOdds, newOdds[teamName]);
+                } else {
+                    // Just update the text without indicator
+                    oddsEl.textContent = newOdds[teamName].toFixed(2);
+                }
+            }
+        }
+    });
+}
+
+function addToAmount(value) {
+    const display = document.getElementById('bet-amount-display');
+    let current = display.value || '';
+    
+    if (current === '0' && value !== '00') {
+        current = '';
+    }
+    
+    current += value;
+    display.value = current;
+    window.selectedAmount = current;
+    updatePlaceBetButton();
+}
+
+function clearAmount() {
+    const display = document.getElementById('bet-amount-display');
+    display.value = '';
+    window.selectedAmount = '';
+    updatePlaceBetButton();
+}
+
+function updatePlaceBetButton() {
+    const btn = document.getElementById('place-bet-btn');
+    const amount = window.selectedAmount;
+    const team = window.selectedTeam;
+    
+    if (amount && team && parseInt(amount) > 0) {
+        btn.disabled = false;
+        btn.textContent = `Place Bet ${formatCurrency(parseInt(amount))} on ${team}`;
+    } else {
+        btn.disabled = true;
+        btn.textContent = 'Place Bet';
+    }
+}
+
+function switchTab(tabName) {
+    const modalContent = document.querySelector('.betting-modal-content');
+    
+    // Update tab active states
+    document.querySelectorAll('.tab-item').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    if (tabName === '1v1') {
+        // Show 1v1 coming soon content but keep the structure
+        const currentEvent = events.find(e => e.id === window.currentEventId);
+        if (!currentEvent) return;
+        
+        modalContent.innerHTML = `
+            <div class="betting-header">
+                <div class="betting-title">${currentEvent.title}</div>
+                <div class="betting-datetime">${formatEventTime(currentEvent.startTime)}</div>
+            </div>
+            
+            <div class="tab-content-area">
+                <div class="coming-soon-tab-content">
+                    <h3>1v1 Betting</h3>
+                    <p>Coming Soon!</p>
+                </div>
+            </div>
+            
+            <div class="modal-tabs">
+                <div class="tab-item" onclick="switchTab('pool')">Pool</div>
+                <button class="modal-close-btn" onclick="closeNewBettingModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="tab-item active" onclick="switchTab('1v1')">1v1</div>
+            </div>
+        `;
+    } else {
+        // Show pool content - recreate the full betting interface
+        showNewBettingModal(events.find(e => e.id === window.currentEventId));
+    }
+}
+
+function showComingSoonInModal() {
+    // Replace content with coming soon message
+    const content = document.querySelector('.betting-modal-content');
+    content.innerHTML = `
+        <div class="coming-soon-content">
+            <h2>1v1 Betting</h2>
+            <p>Coming Soon!</p>
+            <button class="secondary-btn" onclick="closeNewBettingModal()">Close</button>
+        </div>
+    `;
+}
+
+function showStatsModal() {
+    const statsModalHTML = `
+        <div class="stats-overlay-modal" id="stats-overlay">
+            <div class="stats-modal-content">
+                <h3>Event Statistics</h3>
+                <p>Coming Soon!</p>
+                <button class="stats-close-btn-bottom" onclick="closeStatsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', statsModalHTML);
+}
+
+function closeStatsModal() {
+    const modal = document.getElementById('stats-overlay');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function placeBetNew() {
+    if (!window.selectedTeam || !window.selectedAmount) {
+        showNotification('Please select team and amount', 'error');
+        return;
+    }
+    
+    const amount = parseInt(window.selectedAmount);
+    if (amount <= 0) {
+        showNotification('Enter valid amount', 'error');
+        return;
+    }
+    
+    const walletBalance = currentUser.balance - currentUser.debt;
+    if (amount > walletBalance) {
+        showNotification('Insufficient balance', 'error');
+        return;
+    }
+    
+    try {
+        showBuffering();
+        
+        const eventId = window.currentEventId;
+        const currentEvent = events.find(e => e.id === eventId);
+        
+        if (!currentEvent) {
+            showNotification('Event not found', 'error');
+            hideBuffering();
+            return;
+        }
+        
+        const optionIndex = currentEvent.options.findIndex(option => option === window.selectedTeam);
+        if (optionIndex === -1) {
+            showNotification('Selected team not found', 'error');
+            hideBuffering();
+            return;
+        }
+        
+        const currentOdds = currentEvent.currentOdds || currentEvent.initialOdds || {};
+        const lockedOdds = currentOdds[window.selectedTeam] || 2.0;
+        
+        if (isNaN(lockedOdds) || lockedOdds <= 0) {
+            showNotification('Invalid odds. Please try again.', 'error');
+            hideBuffering();
+            return;
+        }
+        
+        const potentialWinning = Math.floor(amount * lockedOdds);
+        
+        // INSTANT LOCAL UPDATES
+        currentUser.balance -= amount;
+        currentUser.totalBets = (currentUser.totalBets || 0) + 1;
+        updateBalance();
+        updateEVCWalletBalance();
+        
+        // Update event data instantly
+        if (!currentEvent.totalPot) currentEvent.totalPot = 0;
+        if (!currentEvent.totalBets) currentEvent.totalBets = 0;
+        currentEvent.totalPot += amount;
+        currentEvent.totalBets += 1;
+        
+        // Update odds instantly
+        const updatedOdds = calculateInstantOdds(currentEvent, window.selectedTeam, amount);
+        currentEvent.currentOdds = updatedOdds;
+        
+        // Close modal and show success immediately
+        closeNewBettingModal();
+        hideBuffering();
+        
+        showNotification(
+            `Bet placed: ${formatCurrency(amount)} on ${window.selectedTeam}. Potential win: ${formatCurrency(potentialWinning)}`,
+            'success'
+        );
+        
+        // Update UI instantly
+        displayEvents(); // Refresh event bars immediately
+        
+        // Firebase transaction in background (no await)
+        db.runTransaction(async (transaction) => {
+            const poolRef = db.collection('betting_pools').doc(eventId);
+            const poolDoc = await transaction.get(poolRef);
+            
+            let poolData;
+            if (!poolDoc.exists) {
+                poolData = {
+                    eventId: eventId,
+                    eventTitle: currentEvent.title,
+                    eventStartTime: currentEvent.startTime,
+                    eventOptions: currentEvent.options,
+                    totalPool: 0,
+                    totalBets: 0,
+                    totalWagered: 0,
+                    optionPools: {},
+                    optionBetCounts: {},
+                    vigPercentage: currentEvent.vigPercentage || 5,
+                    status: 'active',
+                    createdAt: firebase.firestore.Timestamp.now()
+                };
+                
+                if (currentEvent.options && Array.isArray(currentEvent.options)) {
+                    currentEvent.options.forEach((option) => {
+                        poolData.optionPools[option] = 100;
+                        poolData.optionBetCounts[option] = 0;
+                    });
+                }
+            } else {
+                poolData = poolDoc.data();
+                if (!poolData.optionPools) poolData.optionPools = {};
+                if (!poolData.optionBetCounts) poolData.optionBetCounts = {};
+                if (!poolData.totalWagered) poolData.totalWagered = poolData.totalPool || 0;
+            }
+            
+            const bettingSlip = {
+                userId: currentUser.id,
+                userNickname: currentUser.nickname,
+                userDisplayName: currentUser.displayName,
+                eventId: eventId,
+                eventTitle: currentEvent.title,
+                eventStartTime: currentEvent.startTime,
+                selectedOption: window.selectedTeam,
+                betAmount: amount,
+                currency: 'INR',
+                timestamp: firebase.firestore.Timestamp.now(),
+                status: 'placed',
+                betType: 'pool',
+                odds: lockedOdds,
+                potentialWinning: potentialWinning
+            };
+            
+            poolData.totalPool += amount;
+            poolData.totalBets += 1;
+            poolData.totalWagered += amount;
+            
+            if (!poolData.optionPools[window.selectedTeam]) {
+                poolData.optionPools[window.selectedTeam] = 100;
+            }
+            if (!poolData.optionBetCounts[window.selectedTeam]) {
+                poolData.optionBetCounts[window.selectedTeam] = 0;
+            }
+            
+            poolData.optionPools[window.selectedTeam] += amount;
+            poolData.optionBetCounts[window.selectedTeam] += 1;
+            
+            const userRef = db.collection('users').doc(currentUser.id);
+            transaction.update(userRef, {
+                balance: currentUser.balance,
+                totalBets: currentUser.totalBets
+            });
+            
+            transaction.set(poolRef, poolData);
+            
+            const slipRef = db.collection('betting_slips').doc();
+            transaction.set(slipRef, bettingSlip);
+            
+            const eventRef = db.collection('events').doc(eventId);
+            transaction.update(eventRef, {
+                totalPot: poolData.totalPool,
+                totalBets: poolData.totalBets,
+                currentOdds: updatedOdds,
+                updatedAt: firebase.firestore.Timestamp.now()
+            });
+            
+            return bettingSlip;
+        }).then((result) => {
+            logActivity('bet_placed', {
+                userId: currentUser.id,
+                eventId: eventId,
+                amount: amount,
+                option: window.selectedTeam,
+                lockedOdds: result.odds,
+                potentialWinning: result.potentialWinning,
+                status: 'placed'
+            });
+        }).catch((error) => {
+            console.error('Firebase transaction failed:', error);
+            // Revert local changes if Firebase fails
+            currentUser.balance += amount;
+            currentUser.totalBets -= 1;
+            currentEvent.totalPot -= amount;
+            currentEvent.totalBets -= 1;
+            updateBalance();
+            updateEVCWalletBalance();
+            displayEvents();
+            showNotification('Transaction failed, bet cancelled', 'error');
+        });
+        
+    } catch (error) {
+        console.error('Error placing bet:', error);
+        showNotification('Failed to place bet', 'error');
+        hideBuffering();
+    }
+}
+
+
+function selectTeam(teamName, index) {
+    window.selectedTeam = teamName;
+    window.selectedTeamIndex = index; // Store the index as well
+    
+    // Update UI
+    document.querySelectorAll('.team-option').forEach((option, idx) => {
+        if (idx === index) {
+            option.classList.add('selected');
+        } else {
+            option.classList.remove('selected');
+        }
+    });
+    
+    updatePlaceBetButton();
+}
+
+function closeNewBettingModal() {
+    // Stop odds polling when modal closes
+    stopOddsPolling();
+    
+    const modal = document.getElementById('betting-modal-new');
+    if (modal) {
+        modal.remove();
+    }
+    document.body.style.overflow = '';
 }
 
 // REPLACE the showEventModal function with this improved version:
@@ -1655,7 +2268,6 @@ function selectBettingOption(option, index) {
 }
 
 // REPLACE the confirmPoolBet function with this version that includes proper status:
-// REPLACE the entire confirmPoolBet function with this corrected version:
 async function confirmPoolBet() {
     console.log('Selected option:', selectedBettingOption, 'Index:', selectedOptionIndex);
     
@@ -1664,7 +2276,6 @@ async function confirmPoolBet() {
         return;
     }
     
-    // Check if user is in debt
     if (checkUserDebt()) {
         showAmberNotification('Clear your debt first!');
         setTimeout(() => {
@@ -1719,8 +2330,36 @@ async function confirmPoolBet() {
         
         const potentialWinning = Math.floor(betAmount * lockedOdds);
         
-        // Use transaction to ensure consistency
-        const result = await db.runTransaction(async (transaction) => {
+        // INSTANT LOCAL UPDATE - Update UI immediately before Firebase
+        currentUser.balance -= betAmount;
+        currentUser.totalBets = (currentUser.totalBets || 0) + 1;
+        updateBalance();
+        updateEVCWalletBalance();
+        
+        // Update local event data immediately
+        if (!currentEvent.totalPot) currentEvent.totalPot = 0;
+        if (!currentEvent.totalBets) currentEvent.totalBets = 0;
+        currentEvent.totalPot += betAmount;
+        currentEvent.totalBets += 1;
+        
+        // Update local odds calculation immediately
+        const updatedOdds = calculateInstantOdds(currentEvent, selectedBettingOption, betAmount);
+        currentEvent.currentOdds = updatedOdds;
+        
+        // Update UI instantly
+        updateInstantOddsDisplay(eventId, updatedOdds, selectedBettingOption, betAmount);
+        displayEvents(); // Refresh event bars immediately
+        
+        // Close modal and show success immediately
+        closeModal('event-modal');
+        showNotification(
+            `Bet placed: ${formatCurrency(betAmount)} on ${selectedBettingOption}. Locked odds: ${lockedOdds}. Potential win: ${formatCurrency(potentialWinning)}`,
+            'success'
+        );
+        hideBuffering();
+        
+        // Now do Firebase transaction in background (don't await)
+        db.runTransaction(async (transaction) => {
             // Get current pool state
             const poolRef = db.collection('betting_pools').doc(eventId);
             const poolDoc = await transaction.get(poolRef);
@@ -1742,22 +2381,20 @@ async function confirmPoolBet() {
                     createdAt: firebase.firestore.Timestamp.now()
                 };
                 
-                // Initialize option pools safely
                 if (currentEvent.options && Array.isArray(currentEvent.options)) {
                     currentEvent.options.forEach((option) => {
-                        poolData.optionPools[option] = 100; // Base amount
+                        poolData.optionPools[option] = 100;
                         poolData.optionBetCounts[option] = 0;
                     });
                 }
             } else {
                 poolData = poolDoc.data();
-                // Ensure the required properties exist
                 if (!poolData.optionPools) poolData.optionPools = {};
                 if (!poolData.optionBetCounts) poolData.optionBetCounts = {};
                 if (!poolData.totalWagered) poolData.totalWagered = poolData.totalPool || 0;
             }
             
-            // Create betting slip with LOCKED odds (what user saw)
+            // Create betting slip
             const bettingSlip = {
                 userId: currentUser.id,
                 userNickname: currentUser.nickname,
@@ -1767,7 +2404,7 @@ async function confirmPoolBet() {
                 eventStartTime: currentEvent.startTime,
                 selectedOption: selectedBettingOption,
                 betAmount: betAmount,
-                currency: 'INR', // Fixed currency value
+                currency: 'INR',
                 timestamp: firebase.firestore.Timestamp.now(),
                 status: 'placed',
                 betType: 'pool',
@@ -1778,14 +2415,13 @@ async function confirmPoolBet() {
             // Update pool with new bet
             poolData.totalPool += betAmount;
             poolData.totalBets += 1;
-            poolData.totalWagered += betAmount; // Track total wagered
+            poolData.totalWagered += betAmount;
             
-            // Safely update option pools
             if (!poolData.optionPools[selectedBettingOption]) {
-                poolData.optionPools[selectedBettingOption] = 100; // Initialize if missing
+                poolData.optionPools[selectedBettingOption] = 100;
             }
             if (!poolData.optionBetCounts[selectedBettingOption]) {
-                poolData.optionBetCounts[selectedBettingOption] = 0; // Initialize if missing
+                poolData.optionBetCounts[selectedBettingOption] = 0;
             }
             
             poolData.optionPools[selectedBettingOption] += betAmount;
@@ -1794,8 +2430,8 @@ async function confirmPoolBet() {
             // Update user balance
             const userRef = db.collection('users').doc(currentUser.id);
             transaction.update(userRef, {
-                balance: currentUser.balance - betAmount,
-                totalBets: (currentUser.totalBets || 0) + 1
+                balance: currentUser.balance,
+                totalBets: currentUser.totalBets
             });
             
             // Save pool data
@@ -1809,45 +2445,96 @@ async function confirmPoolBet() {
             const eventRef = db.collection('events').doc(eventId);
             transaction.update(eventRef, {
                 totalPot: poolData.totalPool,
-                totalBets: poolData.totalBets
+                totalBets: poolData.totalBets,
+                currentOdds: updatedOdds,
+                updatedAt: firebase.firestore.Timestamp.now()
             });
             
             return bettingSlip;
+        }).then((result) => {
+            console.log('Firebase transaction completed successfully');
+            
+            // Log activity
+            logActivity('bet_placed', {
+                userId: currentUser.id,
+                eventId: eventId,
+                amount: betAmount,
+                option: selectedBettingOption,
+                lockedOdds: lockedOdds,
+                potentialWinning: potentialWinning,
+                status: 'placed'
+            });
+        }).catch((error) => {
+            console.error('Firebase transaction failed:', error);
+            // Revert local changes if Firebase fails
+            currentUser.balance += betAmount;
+            currentUser.totalBets -= 1;
+            currentEvent.totalPot -= betAmount;
+            currentEvent.totalBets -= 1;
+            updateBalance();
+            updateEVCWalletBalance();
+            showNotification('Transaction failed, bet cancelled', 'error');
         });
-        
-        // Update local user data
-        currentUser.balance -= betAmount;
-        currentUser.totalBets = (currentUser.totalBets || 0) + 1;
-        
-        updateBalance();
-        hideBuffering();
-        closeModal('event-modal');
-        
-        showNotification(
-            `Bet placed: ${formatCurrency(betAmount)} on ${selectedBettingOption}. Locked odds: ${result.odds}. Potential win: ${formatCurrency(result.potentialWinning)}`,
-            'success'
-        );
-        
-        // Log activity
-        logActivity('bet_placed', {
-            userId: currentUser.id,
-            eventId: eventId,
-            amount: betAmount,
-            option: selectedBettingOption,
-            lockedOdds: result.odds,
-            potentialWinning: result.potentialWinning,
-            status: 'placed'
-        });
-        
-        // Refresh odds for all users after a short delay
-        setTimeout(() => {
-            loadPoolOdds(eventId);
-        }, 1000);
         
     } catch (error) {
         console.error('Error placing bet:', error);
         showNotification('Failed to place bet', 'error');
         hideBuffering();
+    }
+}
+
+// Calculate odds instantly for immediate UI update
+function calculateInstantOdds(event, betOption, betAmount) {
+    const currentOdds = event.currentOdds || event.initialOdds || {};
+    const updatedOdds = { ...currentOdds };
+    
+    // Simple instant calculation - more sophisticated than actual parimutuel
+    // but good enough for instant feedback
+    const totalPot = event.totalPot + betAmount;
+    const vigPercentage = event.vigPercentage || 5;
+    
+    if (totalPot > 0) {
+        event.options.forEach(option => {
+            if (option === betOption) {
+                // Option that was bet on gets slightly lower odds
+                const currentOdd = updatedOdds[option] || 2.0;
+                updatedOdds[option] = Math.max(1.01, currentOdd * 0.95);
+            } else {
+                // Other options get slightly higher odds
+                const currentOdd = updatedOdds[option] || 2.0;
+                updatedOdds[option] = Math.min(10.0, currentOdd * 1.02);
+            }
+        });
+    }
+    
+    return updatedOdds;
+}
+
+// Update odds display instantly without waiting for Firebase
+function updateInstantOddsDisplay(eventId, newOdds, betOption, betAmount) {
+    // Update betting modal odds if it's open
+    const currentEvent = events.find(e => e.id === eventId);
+    if (currentEvent && currentEvent.options) {
+        currentEvent.options.forEach((option, index) => {
+            const oddsEl = document.getElementById(`odds-${index}`);
+            const betsEl = document.getElementById(`bets-${index}`);
+            const poolEl = document.getElementById(`pool-${index}`);
+            
+            if (oddsEl && newOdds[option]) {
+                oddsEl.textContent = newOdds[option].toFixed(2);
+            }
+            
+            if (option === betOption) {
+                if (betsEl) {
+                    const currentBets = parseInt(betsEl.textContent) || 0;
+                    betsEl.textContent = `${currentBets + 1} bets`;
+                }
+                if (poolEl) {
+                    const currentPool = parseInt(poolEl.textContent.replace(/[^\d]/g, '')) || 0;
+                    poolEl.textContent = `₹${currentPool + betAmount}`;
+                }
+            }
+        });
     }
 }
 
@@ -1865,21 +2552,21 @@ async function loadPoolOdds(eventId) {
         let calculatedOdds = {};
         
         if (!poolDoc.exists) {
-            // No bets placed yet, show initial odds with vig built in
+            // No bets placed yet - use initial odds
             currentEvent.options.forEach((option, index) => {
-                const oddsEl = document.getElementById(`odds-${index}`);
-                const betsEl = document.getElementById(`bets-${index}`);
-                const poolEl = document.getElementById(`pool-${index}`);
-                
                 const initialOdds = currentEvent.initialOdds && currentEvent.initialOdds[option] 
                     ? currentEvent.initialOdds[option] 
                     : 2.0;
                 
                 calculatedOdds[option] = initialOdds;
                 
+                const oddsEl = document.getElementById(`odds-${index}`);
+                const betsEl = document.getElementById(`bets-${index}`);
+                const poolEl = document.getElementById(`pool-${index}`);
+                
                 if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                 if (betsEl) betsEl.textContent = '0 bets';
-                if (poolEl) poolEl.textContent = '₹0';
+                if (poolEl) poolEl.textContent = 'â‚¹0';
             });
         } else {
             poolData = poolDoc.data();
@@ -1888,46 +2575,69 @@ async function loadPoolOdds(eventId) {
             if (!poolData.optionPools) poolData.optionPools = {};
             if (!poolData.optionBetCounts) poolData.optionBetCounts = {};
             
-            const totalPool = poolData.totalPool || 0;
+            const totalWagered = poolData.totalWagered || poolData.totalPool || 0;
             const vigPercentage = poolData.vigPercentage || 5;
             
-            // Calculate overround to maintain vig
-            const targetOverround = 100 + vigPercentage; // e.g., 105% for 5% vig
-            
-            currentEvent.options.forEach((option, index) => {
-                const optionPool = poolData.optionPools[option] || 0;
-                const betCount = poolData.optionBetCounts[option] || 0;
+            // TRUE PARIMUTUEL CALCULATION
+            if (totalWagered > 0) {
+                // Step 1: Calculate net pool after vig deduction
+                const vigAmount = totalWagered * (vigPercentage / 100);
+                const netPool = totalWagered - vigAmount;
                 
-                let odds = currentEvent.initialOdds && currentEvent.initialOdds[option] 
-                    ? currentEvent.initialOdds[option] 
-                    : 2.0;
-                
-                // Only recalculate if there are actual bets and pool is significant
-                if (totalPool > 0 && optionPool > 0) {
-                    // Calculate implied probability for this option
-                    const impliedProbability = (optionPool / totalPool) * 100;
+                // Step 2: Calculate true parimutuel odds for each option
+                currentEvent.options.forEach((option, index) => {
+                    const optionPool = poolData.optionPools[option] || 100; // Minimum base amount
+                    const betCount = poolData.optionBetCounts[option] || 0;
                     
-                    // Adjust for overround to maintain vig
-                    const adjustedProbability = (impliedProbability / 100) * (targetOverround / 100);
+                    // PARIMUTUEL FORMULA: (Net Pool / Amount Bet on This Option)
+                    // This is how much a winning bettor gets back for every ₹1 wagered
+                    let odds;
                     
-                    // Convert back to odds, ensuring minimum of 1.01
-                    odds = Math.max(1.01, 1 / adjustedProbability);
-                }
-                
-                calculatedOdds[option] = odds;
-                const poolAmount = Math.max(0, optionPool);
-                
-                const oddsEl = document.getElementById(`odds-${index}`);
-                const betsEl = document.getElementById(`bets-${index}`);
-                const poolEl = document.getElementById(`pool-${index}`);
-                
-                if (oddsEl) oddsEl.textContent = odds.toFixed(2);
-                if (betsEl) betsEl.textContent = `${betCount} bets`;
-                if (poolEl) poolEl.textContent = `₹${poolAmount}`;
-            });
+                    if (optionPool > 100) { // Actual bets on this option
+                        // True parimutuel: Net pool divided by money on this option
+                        const actualBetAmount = optionPool - 100; // Subtract the base amount
+                        if (actualBetAmount > 0) {
+                            const payout = netPool / actualBetAmount;
+                            odds = Math.max(1.01, payout); // Minimum odds of 1.01
+                        } else {
+                            odds = currentEvent.initialOdds && currentEvent.initialOdds[option] ? currentEvent.initialOdds[option] : 2.0;
+                        }
+                    } else {
+                        // No real bets on this option, use initial odds
+                        odds = currentEvent.initialOdds && currentEvent.initialOdds[option] ? currentEvent.initialOdds[option] : 2.0;
+                    }
+                    
+                    calculatedOdds[option] = odds;
+                    const poolAmount = Math.max(0, optionPool);
+                    
+                    const oddsEl = document.getElementById(`odds-${index}`);
+                    const betsEl = document.getElementById(`bets-${index}`);
+                    const poolEl = document.getElementById(`pool-${index}`);
+                    
+                    if (oddsEl) oddsEl.textContent = odds.toFixed(2);
+                    if (betsEl) betsEl.textContent = `${betCount} bets`;
+                    if (poolEl) poolEl.textContent = `â‚¹${poolAmount}`;
+                });
+            } else {
+                // Fallback to initial odds
+                currentEvent.options.forEach((option, index) => {
+                    const initialOdds = currentEvent.initialOdds && currentEvent.initialOdds[option] 
+                        ? currentEvent.initialOdds[option] 
+                        : 2.0;
+                    calculatedOdds[option] = initialOdds;
+                    
+                    const oddsEl = document.getElementById(`odds-${index}`);
+                    const betsEl = document.getElementById(`bets-${index}`);
+                    const poolEl = document.getElementById(`pool-${index}`);
+                    
+                    if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
+                    if (betsEl) betsEl.textContent = '0 bets';
+                    if (poolEl) poolEl.textContent = 'â‚¹0';
+                });
+            }
         }
         
-        // UPDATE: Save currentOdds to event document in Firestore
+        // CRITICAL: Update currentOdds in Firebase
         await db.collection('events').doc(eventId).update({
             currentOdds: calculatedOdds,
             updatedAt: firebase.firestore.Timestamp.now()
@@ -1941,39 +2651,393 @@ async function loadPoolOdds(eventId) {
         
     } catch (error) {
         console.error('Error loading pool odds:', error);
-        
-        // Fallback to initial odds
-        const currentEvent = events.find(e => e.id === eventId);
-        if (currentEvent && currentEvent.options) {
-            let fallbackOdds = {};
-            currentEvent.options.forEach((option, index) => {
-                const oddsEl = document.getElementById(`odds-${index}`);
-                const betsEl = document.getElementById(`bets-${index}`);
-                const poolEl = document.getElementById(`pool-${index}`);
-                
-                const initialOdds = currentEvent.initialOdds && currentEvent.initialOdds[option] 
-                    ? currentEvent.initialOdds[option] 
-                    : 2.0;
-                
-                fallbackOdds[option] = initialOdds;
-                
-                if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
-                if (betsEl) betsEl.textContent = '0 bets';
-                if (poolEl) poolEl.textContent = '₹0';
-            });
-            
-            // Still try to update Firestore even in fallback
-            try {
-                await db.collection('events').doc(eventId).update({
-                    currentOdds: fallbackOdds,
-                    updatedAt: firebase.firestore.Timestamp.now()
-                });
-            } catch (updateError) {
-                console.error('Error updating fallback odds:', updateError);
-            }
-        }
     }
 }
+
+// Real-time odds listener instead of polling
+let oddsListener = null;
+
+function startOddsPolling(eventId) {
+    // Stop any existing polling
+    stopOddsPolling();
+    
+    // Set up real-time listener for the betting pool
+    const poolRef = db.collection('betting_pools').doc(eventId);
+    
+    oddsListener = poolRef.onSnapshot((doc) => {
+        if (doc.exists) {
+            const poolData = doc.data();
+            // Update betting modal odds directly
+            updateBettingModalOdds(eventId, poolData);
+        }
+    }, (error) => {
+        console.error('Error listening to pool updates:', error);
+        // Fallback to polling if real-time fails
+        fallbackToPolling(eventId);
+    });
+    
+    // Also listen to event updates for currentOdds (for betting modal)
+    const eventRef = db.collection('events').doc(eventId);
+    const eventListener = eventRef.onSnapshot((doc) => {
+        if (doc.exists) {
+            const eventData = doc.data();
+            if (eventData.currentOdds) {
+                updateBettingModalOddsFromEvent(eventId, eventData.currentOdds);
+            }
+        }
+    });
+    
+    // Store both listeners for cleanup
+    window.currentEventListener = eventListener;
+}
+
+function updateBettingModalOdds(eventId, poolData) {
+    const currentEvent = events.find(e => e.id === eventId);
+    if (!currentEvent || !currentEvent.options) return;
+    
+    const totalWagered = poolData.totalWagered || poolData.totalPool || 0;
+    const vigPercentage = poolData.vigPercentage || 5;
+    
+    let calculatedOdds = {};
+    
+    if (totalWagered > 0) {
+        const vigAmount = totalWagered * (vigPercentage / 100);
+        const netPool = totalWagered - vigAmount;
+        
+        currentEvent.options.forEach((option, index) => {
+            const optionPool = poolData.optionPools[option] || 100;
+            const betCount = poolData.optionBetCounts[option] || 0;
+            
+            let odds;
+            if (optionPool > 100) {
+                const actualBetAmount = optionPool - 100;
+                if (actualBetAmount > 0) {
+                    const payout = netPool / actualBetAmount;
+                    odds = Math.max(1.01, payout);
+                } else {
+                    odds = currentEvent.initialOdds && currentEvent.initialOdds[option] ? currentEvent.initialOdds[option] : 2.0;
+                }
+            } else {
+                odds = currentEvent.initialOdds && currentEvent.initialOdds[option] ? currentEvent.initialOdds[option] : 2.0;
+            }
+            
+            calculatedOdds[option] = odds;
+            
+            // Update betting modal UI elements if they exist
+            const oddsEl = document.getElementById(`odds-${index}`);
+            const betsEl = document.getElementById(`bets-${index}`);
+            const poolEl = document.getElementById(`pool-${index}`);
+            
+            if (oddsEl) {
+                const oldOdds = parseFloat(oddsEl.textContent) || 0;
+                // Only show indicator if odds actually changed significantly
+                if (Math.abs(oldOdds - odds) > 0.01) {
+                    updateOddsWithIndicator(oddsEl, oldOdds, odds);
+                } else {
+                    // Just update the text without indicator
+                    oddsEl.textContent = odds.toFixed(2);
+                }
+            }
+            if (betsEl) betsEl.textContent = `${betCount} bets`;
+            if (poolEl) poolEl.textContent = `₹${Math.max(0, optionPool)}`;
+        });
+    }
+    
+    // Update local event data (but don't trigger event bar updates from here)
+    currentEvent.currentOdds = calculatedOdds;
+    currentEvent.totalPot = poolData.totalPool || 0;
+    currentEvent.totalBets = poolData.totalBets || 0;
+}
+
+function updateBettingModalOddsFromEvent(eventId, newOdds) {
+    const currentEvent = events.find(e => e.id === eventId);
+    if (!currentEvent || !currentEvent.options) return;
+    
+    currentEvent.options.forEach((option, index) => {
+        if (newOdds[option]) {
+            const oddsEl = document.getElementById(`odds-${index}`);
+            if (oddsEl) {
+                const oldOdds = parseFloat(oddsEl.textContent) || 0;
+                // Only show indicator if odds actually changed significantly
+                if (Math.abs(oldOdds - newOdds[option]) > 0.01) {
+                    updateOddsWithIndicator(oddsEl, oldOdds, newOdds[option]);
+                } else {
+                    // Just update the text without indicator
+                    oddsEl.textContent = newOdds[option].toFixed(2);
+                }
+            }
+        }
+    });
+    
+    // Update local event data only
+    currentEvent.currentOdds = newOdds;
+}
+
+function stopOddsPolling() {
+    if (oddsListener) {
+        oddsListener();
+        oddsListener = null;
+    }
+    
+    if (window.currentEventListener) {
+        window.currentEventListener();
+        window.currentEventListener = null;
+    }
+    
+    if (window.teamOptionsListener) {
+        window.teamOptionsListener();
+        window.teamOptionsListener = null;
+    }
+    
+    // Clear old polling interval if exists
+    if (window.oddsPollingInterval) {
+        clearInterval(window.oddsPollingInterval);
+        window.oddsPollingInterval = null;
+    }
+}
+
+function fallbackToPolling(eventId) {
+    console.log('Falling back to polling for odds updates');
+    if (window.oddsPollingInterval) {
+        clearInterval(window.oddsPollingInterval);
+    }
+    window.oddsPollingInterval = setInterval(() => {
+        loadPoolOdds(eventId);
+    }, 2000); // Faster polling as fallback
+}
+
+
+function updateOddsFromPoolData(eventId, poolData) {
+    const currentEvent = events.find(e => e.id === eventId);
+    if (!currentEvent || !currentEvent.options) return;
+    
+    const totalWagered = poolData.totalWagered || poolData.totalPool || 0;
+    const vigPercentage = poolData.vigPercentage || 5;
+    
+    let calculatedOdds = {};
+    
+    if (totalWagered > 0) {
+        const vigAmount = totalWagered * (vigPercentage / 100);
+        const netPool = totalWagered - vigAmount;
+        
+        currentEvent.options.forEach((option, index) => {
+            const optionPool = poolData.optionPools[option] || 100;
+            const betCount = poolData.optionBetCounts[option] || 0;
+            
+            let odds;
+            if (optionPool > 100) {
+                const actualBetAmount = optionPool - 100;
+                if (actualBetAmount > 0) {
+                    const payout = netPool / actualBetAmount;
+                    odds = Math.max(1.01, payout);
+                } else {
+                    odds = currentEvent.initialOdds && currentEvent.initialOdds[option] ? currentEvent.initialOdds[option] : 2.0;
+                }
+            } else {
+                odds = currentEvent.initialOdds && currentEvent.initialOdds[option] ? currentEvent.initialOdds[option] : 2.0;
+            }
+            
+            calculatedOdds[option] = odds;
+        });
+    }
+    
+    // Store old odds before updating
+    const oldOdds = currentEvent.currentOdds || {};
+    
+    // Update local event data
+    currentEvent.currentOdds = calculatedOdds;
+    currentEvent.totalPot = poolData.totalPool || 0;
+    currentEvent.totalBets = poolData.totalBets || 0;
+    
+    // ONLY update event bars in real-time (not betting modal from here)
+    updateEventBarsRealTime(eventId, oldOdds, calculatedOdds);
+}
+
+function updateOddsWithIndicator(oddsElement, oldOdds, newOdds) {
+    if (!oddsElement) return;
+    
+    // Remove any existing indicators
+    const existingIndicator = oddsElement.querySelector('.odds-change-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+    
+    // Update the odds value
+    oddsElement.textContent = newOdds.toFixed(2);
+    
+    // Only show indicator if odds actually changed
+    if (oldOdds && oldOdds !== newOdds && Math.abs(oldOdds - newOdds) > 0.001) {
+        const indicator = document.createElement('span');
+        indicator.className = 'odds-change-indicator';
+        
+        if (newOdds > oldOdds) {
+            indicator.innerHTML = '▲';
+            indicator.classList.add('odds-increase');
+        } else {
+            indicator.innerHTML = '▼';
+            indicator.classList.add('odds-decrease');
+        }
+        
+        oddsElement.appendChild(indicator);
+        
+        // Fade out indicator after 3 seconds
+        setTimeout(() => {
+            if (indicator.parentNode) {
+                indicator.classList.add('fade-out');
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        indicator.remove();
+                    }
+                }, 300);
+            }
+        }, 3000);
+    }
+}
+
+
+
+
+function updateOddsDisplay(eventId, newOdds) {
+    const currentEvent = events.find(e => e.id === eventId);
+    if (!currentEvent || !currentEvent.options) return;
+    
+    // Store old odds before updating
+    const oldOdds = currentEvent.currentOdds || {};
+    
+    currentEvent.options.forEach((option, index) => {
+        if (newOdds[option]) {
+            const oddsEl = document.getElementById(`odds-${index}`);
+            if (oddsEl) {
+                const oldValue = oldOdds[option] || parseFloat(oddsEl.textContent) || 0;
+                updateOddsWithIndicator(oddsEl, oldValue, newOdds[option]);
+            }
+        }
+    });
+    
+    // Update local event data
+    currentEvent.currentOdds = newOdds;
+    
+    // Update event bars with change indicators
+    updateEventBarsRealTime(eventId, oldOdds, newOdds);
+}
+
+function updateEventBarsRealTime(eventId = null, oldOdds = {}, newOdds = {}) {
+    // Update all event bars with new odds and pot data
+    events.forEach(event => {
+        // If eventId is specified, only update that event
+        if (eventId && event.id !== eventId) return;
+        
+        const teams = event.options || ['Team A', 'Team B'];
+        const currentOdds = event.currentOdds || event.initialOdds || {};
+        
+        // Get old odds for this specific event
+        const eventOldOdds = eventId === event.id ? oldOdds : {};
+        const eventNewOdds = eventId === event.id ? newOdds : currentOdds;
+        
+        // Update odds in event bars
+        const team1Odds = eventNewOdds[teams[0]] || currentOdds[teams[0]] || 2.0;
+        const team2Odds = eventNewOdds[teams[1]] || currentOdds[teams[1]] || 2.0;
+        
+        // Find the event bar elements
+        const eventBars = document.querySelectorAll('.event-bar');
+        eventBars.forEach(bar => {
+            const barTitle = bar.querySelector('.event-title-text');
+            if (barTitle && barTitle.textContent === event.title) {
+                // Update team odds with indicators
+                const team1OddsEl = bar.querySelector('.team-left .team-odds');
+                const team2OddsEl = bar.querySelector('.team-right .team-odds');
+                
+                if (team1OddsEl) {
+                    const oldTeam1Odds = eventOldOdds[teams[0]] || parseFloat(team1OddsEl.textContent) || 0;
+                    updateOddsWithIndicator(team1OddsEl, oldTeam1Odds, team1Odds);
+                }
+                if (team2OddsEl) {
+                    const oldTeam2Odds = eventOldOdds[teams[1]] || parseFloat(team2OddsEl.textContent) || 0;
+                    updateOddsWithIndicator(team2OddsEl, oldTeam2Odds, team2Odds);
+                }
+                
+                // Update VS/Pool display
+                const vsPoolEl = bar.querySelector(`#vs-${event.id}`);
+                if (vsPoolEl && vsPoolEl.classList.contains('pool-text')) {
+                    vsPoolEl.textContent = `Pool ${formatCurrency(event.totalPot || 0)}`;
+                }
+            }
+        });
+    });
+}
+
+function startGlobalRealTimeListeners() {
+    // Listen to all active events for real-time updates
+    const eventsRef = db.collection('events')
+        .where('status', '==', 'active')
+        .where('display_status', '==', 'visible');
+    
+    window.globalEventsListener = eventsRef.onSnapshot((snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === 'modified') {
+                const eventData = { id: change.doc.id, ...change.doc.data() };
+                
+                // Update local events array
+                const eventIndex = events.findIndex(e => e.id === eventData.id);
+                if (eventIndex !== -1) {
+                    const oldEventData = events[eventIndex];
+                    const oldOdds = oldEventData.currentOdds || {};
+                    const newOdds = eventData.currentOdds || {};
+                    
+                    // Only update if odds actually changed to prevent double updates
+                    const oddsChanged = JSON.stringify(oldOdds) !== JSON.stringify(newOdds);
+                    
+                    events[eventIndex] = eventData;
+                    
+                    if (oddsChanged) {
+                        // Update event bars with change indicators
+                        updateEventBarsRealTime(eventData.id, oldOdds, newOdds);
+                        
+                        // Update betting modal ONLY if this event is currently open
+                        if (window.currentEventId === eventData.id) {
+                            updateBettingModalOddsFromEvent(eventData.id, newOdds);
+                        }
+                    }
+                }
+            }
+        });
+    }, (error) => {
+        console.error('Error listening to global events:', error);
+    });
+    
+    // Listen to betting pools for real-time pool updates (for event bars only)
+    const poolsRef = db.collection('betting_pools').where('status', '==', 'active');
+    
+    window.globalPoolsListener = poolsRef.onSnapshot((snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === 'modified') {
+                const poolData = change.doc.data();
+                const eventId = change.doc.id;
+                
+                // Skip if this is the event currently being viewed in betting modal
+                // (betting modal has its own dedicated listener)
+                if (window.currentEventId !== eventId) {
+                    updateOddsFromPoolData(eventId, poolData);
+                }
+            }
+        });
+    }, (error) => {
+        console.error('Error listening to global pools:', error);
+    });
+}
+
+function stopGlobalRealTimeListeners() {
+    if (window.globalEventsListener) {
+        window.globalEventsListener();
+        window.globalEventsListener = null;
+    }
+    
+    if (window.globalPoolsListener) {
+        window.globalPoolsListener();
+        window.globalPoolsListener = null;
+    }
+}
+
 
 function showVFRModal(eventId) {
     const event = events.find(e => e.id === eventId);
