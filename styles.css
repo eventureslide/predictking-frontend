@@ -823,9 +823,9 @@ input, textarea, .code-display input, .notification {
     background: rgba(26, 26, 26, 0.95);
     backdrop-filter: blur(10px);
     margin: 5% auto;
-    padding: 2rem;
+    padding: 1.5rem 1rem;
     border-radius: 12px;
-    width: 90%;
+    width: 95%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
@@ -1109,13 +1109,15 @@ input:focus, select:focus, textarea:focus {
     max-height: 400px;
     overflow-y: auto;
     overflow-x: hidden;
+    margin: 0;
+    padding: 0;
 }
 
 .leaderboard-row {
     display: grid;
-    grid-template-columns: 50px 60px 1fr 80px;
-    gap: 0.8rem;
-    padding: 1rem 0.5rem;
+    grid-template-columns: 40px 50px 1fr;
+    gap: 2rem;      /* Leaderboard Gap between columns */ 
+    padding: 1rem 0;
     border-bottom: 1px solid #333;
     align-items: center;
     position: relative;
@@ -1159,9 +1161,9 @@ input:focus, select:focus, textarea:focus {
     font-weight: 700;
     text-align: left;
     font-size: 0.9rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
+    padding-right: 0;
+    margin-right: 0;
 }
 
 .rep-score {
@@ -3404,24 +3406,24 @@ input:focus, select:focus, textarea:focus {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.8em;  /* Increased from 1.2em */
-    height: 1.8em; /* Increased from 1.2em */
+    width: 1.8em;
+    height: 1.8em;
     background: radial-gradient(circle at 30% 30%, 
         rgba(255, 255, 255, 0.8), 
         var(--neon) 40%, 
         rgba(0, 0, 0, 0.2) 70%);
     border-radius: 50%;
-    border: 3px solid var(--neon); /* Increased from 2px */
-    font-size: 0.7em; /* Slightly increased from 0.6em */
+    border: 2px solid var(--neon);
+    font-size: 0.7em;
     font-weight: 900;
     color: #141414;
-    text-shadow: 0 0 3px rgba(0, 0, 0, 0.6); /* Enhanced shadow */
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
     box-shadow: 
-        0 0 12px var(--neon), /* Increased from 8px */
-        inset 0 0 6px rgba(255, 255, 255, 0.3), /* Increased from 4px */
-        inset -3px -3px 6px rgba(0, 0, 0, 0.2); /* Increased shadow */
-    animation: coinGlow 3s ease-in-out infinite alternate;
-    margin-right: 0.3em; /* Increased from 0.2em */
+        0 0 4px rgba(255, 255, 255, 0.1),
+        inset 0 0 3px rgba(255, 255, 255, 0.2),
+        inset -2px -2px 4px rgba(0, 0, 0, 0.1);
+    animation: coinGlow 6s ease-in-out infinite alternate;
+    margin-right: 0.3em;
     vertical-align: middle;
     position: relative;
     overflow: hidden;
@@ -3444,16 +3446,16 @@ input:focus, select:focus, textarea:focus {
 @keyframes coinGlow {
     0% { 
         box-shadow: 
-            0 0 12px var(--neon),
-            inset 0 0 6px rgba(255, 255, 255, 0.3),
-            inset -3px -3px 6px rgba(0, 0, 0, 0.2);
+            0 0 4px rgba(255, 255, 255, 0.1),
+            inset 0 0 3px rgba(255, 255, 255, 0.2),
+            inset -2px -2px 4px rgba(0, 0, 0, 0.1);
     }
     100% { 
         box-shadow: 
-            0 0 20px var(--neon),
-            0 0 35px rgba(255, 255, 255, 0.1),
-            inset 0 0 8px rgba(255, 255, 255, 0.4),
-            inset -3px -3px 6px rgba(0, 0, 0, 0.2);
+            0 0 8px rgba(255, 255, 255, 0.2),
+            0 0 12px rgba(255, 255, 255, 0.05),
+            inset 0 0 4px rgba(255, 255, 255, 0.25),
+            inset -2px -2px 4px rgba(0, 0, 0, 0.1);
     }
 }
 
