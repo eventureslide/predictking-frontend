@@ -185,6 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startRealTimeUpdates();
         startActivePlayerTracking();
         startGlobalRealTimeListeners(); // Add this for real-time odds
+        startUpcomingEventsChecker(); // Add this line
         showPostRefreshWelcomeMessage();
     });
 });
@@ -1077,7 +1078,7 @@ function showWallet() {
     const walletBalance = currentUser.balance - currentUser.debt;
     const balanceEl = document.getElementById('wallet-balance');
     
-    balanceEl.textContent = formatCurrency(walletBalance);
+    balanceEl.innerHTML = formatCurrency(walletBalance);
     
     // Set color based on wallet balance and user theme
     if (walletBalance < 0) {
@@ -1100,7 +1101,7 @@ function updateEVCWalletBalance() {
     const evcWalletBalance = document.getElementById('wallet-balance');
     if (evcWalletBalance && currentUser) {
         const walletBalance = currentUser.balance - currentUser.debt;
-        evcWalletBalance.textContent = formatCurrency(walletBalance);
+        evcWalletBalance.innerHTML = formatCurrency(walletBalance);
         
         // Set color based on wallet balance and user theme
         if (walletBalance < 0) {
@@ -1125,7 +1126,7 @@ function updateBalance() {
         
         const balanceEl = document.getElementById('balance');
         if (balanceEl) {
-            balanceEl.textContent = balanceText;
+            balanceEl.innerHTML = balanceText;
             balanceEl.style.display = 'none'; // Always hide on homepage
             
             // Set color based on wallet balance
@@ -1143,7 +1144,29 @@ function updateBalance() {
 // symbolizing the player's quest for victory and rewards in prediction gaming
 function formatCurrency(amount) {
     const flooredAmount = Math.floor(amount); // Floor the amount to remove decimals
-    return `₮Ξ${flooredAmount}`;
+    return `<span class="currency-coin">₮Ξ</span>${flooredAmount}`;
+}
+
+function getStatusColor(status) {
+    if (!status) return '#9ef01a'; // default to active color
+    
+    const statusLower = status.toLowerCase().trim();
+    
+    switch(statusLower) {
+        case 'active':
+            return '#9ef01a';
+        case 'settled':
+            return '#2ec4b6';
+        case 'cancelled':
+            return '#ff0a54';
+        case 'delayed':
+            return '#3a86ff';
+        case 'upcoming':
+            return '#ffd400';
+        default:
+            // For other statuses, use the event's custom statusColor or default
+            return '#9ef01a';
+    }
 }
 
 // ADD this function after formatCurrency:
@@ -1268,16 +1291,35 @@ function createEventCard(event) {
     card.className = 'event-bar';
     card.onclick = () => handleEventBarClick(event);
     
-    // Calculate time remaining for upcoming events
+    // Calculate time remaining for upcoming events and auto-update status
     let statusText = event.status || 'active';
-    let statusColor = event.statusColor || '#9ef01a';
+    let statusColor = getStatusColor(event.status); // Use the new function here
     
     if (event.status && event.status.toLowerCase() === 'upcoming' && event.startTime) {
         const now = new Date();
         const startTime = event.startTime.toDate();
         const timeDiff = startTime - now;
         
-        if (timeDiff > 0) {
+        if (timeDiff <= 0) {
+            // Time has elapsed, auto-update to active
+            statusText = 'active';
+            statusColor = getStatusColor('active'); // Use the function here too
+            
+            // Update Firebase document automatically
+            db.collection('events').doc(event.id).update({
+                status: 'active'
+            }).then(() => {
+                console.log(`Event ${event.id} auto-updated from upcoming to active`);
+                // Update local events array
+                const eventIndex = events.findIndex(e => e.id === event.id);
+                if (eventIndex !== -1) {
+                    events[eventIndex].status = 'active';
+                }
+            }).catch(error => {
+                console.error('Error auto-updating event status:', error);
+            });
+        } else {
+            // Show countdown - keep upcoming color
             const hours = Math.floor(timeDiff / (1000 * 60 * 60));
             const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
             
@@ -1288,20 +1330,19 @@ function createEventCard(event) {
             } else {
                 statusText = 'Starting Soon';
             }
+            statusColor = getStatusColor('upcoming'); // Amber color for upcoming
         }
     }
     
-    // Get team data
+    // Rest of the function remains the same...
     const teams = event.options || ['Team A', 'Team B'];
     const team1 = teams[0] || 'Team A';
     const team2 = teams[1] || 'Team B';
     
-    // Get odds
     const currentOdds = event.currentOdds || event.initialOdds || {};
     const team1Odds = currentOdds[team1] || 2.0;
     const team2Odds = currentOdds[team2] || 2.0;
     
-    // Get team logos
     const team1Logo = event.team1Logo || 'https://api.dicebear.com/7.x/shapes/svg?seed=team1&backgroundColor=9ef01a';
     const team2Logo = event.team2Logo || 'https://api.dicebear.com/7.x/shapes/svg?seed=team2&backgroundColor=ff0a54';
     
@@ -1334,7 +1375,6 @@ function createEventCard(event) {
                     <div class="team-odds">${team2Odds.toFixed(2)}</div>
                     <div class="team-score">-</div>
                 </div>
-                
             </div>
         </div>
         
@@ -1346,7 +1386,6 @@ function createEventCard(event) {
         </div>
     `;
     
-    // Start VS/Pool animation after element is added to DOM
     setTimeout(() => startVsPoolAnimation(event.id, event.totalPot || 0), 1000);
     
     return card;
@@ -1403,7 +1442,7 @@ function startVsPoolAnimation(eventId, totalPot) {
         const currentPot = currentEvent ? currentEvent.totalPot || 0 : totalPot;
         
         if (showingVS) {
-            element.textContent = `Pool ${formatCurrency(currentPot)}`;
+            element.innerHTML = `Pool ${formatCurrency(currentPot)}`;
             element.classList.add('pool-text');
         } else {
             element.textContent = 'VS';
@@ -1593,10 +1632,13 @@ function updatePlaceBetButton() {
     
     if (amount && team && parseInt(amount) > 0) {
         btn.disabled = false;
+        // REPLACE THIS LINE:
         btn.textContent = `Place Bet ${formatCurrency(parseInt(amount))} on ${team}`;
+        // WITH:
+        btn.innerHTML = `Place Bet ${formatCurrency(parseInt(amount))} on ${team}`;
     } else {
         btn.disabled = true;
-        btn.textContent = 'Place Bet';
+        btn.textContent = 'Place Bet'; // This one is fine as it has no currency
     }
 }
 
@@ -2017,7 +2059,7 @@ function showDebtResolutionModal() {
         // Update debt amount in existing modal
         const debtAmountEl = modal.querySelector('.debt-info div');
         if (debtAmountEl) {
-            debtAmountEl.textContent = formatCurrency(debtAmount);
+            debtAmountEl.innerHTML = formatCurrency(debtAmount);
         }
     }
     
@@ -2954,7 +2996,7 @@ function updateEventBarsRealTime(eventId = null, oldOdds = {}, newOdds = {}) {
                 // Update VS/Pool display
                 const vsPoolEl = bar.querySelector(`#vs-${event.id}`);
                 if (vsPoolEl && vsPoolEl.classList.contains('pool-text')) {
-                    vsPoolEl.textContent = `Pool ${formatCurrency(event.totalPot || 0)}`;
+                    vsPoolEl.innerHTML = `Pool ${formatCurrency(event.totalPot || 0)}`;
                 }
             }
         });
@@ -4161,7 +4203,7 @@ async function loadStats() {
         
         totalPotEls.forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.textContent = formatCurrency(totalPot, 'INR');
+            if (el) el.innerHTML = formatCurrency(totalPot, 'INR');
         });
     } catch (error) {
         console.error('Error loading stats:', error);
@@ -4174,6 +4216,36 @@ function startRealTimeUpdates() {
     
     // Update events every minute
     setInterval(loadEvents, 60000);
+}
+
+// Auto-check and update upcoming events every minute
+function startUpcomingEventsChecker() {
+    setInterval(() => {
+        events.forEach(event => {
+            if (event.status && event.status.toLowerCase() === 'upcoming' && event.startTime) {
+                const now = new Date();
+                const startTime = event.startTime.toDate();
+                
+                if (now >= startTime) {
+                    // Auto-update to active
+                    db.collection('events').doc(event.id).update({
+                        status: 'active'
+                    }).then(() => {
+                        console.log(`Event ${event.id} auto-updated from upcoming to active`);
+                        // Update local events array
+                        const eventIndex = events.findIndex(e => e.id === event.id);
+                        if (eventIndex !== -1) {
+                            events[eventIndex].status = 'active';
+                        }
+                        // Refresh display
+                        displayEvents();
+                    }).catch(error => {
+                        console.error('Error auto-updating event status:', error);
+                    });
+                }
+            }
+        });
+    }, 60000); // Check every minute
 }
 
 // ADD THE FUNCTION HERE:
@@ -4206,7 +4278,7 @@ function showNotification(message, type = 'info') {
         clearTimeout(window.notificationHideTimer);
     }
     
-    text.textContent = message;
+    text.innerHTML = message;
     notification.className = `notification ${type}`;
     
     // Swoosh animation from left to right
