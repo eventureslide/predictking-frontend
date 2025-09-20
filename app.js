@@ -1358,6 +1358,18 @@ function handleEventBarClick(event) {
         return;
     }
     
+    // Check if event is settled
+    if (event.status === 'settled') {
+        showNotification('This event has been settled. Betting is closed.', 'warning');
+        return;
+    }
+    
+    // Check if event is not active
+    if (event.status !== 'active') {
+        showNotification(`Event is ${event.status}. Betting is not available.`, 'warning');
+        return;
+    }
+    
     // Check user status
     if (currentUser.kycStatus !== 'approved') {
         showAmberNotification('Account awaiting approval (~8hrs)');
@@ -1886,21 +1898,32 @@ function closeNewBettingModal() {
 // REPLACE the showEventModal function with this improved version:
 async function showEventModal(event) {
     if (!currentUser) {
-        showNotification('Please login to bet', 'error');
+        showNotification('Please login to view event details', 'error');
         return;
     }
     
-    // Check if user is in debt FIRST
+    // Check if event is settled - no betting allowed
+    if (event.status === 'settled') {
+        showNotification('This event has been settled. View results in event history.', 'info');
+        return;
+    }
+    
+    // Check if event is not active - show status but no betting
+    if (event.status !== 'active') {
+        showNotification(`Event is ${event.status}. Betting is not available.`, 'warning');
+        return;
+    }
+    
+    // Continue with existing modal logic for active events only
     if (checkUserDebt()) {
         showAmberNotification('Clear your debt first!');
-        
-        // Show debt resolution modal instead of event modal
         showDebtResolutionModal();
         return;
     }
     
     window.currentEventId = event.id;
     
+    // Existing modal code continues here...
     const now = new Date();
     const eventStart = event.startTime ? event.startTime.toDate() : new Date(0);
     const hasStarted = now > eventStart;
@@ -1910,73 +1933,45 @@ async function showEventModal(event) {
     
     let vfrButton = '';
     let bettingContent = '';
-    let statusDisplay = '';
     
-    // Handle any status - not just 'settled'
-    if (event.status === 'settled' && event.winner) {
-        // Show winner in theme color
-        statusDisplay = `<span style="color: var(--primary-color); font-weight: bold;">${event.winner} WON</span>`;
+    if (currentUser.kycStatus !== 'approved') {
         bettingContent = `
-            <div class="event-settled">
-                <h3>Event Settled</h3>
-                <p>This event has ended and betting is closed.</p>
-                <div class="winner-announcement" style="color: var(--primary-color); font-size: 1.2rem; font-weight: bold; margin: 1rem 0;">
-                    🏆 ${event.winner} WON
-                </div>
+            <div class="kyc-required">
+                <h3>Account Approval Required</h3>
+                <p>Your account is awaiting approval (~8hrs)</p>
             </div>
         `;
-    } else if (event.status !== 'active') {
-        // Handle other statuses (cancelled, postponed, etc.)
-        statusDisplay = `<span style="color: #ffc857; font-weight: bold;">${event.status.toUpperCase()}</span>`;
+    } else if (currentUser.balance - currentUser.debt <= 0) {
         bettingContent = `
-            <div class="event-not-active">
-                <h3>Event Status: ${event.status.toUpperCase()}</h3>
-                <p>Betting is currently not available for this event.</p>
+            <div class="insufficient-balance">
+                <h3>Insufficient Balance</h3>
+                <p>Add funds to your wallet to start betting</p>
             </div>
         `;
     } else {
-        // Active event - show normal betting interface
-        statusDisplay = 'ACTIVE';
-        
-        if (currentUser.kycStatus !== 'approved') {
-            bettingContent = `
-                <div class="kyc-required">
-                    <h3>Account Approval Required</h3>
-                    <p>Your account is awaiting approval (~8hrs)</p>
-                </div>
-            `;
-        } else if (currentUser.balance - currentUser.debt <= 0) {
-            bettingContent = `
-                <div class="insufficient-balance">
-                    <h3>Insufficient Balance</h3>
-                    <p>Add funds to your wallet to start betting</p>
-                </div>
-            `;
-        } else {
-            if (hasStarted && userHasWagered) {
-                vfrButton = `<button class="vfr-btn" onclick="showVFRModal('${event.id}')">VOTE FOR RESULT</button>`;
-            }
-            
-            bettingContent = `
-                <div class="betting-tabs">
-                    <button class="tab-btn" onclick="showBettingTab('pool')">Pool Betting</button>
-                    <button class="tab-btn" onclick="showBettingTab('1v1')">1v1 Betting</button>
-                </div>
-                <div id="betting-content">
-                    <div class="select-betting-type">
-                        <h3>Select Betting Type</h3>
-                        <p>Please select Pool Betting or 1v1 Betting to continue</p>
-                    </div>
-                </div>
-            `;
+        if (hasStarted && userHasWagered) {
+            vfrButton = `<button class="vfr-btn" onclick="showVFRModal('${event.id}')">VOTE FOR RESULT</button>`;
         }
+        
+        bettingContent = `
+            <div class="betting-tabs">
+                <button class="tab-btn" onclick="showBettingTab('pool')">Pool Betting</button>
+                <button class="tab-btn" onclick="showBettingTab('1v1')">1v1 Betting</button>
+            </div>
+            <div id="betting-content">
+                <div class="select-betting-type">
+                    <h3>Select Betting Type</h3>
+                    <p>Please select Pool Betting or 1v1 Betting to continue</p>
+                </div>
+            </div>
+        `;
     }
     
     document.getElementById('event-modal').querySelector('.modal-content').innerHTML = `
         <span class="close" onclick="closeModal('event-modal')">&times;</span>
         <h2 id="event-title">${event.title}</h2>
         <p>Start Time: <span id="event-time">${formatEventTime(event.startTime)}</span></p>
-        <p>Status: <span id="event-status">${statusDisplay}</span></p>
+        <p>Status: <span id="event-status">ACTIVE</span></p>
         ${vfrButton}
         ${bettingContent}
     `;

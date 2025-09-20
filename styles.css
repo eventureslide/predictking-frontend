@@ -2479,27 +2479,143 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Fullscreen Betting Modal */
+/* Fullscreen Betting Modal - Responsive Height */
 .fullscreen-betting-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: 100vh;
+    max-height: 100vh;
     background: rgba(20, 20, 20, 0.98);
     z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
 }
 
 .betting-modal-content {
     width: 100%;
-    height: 100%;
+    height: 100vh;
+    max-height: 100vh;
     max-width: 500px;
     padding: 1rem;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+
+/* Responsive adjustments */
+@media (max-height: 700px) {
+    .betting-modal-content {
+        padding: 0.8rem;
+    }
+    
+    .betting-header {
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    .team-options {
+        margin-bottom: 1rem;
+    }
+    
+    .amount-input-section {
+        margin-bottom: 1rem;
+    }
+    
+    .keypad {
+        margin-bottom: 1rem;
+        gap: 0.6rem;
+    }
+    
+    .keypad-btn {
+        padding: 0.8rem;
+        font-size: 1rem;
+    }
+    
+    .place-bet-btn {
+        margin-bottom: 0.8rem;
+    }
+    
+    .stats-btn {
+        margin-bottom: 1rem;
+        padding: 0.6rem;
+    }
+}
+
+@media (max-height: 600px) {
+    .betting-modal-content {
+        padding: 0.5rem;
+    }
+    
+    .betting-header {
+        margin-bottom: 0.8rem;
+        padding-bottom: 0.3rem;
+    }
+    
+    .team-options {
+        margin-bottom: 0.8rem;
+        gap: 0.8rem;
+    }
+    
+    .team-option {
+        padding: 0.8rem;
+    }
+    
+    .keypad {
+        gap: 0.5rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .keypad-btn {
+        padding: 0.6rem;
+        font-size: 0.9rem;
+    }
+    
+    .place-bet-btn, .stats-btn {
+        padding: 0.8rem;
+        margin-bottom: 0.5rem;
+    }
+}
+
+@media (max-height: 500px) {
+    .betting-header {
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.2rem;
+    }
+    
+    .betting-title {
+        font-size: 1rem;
+    }
+    
+    .betting-datetime {
+        font-size: 0.75rem;
+    }
+    
+    .team-options {
+        margin-bottom: 0.5rem;
+        gap: 0.5rem;
+    }
+    
+    .team-option {
+        padding: 0.5rem;
+    }
+    
+    .team-option-name {
+        font-size: 0.9rem;
+    }
+    
+    .keypad {
+        gap: 0.3rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .keypad-btn {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
 }
 
 .betting-header {
@@ -2918,4 +3034,232 @@ input:focus, select:focus, textarea:focus {
 
 .team-info-right .team-odds {
     justify-content: flex-end;
+}
+
+
+
+
+
+
+/* Realistic Star-Studded Sky Background */
+.main-content {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Dense star field - Layer 1 (Small stars) */
+.main-content::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 300vw;
+    height: 300vh;
+    background: 
+        /* Row 1 */
+        radial-gradient(0.5px 0.5px at 12px 18px, #FFF3DA, transparent 1px),
+        radial-gradient(0.5px 0.5px at 45px 32px, rgba(255, 243, 218, 0.8), transparent 1px),
+        radial-gradient(0.5px 0.5px at 78px 56px, rgba(255, 243, 218, 0.6), transparent 1px),
+        radial-gradient(0.5px 0.5px at 123px 29px, #FFF3DA, transparent 1px),
+        radial-gradient(0.5px 0.5px at 156px 71px, rgba(255, 243, 218, 0.9), transparent 1px),
+        radial-gradient(0.5px 0.5px at 189px 43px, rgba(255, 243, 218, 0.7), transparent 1px),
+        radial-gradient(0.5px 0.5px at 234px 67px, #FFF3DA, transparent 1px),
+        radial-gradient(0.5px 0.5px at 267px 21px, rgba(255, 243, 218, 0.5), transparent 1px),
+        /* Row 2 */
+        radial-gradient(0.5px 0.5px at 23px 89px, rgba(255, 243, 218, 0.8), transparent 1px),
+        radial-gradient(0.5px 0.5px at 67px 112px, #FFF3DA, transparent 1px),
+        radial-gradient(0.5px 0.5px at 98px 134px, rgba(255, 243, 218, 0.6), transparent 1px),
+        radial-gradient(0.5px 0.5px at 145px 105px, rgba(255, 243, 218, 0.9), transparent 1px),
+        radial-gradient(0.5px 0.5px at 178px 127px, #FFF3DA, transparent 1px),
+        radial-gradient(0.5px 0.5px at 212px 98px, rgba(255, 243, 218, 0.7), transparent 1px),
+        radial-gradient(0.5px 0.5px at 245px 143px, rgba(255, 243, 218, 0.8), transparent 1px),
+        radial-gradient(0.5px 0.5px at 289px 116px, #FFF3DA, transparent 1px),
+        /* Row 3 */
+        radial-gradient(0.5px 0.5px at 34px 167px, rgba(255, 243, 218, 0.6), transparent 1px),
+        radial-gradient(0.5px 0.5px at 78px 189px, #FFF3DA, transparent 1px),
+        radial-gradient(0.5px 0.5px at 123px 178px, rgba(255, 243, 218, 0.9), transparent 1px),
+        radial-gradient(0.5px 0.5px at 167px 201px, rgba(255, 243, 218, 0.5), transparent 1px),
+        radial-gradient(0.5px 0.5px at 198px 156px, #FFF3DA, transparent 1px),
+        radial-gradient(0.5px 0.5px at 234px 187px, rgba(255, 243, 218, 0.8), transparent 1px),
+        radial-gradient(0.5px 0.5px at 278px 169px, rgba(255, 243, 218, 0.7), transparent 1px),
+        radial-gradient(0.5px 0.5px at 312px 203px, #FFF3DA, transparent 1px);
+    background-repeat: repeat;
+    background-size: 350px 250px;
+    z-index: -2;
+    opacity: 0.95;
+    animation: 
+        starDrift1 300s linear infinite,
+        starTwinkle1 4s ease-in-out infinite,
+        starTwinkle2 6s ease-in-out infinite 1s,
+        starTwinkle3 8s ease-in-out infinite 2s;
+}
+
+/* Medium stars - Layer 2 */
+.main-content::after {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 300vw;
+    height: 300vh;
+    background: 
+        /* Medium stars scattered */
+        radial-gradient(1px 1px at 67px 45px, #FFF3DA, transparent 1.5px),
+        radial-gradient(1px 1px at 156px 89px, rgba(255, 243, 218, 0.9), transparent 1.5px),
+        radial-gradient(1px 1px at 234px 123px, rgba(255, 243, 218, 0.7), transparent 1.5px),
+        radial-gradient(1px 1px at 345px 67px, #FFF3DA, transparent 1.5px),
+        radial-gradient(1px 1px at 89px 178px, rgba(255, 243, 218, 0.8), transparent 1.5px),
+        radial-gradient(1px 1px at 198px 234px, #FFF3DA, transparent 1.5px),
+        radial-gradient(1px 1px at 289px 189px, rgba(255, 243, 218, 0.6), transparent 1.5px),
+        radial-gradient(1px 1px at 123px 67px, rgba(255, 243, 218, 0.9), transparent 1.5px),
+        radial-gradient(1px 1px at 267px 34px, #FFF3DA, transparent 1.5px),
+        radial-gradient(1px 1px at 78px 134px, rgba(255, 243, 218, 0.7), transparent 1.5px),
+        radial-gradient(1px 1px at 189px 156px, rgba(255, 243, 218, 0.8), transparent 1.5px),
+        radial-gradient(1px 1px at 312px 123px, #FFF3DA, transparent 1.5px);
+    background-repeat: repeat;
+    background-size: 400px 300px;
+    z-index: -1;
+    opacity: 0.85;
+    animation: 
+        starDrift2 250s linear infinite reverse,
+        starTwinkle4 5s ease-in-out infinite 0.5s,
+        starTwinkle5 7s ease-in-out infinite 2.5s;
+}
+
+/* Add large bright stars as pseudo-element of body */
+body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 300vw;
+    height: 300vh;
+    background: 
+        /* Large bright stars */
+        radial-gradient(2px 2px at 123px 89px, #FFF3DA, transparent 3px),
+        radial-gradient(2px 2px at 345px 156px, rgba(255, 243, 218, 0.9), transparent 3px),
+        radial-gradient(2px 2px at 567px 234px, #FFF3DA, transparent 3px),
+        radial-gradient(2px 2px at 234px 345px, rgba(255, 243, 218, 0.8), transparent 3px),
+        radial-gradient(2px 2px at 456px 123px, #FFF3DA, transparent 3px),
+        radial-gradient(2px 2px at 678px 289px, rgba(255, 243, 218, 0.9), transparent 3px),
+        radial-gradient(2px 2px at 89px 456px, rgba(255, 243, 218, 0.7), transparent 3px),
+        radial-gradient(2px 2px at 789px 67px, #FFF3DA, transparent 3px);
+    background-repeat: repeat;
+    background-size: 800px 600px;
+    z-index: -3;
+    opacity: 0.6;
+    animation: 
+        starDrift3 200s linear infinite,
+        starPulse1 10s ease-in-out infinite,
+        starPulse2 12s ease-in-out infinite 3s;
+}
+
+/* Additional tiny stars for density */
+body::after {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 300vw;
+    height: 300vh;
+    background: 
+        /* Tiny stars for density */
+        radial-gradient(0.3px 0.3px at 29px 41px, rgba(255, 243, 218, 0.4), transparent 0.5px),
+        radial-gradient(0.3px 0.3px at 73px 82px, rgba(255, 243, 218, 0.3), transparent 0.5px),
+        radial-gradient(0.3px 0.3px at 127px 53px, rgba(255, 243, 218, 0.5), transparent 0.5px),
+        radial-gradient(0.3px 0.3px at 181px 94px, rgba(255, 243, 218, 0.3), transparent 0.5px),
+        radial-gradient(0.3px 0.3px at 235px 167px, rgba(255, 243, 218, 0.4), transparent 0.5px),
+        radial-gradient(0.3px 0.3px at 289px 128px, rgba(255, 243, 218, 0.3), transparent 0.5px),
+        radial-gradient(0.3px 0.3px at 58px 203px, rgba(255, 243, 218, 0.5), transparent 0.5px),
+        radial-gradient(0.3px 0.3px at 112px 244px, rgba(255, 243, 218, 0.4), transparent 0.5px),
+        radial-gradient(0.3px 0.3px at 166px 215px, rgba(255, 243, 218, 0.3), transparent 0.5px),
+        radial-gradient(0.3px 0.3px at 220px 256px, rgba(255, 243, 218, 0.4), transparent 0.5px);
+    background-repeat: repeat;
+    background-size: 300px 300px;
+    z-index: -4;
+    opacity: 0.5;
+    animation: 
+        starDrift4 350s linear infinite reverse,
+        starShimmer 3s ease-in-out infinite 1s;
+}
+
+/* Movement animations */
+@keyframes starDrift1 {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    33% { transform: translate(-30px, -50px) rotate(120deg); }
+    66% { transform: translate(40px, -30px) rotate(240deg); }
+    100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+@keyframes starDrift2 {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(50px, 30px) rotate(-90deg); }
+    50% { transform: translate(-20px, 60px) rotate(-180deg); }
+    75% { transform: translate(-60px, -20px) rotate(-270deg); }
+    100% { transform: translate(0, 0) rotate(-360deg); }
+}
+
+@keyframes starDrift3 {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    40% { transform: translate(-70px, 40px) rotate(144deg); }
+    80% { transform: translate(30px, -70px) rotate(288deg); }
+    100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+@keyframes starDrift4 {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(20px, -40px) rotate(-180deg); }
+    100% { transform: translate(0, 0) rotate(-360deg); }
+}
+
+/* Twinkling animations */
+@keyframes starTwinkle1 {
+    0%, 100% { opacity: 0.8; }
+    25% { opacity: 0.4; }
+    50% { opacity: 1; }
+    75% { opacity: 0.6; }
+}
+
+@keyframes starTwinkle2 {
+    0%, 100% { opacity: 0.6; }
+    30% { opacity: 0.9; }
+    70% { opacity: 0.3; }
+}
+
+@keyframes starTwinkle3 {
+    0%, 100% { opacity: 0.7; }
+    40% { opacity: 0.2; }
+    80% { opacity: 0.95; }
+}
+
+@keyframes starTwinkle4 {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+@keyframes starTwinkle5 {
+    0%, 100% { opacity: 0.5; }
+    33% { opacity: 0.8; }
+    66% { opacity: 0.4; }
+}
+
+@keyframes starPulse1 {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes starPulse2 {
+    0%, 100% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 0.9; transform: scale(1.1); }
+}
+
+@keyframes starShimmer {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+}
+
+/* Ensure content stays above the stars */
+.main-content > * {
+    position: relative;
+    z-index: 1;
 }
