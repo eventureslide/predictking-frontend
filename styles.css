@@ -2334,9 +2334,11 @@ input:focus, select:focus, textarea:focus {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    object-fit: cover;
+    object-fit: contain;
     border: 1px solid var(--neon);
     flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px;
 }
 
 .team-info {
@@ -2964,7 +2966,10 @@ input:focus, select:focus, textarea:focus {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    object-fit: cover;
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px;
+    border: 1px solid var(--neon);
 }
 
 .team-option-odds {

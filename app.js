@@ -1961,7 +1961,7 @@ function createEventCard(event) {
         
         <div class="event-bar-content">
             <div class="team-section team-left">
-                <img src="${team1Logo}" alt="Team 1" class="team-logo">
+                <img src="${team1Logo}" alt="Team 1" class="team-logo" style="object-fit: contain;">
                 <div class="team-info">
                     <div class="team-name">${team1}</div>
                     <div class="team-odds">${team1Odds.toFixed(2)}</div>
@@ -1974,7 +1974,7 @@ function createEventCard(event) {
             </div>
             
             <div class="team-section team-right">
-                <img src="${team2Logo}" alt="Team 2" class="team-logo">
+                <img src="${team2Logo}" alt="Team 2" class="team-logo" style="object-fit: contain;">
                 <div class="team-info team-info-right">
                     <div class="team-name">${team2}</div>
                     <div class="team-odds">${team2Odds.toFixed(2)}</div>
