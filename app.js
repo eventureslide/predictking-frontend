@@ -1889,9 +1889,18 @@ function createEventCard(event) {
     
     // Calculate time remaining for upcoming events and auto-update status
     let statusText = event.status || 'active';
-    let statusColor = getStatusColor(event.status); // Use the new function here
+    let statusColor = getStatusColor(event.status);
     
-    if (event.status && event.status.toLowerCase() === 'upcoming' && event.startTime) {
+    if (event.status && event.status.toLowerCase() === 'settled') {
+        // Show winner instead of "settled"
+        if (event.winner) {
+            statusText = `${event.winner} won`;
+            statusColor = '#2ec4b6'; // Keep settled color
+        } else {
+            statusText = 'Settled';
+            statusColor = '#2ec4b6';
+        }
+    } else if (event.status && event.status.toLowerCase() === 'upcoming' && event.startTime) {
         const now = new Date();
         const startTime = event.startTime.toDate();
         const timeDiff = startTime - now;
@@ -1899,7 +1908,7 @@ function createEventCard(event) {
         if (timeDiff <= 0) {
             // Time has elapsed, auto-update to active
             statusText = 'active';
-            statusColor = getStatusColor('active'); // Use the function here too
+            statusColor = getStatusColor('active');
             
             // Update Firebase document automatically
             db.collection('events').doc(event.id).update({
@@ -1930,7 +1939,7 @@ function createEventCard(event) {
         }
     }
     
-    // Rest of the function remains the same...
+    // Get team information
     const teams = event.options || ['Team A', 'Team B'];
     const team1 = teams[0] || 'Team A';
     const team2 = teams[1] || 'Team B';
@@ -2051,7 +2060,7 @@ function startVsPoolAnimation(eventId, totalPot) {
     setInterval(updateDisplay, 3000 + Math.random() * 2000);
 }
 
-function showNewBettingModal(event) {
+async function showNewBettingModal(event) {
     window.currentEventId = event.id;
     window.selectedTeam = null;
     window.selectedAmount = '';
@@ -2059,9 +2068,27 @@ function showNewBettingModal(event) {
     const teams = event.options || ['Team A', 'Team B'];
     const currentOdds = event.currentOdds || event.initialOdds || {};
     
-    // Get bet counts (you'll need to implement this)
-    const team1Bets = 0; // TODO: Get from betting_pools collection
-    const team2Bets = 0; // TODO: Get from betting_pools collection
+    // Get actual bet counts from betting_slips collection
+    let team1Bets = 0;
+    let team2Bets = 0;
+    
+    try {
+        const betsQuery = await db.collection('betting_slips')
+            .where('eventId', '==', event.id)
+            .get();
+        
+        betsQuery.docs.forEach(doc => {
+            const betData = doc.data();
+            if (betData.selectedOption === teams[0]) {
+                team1Bets++;
+            } else if (betData.selectedOption === teams[1]) {
+                team2Bets++;
+            }
+        });
+    } catch (error) {
+        console.error('Error loading bet counts:', error);
+        // Continue with 0 counts if error
+    }
     
     const modalHTML = `
         <div class="fullscreen-betting-modal" id="betting-modal-new">
@@ -2145,7 +2172,6 @@ function showNewBettingModal(event) {
     document.body.style.overflow = 'hidden';
 
     // Start real-time odds updates
-    // Start real-time odds updates for both betting modal types
     setTimeout(() => {
         startOddsPolling(event.id);
         // Also start team options updates
@@ -2394,6 +2420,11 @@ function placeBetNew() {
         
         // Update UI instantly
         displayEvents(); // Refresh event bars immediately
+
+        // Update bet counts in the betting modal if it's still open
+        if (window.currentEventId === eventId) {
+            setTimeout(() => updateBetCounts(eventId), 500);
+        }
         
         // Firebase transaction in background (no await)
         db.runTransaction(async (transaction) => {
@@ -3430,6 +3461,40 @@ function updateBettingModalOdds(eventId, poolData) {
     currentEvent.currentOdds = calculatedOdds;
     currentEvent.totalPot = poolData.totalPool || 0;
     currentEvent.totalBets = poolData.totalBets || 0;
+}
+
+// Function to update bet counts in the betting modal
+async function updateBetCounts(eventId) {
+    const currentEvent = events.find(e => e.id === eventId);
+    if (!currentEvent || !currentEvent.options) return;
+    
+    try {
+        const betsQuery = await db.collection('betting_slips')
+            .where('eventId', '==', eventId)
+            .get();
+        
+        let team1Bets = 0;
+        let team2Bets = 0;
+        
+        betsQuery.docs.forEach(doc => {
+            const betData = doc.data();
+            if (betData.selectedOption === currentEvent.options[0]) {
+                team1Bets++;
+            } else if (betData.selectedOption === currentEvent.options[1]) {
+                team2Bets++;
+            }
+        });
+        
+        // Update the UI elements
+        const team1BetsEl = document.querySelector('.team-option:first-child .team-option-bets');
+        const team2BetsEl = document.querySelector('.team-option:last-child .team-option-bets');
+        
+        if (team1BetsEl) team1BetsEl.textContent = `${team1Bets} bets`;
+        if (team2BetsEl) team2BetsEl.textContent = `${team2Bets} bets`;
+        
+    } catch (error) {
+        console.error('Error updating bet counts:', error);
+    }
 }
 
 function updateBettingModalOddsFromEvent(eventId, newOdds) {
