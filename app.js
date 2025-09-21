@@ -50,7 +50,7 @@ function checkViewportSize() {
                 padding: 2rem;
                 z-index: 10000;
             ">
-                <div style="font-size: 4rem; margin-bottom: 2rem;">Ã¢â„¢â€º</div>
+                <div style="font-size: 4rem; margin-bottom: 2rem;">â™›</div>
                 <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: 2px;">PREDICTKING</h1>
                 <h2 style="font-size: 1.5rem; margin-bottom: 2rem; color: #888;">Please Use Mobile Device</h2>
                 <p style="font-size: 1.1rem; max-width: 500px; line-height: 1.6;">
@@ -185,7 +185,11 @@ class StarField {
         this.createRealisticStars();
         this.animate();
 
-        window.addEventListener('resize', () => this.resize());
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => this.resize(), 250);
+        });
         
         document.addEventListener('visibilitychange', () => {
             this.isVisible = !document.hidden;
@@ -199,14 +203,22 @@ class StarField {
         const dpr = window.devicePixelRatio || 1;
         const rect = this.canvas.getBoundingClientRect();
         
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
+        const newWidth = rect.width * dpr;
+        const newHeight = rect.height * dpr;
         
-        this.ctx.scale(dpr, dpr);
-        this.canvas.style.width = rect.width + 'px';
-        this.canvas.style.height = rect.height + 'px';
-        
-        this.createRealisticStars();
+        // Only resize if dimensions actually changed significantly
+        if (Math.abs(this.canvas.width - newWidth) > 10 || 
+            Math.abs(this.canvas.height - newHeight) > 10) {
+            
+            this.canvas.width = newWidth;
+            this.canvas.height = newHeight;
+            
+            this.ctx.scale(dpr, dpr);
+            this.canvas.style.width = rect.width + 'px';
+            this.canvas.style.height = rect.height + 'px';
+            
+            this.createRealisticStars();
+        }
     }
 
     createRealisticStars() {
@@ -1004,10 +1016,10 @@ if (profilePicInput) {
         const button = document.querySelector('.file-upload-btn');
         
         if (file) {
-            button.textContent = `ðŸ“· ${file.name}`;
+            button.textContent = `📷 ${file.name}`;
             button.style.color = 'var(--primary-color)';
         } else {
-            button.textContent = 'ðŸ“· Upload Profile Picture';
+            button.textContent = '📷 Upload Profile Picture';
             button.style.color = '';
         }
     });
@@ -1735,12 +1747,12 @@ function updateBalance() {
     }
 }
 
-// Quero (â‚®Îž) - Universal currency for PredictKing
+// Quero (₮Ξ) - Universal currency for PredictKing
 // Etymology: "Quero" derives from Latin "quaero" meaning "I seek/desire"
 // symbolizing the player's quest for victory and rewards in prediction gaming
 function formatCurrency(amount) {
     const flooredAmount = Math.floor(amount); // Floor the amount to remove decimals
-    return `<span class="currency-coin">â‚®Îž</span>${flooredAmount}`;
+    return `<span class="currency-coin">₮Ξ</span>${flooredAmount}`;
 }
 
 function getStatusColor(status) {
@@ -2504,7 +2516,7 @@ function placeBetNew() {
         );
         
         // Update UI instantly
-        //displayEvents(); // Refresh event bars immediately
+        displayEvents(); // Refresh event bars immediately
 
         // Update bet counts in the betting modal if it's still open
         if (window.currentEventId === eventId) {
@@ -2889,7 +2901,7 @@ function createPoolBettingUI() {
                         <h4>${option}</h4>
                         <div class="odds" id="odds-${index}">Loading...</div>
                         <div class="bet-count" id="bets-${index}">0 bets</div>
-                        <div class="pool-amount" id="pool-${index}">Ã¢â€šÂ¹0</div>
+                        <div class="pool-amount" id="pool-${index}">â‚¹0</div>
                     </div>
                 `).join('')}
             </div>
@@ -2997,17 +3009,17 @@ function createPriceLadder() {
             <span>Back Team B</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(100, 'team_a')">
-            <span>Ã¢â€šÂ¹100</span>
+            <span>â‚¹100</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(200, 'team_a')">
-            <span>Ã¢â€šÂ¹200</span>
+            <span>â‚¹200</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(500, 'team_a')">
-            <span>Ã¢â€šÂ¹500</span>
+            <span>â‚¹500</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
@@ -3096,23 +3108,19 @@ async function confirmPoolBet() {
         updateBalance();
         updateEVCWalletBalance();
         
-        // Update local event data instantly - but create isolated copy for this event
-        const eventIndex = events.findIndex(e => e.id === eventId);
-        if (eventIndex !== -1) {
-            // Create isolated updates that won't affect other events
-            events[eventIndex] = {
-                ...events[eventIndex],
-                totalPot: (events[eventIndex].totalPot || 0) + amount,
-                totalBets: (events[eventIndex].totalBets || 0) + 1
-            };
-            
-            // Calculate odds ONLY for this specific event
-            const updatedOdds = calculateInstantOdds(events[eventIndex], window.selectedTeam, amount);
-            events[eventIndex].currentOdds = { ...updatedOdds };
-            
-            // Update UI ONLY for this specific event
-            updateEventBarsRealTime(eventId, currentEvent.currentOdds || {}, updatedOdds);
-        }
+        // Update local event data immediately
+        if (!currentEvent.totalPot) currentEvent.totalPot = 0;
+        if (!currentEvent.totalBets) currentEvent.totalBets = 0;
+        currentEvent.totalPot += betAmount;
+        currentEvent.totalBets += 1;
+        
+        // Update local odds calculation immediately
+        const updatedOdds = calculateInstantOdds(currentEvent, selectedBettingOption, betAmount);
+        currentEvent.currentOdds = updatedOdds;
+        
+        // Update UI instantly
+        updateInstantOddsDisplay(eventId, updatedOdds, selectedBettingOption, betAmount);
+        displayEvents(); // Refresh event bars immediately
         
         // Close modal and show success immediately
         closeModal('event-modal');
@@ -3249,21 +3257,24 @@ async function confirmPoolBet() {
 
 // Calculate odds instantly for immediate UI update
 function calculateInstantOdds(event, betOption, betAmount) {
-    // Don't modify the original event's odds - create completely isolated calculation
-    const baseOdds = event.initialOdds || {};
-    const updatedOdds = {};
+    const currentOdds = event.currentOdds || event.initialOdds || {};
+    const updatedOdds = { ...currentOdds };
     
-    // Only calculate for THIS event's specific options
-    if (event.options && Array.isArray(event.options)) {
+    // Simple instant calculation - more sophisticated than actual parimutuel
+    // but good enough for instant feedback
+    const totalPot = event.totalPot + betAmount;
+    const vigPercentage = event.vigPercentage || 5;
+    
+    if (totalPot > 0) {
         event.options.forEach(option => {
-            const baseOdd = baseOdds[option] || 2.0;
-            
             if (option === betOption) {
                 // Option that was bet on gets slightly lower odds
-                updatedOdds[option] = Math.max(1.01, baseOdd * 0.95);
+                const currentOdd = updatedOdds[option] || 2.0;
+                updatedOdds[option] = Math.max(1.01, currentOdd * 0.95);
             } else {
-                // Other options get slightly higher odds  
-                updatedOdds[option] = Math.min(10.0, baseOdd * 1.02);
+                // Other options get slightly higher odds
+                const currentOdd = updatedOdds[option] || 2.0;
+                updatedOdds[option] = Math.min(10.0, currentOdd * 1.02);
             }
         });
     }
@@ -3292,7 +3303,7 @@ function updateInstantOddsDisplay(eventId, newOdds, betOption, betAmount) {
                 }
                 if (poolEl) {
                     const currentPool = parseInt(poolEl.textContent.replace(/[^\d]/g, '')) || 0;
-                    poolEl.textContent = `â‚¹${currentPool + betAmount}`;
+                    poolEl.textContent = `₹${currentPool + betAmount}`;
                 }
             }
         });
@@ -3328,7 +3339,7 @@ async function loadPoolOdds(eventId) {
                 // Set odds directly without indicator (initial load)
                 if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                 if (betsEl) betsEl.textContent = '0 bets';
-                if (poolEl) poolEl.textContent = 'â‚¹0';
+                if (poolEl) poolEl.textContent = '₹0';
             });
         } else {
             poolData = poolDoc.data();
@@ -3375,7 +3386,7 @@ async function loadPoolOdds(eventId) {
                     // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = odds.toFixed(2);
                     if (betsEl) betsEl.textContent = `${betCount} bets`;
-                    if (poolEl) poolEl.textContent = `â‚¹${poolAmount}`;
+                    if (poolEl) poolEl.textContent = `₹${poolAmount}`;
                 });
             } else {
                 // Fallback to initial odds
@@ -3392,7 +3403,7 @@ async function loadPoolOdds(eventId) {
                     // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                     if (betsEl) betsEl.textContent = '0 bets';
-                    if (poolEl) poolEl.textContent = 'â‚¹0';
+                    if (poolEl) poolEl.textContent = '₹0';
                 });
             }
         }
@@ -3471,7 +3482,7 @@ function updateBettingModalOddsFromEventDirect(eventId, newOdds) {
         const oddsEl = document.getElementById(`odds-${index}`);
         if (oddsEl) {
             // Parse only the number, ignore any arrow symbols
-            const oddsText = oddsEl.textContent.replace(/[â–²â–¼\s]/g, '');
+            const oddsText = oddsEl.textContent.replace(/[▲▼\s]/g, '');
             currentDOMOdds[option] = parseFloat(oddsText) || 0;
         }
     });
@@ -3544,7 +3555,7 @@ function updateBettingModalOdds(eventId, poolData) {
                 }
             }
             if (betsEl) betsEl.textContent = `${betCount} bets`;
-            if (poolEl) poolEl.textContent = `â‚¹${Math.max(0, optionPool)}`;
+            if (poolEl) poolEl.textContent = `₹${Math.max(0, optionPool)}`;
         });
     }
     
@@ -3627,12 +3638,8 @@ function fallbackToPolling(eventId) {
 
 
 function updateOddsFromPoolData(eventId, poolData) {
-    // ONLY find and update the SPECIFIC event with this eventId
-    const eventIndex = events.findIndex(e => e.id === eventId);
-    if (eventIndex === -1) return;
-    
-    const currentEvent = events[eventIndex];
-    if (!currentEvent.options) return;
+    const currentEvent = events.find(e => e.id === eventId);
+    if (!currentEvent || !currentEvent.options) return;
     
     const totalWagered = poolData.totalWagered || poolData.totalPool || 0;
     const vigPercentage = poolData.vigPercentage || 5;
@@ -3643,8 +3650,9 @@ function updateOddsFromPoolData(eventId, poolData) {
         const vigAmount = totalWagered * (vigPercentage / 100);
         const netPool = totalWagered - vigAmount;
         
-        currentEvent.options.forEach((option) => {
+        currentEvent.options.forEach((option, index) => {
             const optionPool = poolData.optionPools[option] || 100;
+            const betCount = poolData.optionBetCounts[option] || 0;
             
             let odds;
             if (optionPool > 100) {
@@ -3663,15 +3671,15 @@ function updateOddsFromPoolData(eventId, poolData) {
         });
     }
     
-    // Store old odds ONLY for this specific event
-    const oldOdds = { ...currentEvent.currentOdds } || {};
+    // Store old odds before updating
+    const oldOdds = currentEvent.currentOdds || {};
     
-    // Update ONLY this specific event in the local array
-    events[eventIndex].currentOdds = calculatedOdds;
-    events[eventIndex].totalPot = poolData.totalPool || 0;
-    events[eventIndex].totalBets = poolData.totalBets || 0;
+    // Update local event data
+    currentEvent.currentOdds = calculatedOdds;
+    currentEvent.totalPot = poolData.totalPool || 0;
+    currentEvent.totalBets = poolData.totalBets || 0;
     
-    // Update ONLY this specific event's bar
+    // ONLY update event bars in real-time (not betting modal from here)
     updateEventBarsRealTime(eventId, oldOdds, calculatedOdds);
 }
 
@@ -3857,18 +3865,19 @@ function startGlobalRealTimeListeners() {
                     const oldOdds = oldEventData.currentOdds || {};
                     const newOdds = eventData.currentOdds || {};
                     
+                    // Only update if odds actually changed to prevent double updates
+                    const oddsChanged = JSON.stringify(oldOdds) !== JSON.stringify(newOdds);
+                    
                     events[eventIndex] = eventData;
                     
-                    // Only update if odds actually changed AND skip if this is a betting modal update
-                    const oddsChanged = JSON.stringify(oldOdds) !== JSON.stringify(newOdds);
-                    const isCurrentBettingEvent = window.currentEventId === eventData.id;
-                    
-                    if (oddsChanged && !isCurrentBettingEvent) {
-                        // Update ONLY this specific event bar
+                    if (oddsChanged) {
+                        // Update event bars with change indicators
                         updateEventBarsRealTime(eventData.id, oldOdds, newOdds);
-                    } else if (oddsChanged && isCurrentBettingEvent) {
+                        
                         // Update betting modal ONLY if this event is currently open
-                        updateBettingModalOddsFromEvent(eventData.id, newOdds);
+                        if (window.currentEventId === eventData.id) {
+                            updateBettingModalOddsFromEvent(eventData.id, newOdds);
+                        }
                     }
                 }
             }
@@ -3877,7 +3886,7 @@ function startGlobalRealTimeListeners() {
         console.error('Error listening to global events:', error);
     });
     
-    // Listen to betting pools for real-time pool updates 
+    // Listen to betting pools for real-time pool updates (for event bars only)
     const poolsRef = db.collection('betting_pools').where('status', '==', 'active');
     
     window.globalPoolsListener = poolsRef.onSnapshot((snapshot) => {
@@ -3886,7 +3895,8 @@ function startGlobalRealTimeListeners() {
                 const poolData = change.doc.data();
                 const eventId = change.doc.id;
                 
-                // ONLY update if this is NOT the current betting modal event
+                // Skip if this is the event currently being viewed in betting modal
+                // (betting modal has its own dedicated listener)
                 if (window.currentEventId !== eventId) {
                     updateOddsFromPoolData(eventId, poolData);
                 }
