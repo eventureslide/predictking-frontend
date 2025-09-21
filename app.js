@@ -2099,7 +2099,7 @@ async function showNewBettingModal(event) {
                 </div>
                 
                 <div class="team-options">
-                    <div class="team-option" onclick="selectTeam('${teams[0]}', 0)">
+                    <div class="team-option" onclick="selectTeam('${teams[0]}', 0)" onmousedown="startVoteTimer('${teams[0]}', this)" onmouseup="cancelVoteTimer()" onmouseleave="cancelVoteTimer()" ontouchstart="startVoteTimer('${teams[0]}', this)" ontouchend="cancelVoteTimer()">
                         <div class="team-option-left">
                             <div class="team-option-name">${teams[0]}</div>
                             <div class="team-option-bets">${team1Bets} bets</div>
@@ -2108,7 +2108,7 @@ async function showNewBettingModal(event) {
                         <div class="team-option-odds">${(currentOdds[teams[0]] || 2.0).toFixed(2)}</div>
                     </div>
                     
-                    <div class="team-option" onclick="selectTeam('${teams[1]}', 1)">
+                    <div class="team-option" onclick="selectTeam('${teams[1]}', 1)" onmousedown="startVoteTimer('${teams[1]}', this)" onmouseup="cancelVoteTimer()" onmouseleave="cancelVoteTimer()" ontouchstart="startVoteTimer('${teams[1]}', this)" ontouchend="cancelVoteTimer()">
                         <div class="team-option-left">
                             <div class="team-option-name">${teams[1]}</div>
                             <div class="team-option-bets">${team2Bets} bets</div>
@@ -2187,20 +2187,105 @@ async function showNewBettingModal(event) {
     }, 1000);
 }
 
-function selectTeam(teamName, index) {
-    window.selectedTeam = teamName;
+// VFR Voting System
+let voteTimer = null;
+let votingInProgress = false;
+
+function startVoteTimer(teamName, element) {
+    // Only allow voting if user has bet on this event
+    if (!currentUser || !window.currentEventId) return;
     
-    // Update UI
-    document.querySelectorAll('.team-option').forEach((option, idx) => {
-        if (idx === index) {
-            option.classList.add('selected');
-        } else {
-            option.classList.remove('selected');
+    // Prevent multiple timers
+    if (voteTimer) {
+        clearTimeout(voteTimer);
+    }
+    
+    votingInProgress = true;
+    
+    // Visual feedback - add voting class
+    element.classList.add('voting-active');
+    
+    voteTimer = setTimeout(async () => {
+        // Check if user has bet on this event
+        const userHasBet = await userHadBetOnEvent(window.currentEventId);
+        
+        if (!userHasBet) {
+            showNotification('You can only vote if you have placed a bet on this event', 'warning');
+            element.classList.remove('voting-active');
+            votingInProgress = false;
+            return;
         }
+        
+        // Check if user already voted
+        try {
+            const existingVote = await db.collection('event_votes')
+                .where('userId', '==', currentUser.id)
+                .where('eventId', '==', window.currentEventId)
+                .get();
+                
+            if (!existingVote.empty) {
+                showNotification('You have already voted for this event result', 'warning');
+                element.classList.remove('voting-active');
+                votingInProgress = false;
+                return;
+            }
+            
+            // Submit vote
+            await submitVFRVote(teamName);
+            element.classList.remove('voting-active');
+            votingInProgress = false;
+            
+        } catch (error) {
+            console.error('Error checking/submitting vote:', error);
+            showNotification('Error submitting vote', 'error');
+            element.classList.remove('voting-active');
+            votingInProgress = false;
+        }
+    }, 2000); // 2 second hold
+}
+
+function cancelVoteTimer() {
+    if (voteTimer) {
+        clearTimeout(voteTimer);
+        voteTimer = null;
+    }
+    
+    // Remove visual feedback
+    document.querySelectorAll('.team-option').forEach(option => {
+        option.classList.remove('voting-active');
     });
     
-    updatePlaceBetButton();
+    votingInProgress = false;
 }
+
+async function submitVFRVote(selectedWinner) {
+    try {
+        // Submit vote to Firebase
+        await db.collection('event_votes').add({
+            userId: currentUser.id,
+            userNickname: currentUser.nickname,
+            eventId: window.currentEventId,
+            selectedWinner: selectedWinner,
+            timestamp: firebase.firestore.Timestamp.now(),
+            userHadBet: true // We already verified this
+        });
+        
+        showNotification(`Vote submitted: ${selectedWinner} to win!`, 'success');
+        
+        // Log the voting activity
+        logActivity('vfr_vote', { 
+            userId: currentUser.id, 
+            eventId: window.currentEventId,
+            selectedWinner: selectedWinner
+        });
+        
+    } catch (error) {
+        console.error('Error submitting VFR vote:', error);
+        showNotification('Failed to submit vote', 'error');
+    }
+}
+
+
 
 function updateTeamOptionsOdds(eventId, newOdds) {
     const currentEvent = events.find(e => e.id === eventId);
@@ -2544,8 +2629,10 @@ function placeBetNew() {
 
 
 function selectTeam(teamName, index) {
+    // Don't select if voting is in progress
+    if (votingInProgress) return;
+    
     window.selectedTeam = teamName;
-    window.selectedTeamIndex = index; // Store the index as well
     
     // Update UI
     document.querySelectorAll('.team-option').forEach((option, idx) => {
@@ -2560,6 +2647,9 @@ function selectTeam(teamName, index) {
 }
 
 function closeNewBettingModal() {
+    // Cancel any ongoing vote timer
+    cancelVoteTimer();
+    
     // Stop odds polling when modal closes
     stopOddsPolling();
     

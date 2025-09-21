@@ -3663,3 +3663,26 @@ input:focus, select:focus, textarea:focus {
     padding-left: 1rem;
     padding-right: 1rem;
 }
+
+
+.team-option.voting-active {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(var(--primary-color-rgb), 0.5);
+    transition: all 0.1s ease;
+}
+
+.team-option.voting-active::after {
+    content: "Hold to vote...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    z-index: 10;
+    pointer-events: none;
+}
