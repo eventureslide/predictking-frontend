@@ -2239,18 +2239,12 @@ function updatePlaceBetButton() {
 }
 
 function switchTab(tabName) {
-    const modalContent = document.querySelector('.betting-modal-content');
-    
-    // Update tab active states
-    document.querySelectorAll('.tab-item').forEach(tab => {
-        tab.classList.remove('active');
-    });
+    const currentEvent = events.find(e => e.id === window.currentEventId);
+    if (!currentEvent) return;
     
     if (tabName === '1v1') {
         // Show 1v1 coming soon content but keep the structure
-        const currentEvent = events.find(e => e.id === window.currentEventId);
-        if (!currentEvent) return;
-        
+        const modalContent = document.querySelector('.betting-modal-content');
         modalContent.innerHTML = `
             <div class="betting-header">
                 <div class="betting-title">${currentEvent.title}</div>
@@ -2274,7 +2268,19 @@ function switchTab(tabName) {
         `;
     } else {
         // Show pool content - recreate the full betting interface
-        showNewBettingModal(events.find(e => e.id === window.currentEventId));
+        showNewBettingModal(currentEvent);
+        
+        // Set the Pool tab as active after recreation
+        setTimeout(() => {
+            document.querySelectorAll('.modal-tabs .tab-item').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const poolTab = Array.from(document.querySelectorAll('.modal-tabs .tab-item'))
+                .find(tab => tab.textContent.trim() === 'Pool');
+            if (poolTab) {
+                poolTab.classList.add('active');
+            }
+        }, 100);
     }
 }
 
@@ -3197,9 +3203,10 @@ async function loadPoolOdds(eventId) {
                 const betsEl = document.getElementById(`bets-${index}`);
                 const poolEl = document.getElementById(`pool-${index}`);
                 
+                // Just set the text directly without indicators for initial load
                 if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                 if (betsEl) betsEl.textContent = '0 bets';
-                if (poolEl) poolEl.textContent = 'â‚¹0';
+                if (poolEl) poolEl.textContent = '₹0';
             });
         } else {
             poolData = poolDoc.data();
@@ -3219,24 +3226,20 @@ async function loadPoolOdds(eventId) {
                 
                 // Step 2: Calculate true parimutuel odds for each option
                 currentEvent.options.forEach((option, index) => {
-                    const optionPool = poolData.optionPools[option] || 100; // Minimum base amount
+                    const optionPool = poolData.optionPools[option] || 100;
                     const betCount = poolData.optionBetCounts[option] || 0;
                     
-                    // PARIMUTUEL FORMULA: (Net Pool / Amount Bet on This Option)
-                    // This is how much a winning bettor gets back for every ₹1 wagered
                     let odds;
                     
-                    if (optionPool > 100) { // Actual bets on this option
-                        // True parimutuel: Net pool divided by money on this option
-                        const actualBetAmount = optionPool - 100; // Subtract the base amount
+                    if (optionPool > 100) {
+                        const actualBetAmount = optionPool - 100;
                         if (actualBetAmount > 0) {
                             const payout = netPool / actualBetAmount;
-                            odds = Math.max(1.01, payout); // Minimum odds of 1.01
+                            odds = Math.max(1.01, payout);
                         } else {
                             odds = currentEvent.initialOdds && currentEvent.initialOdds[option] ? currentEvent.initialOdds[option] : 2.0;
                         }
                     } else {
-                        // No real bets on this option, use initial odds
                         odds = currentEvent.initialOdds && currentEvent.initialOdds[option] ? currentEvent.initialOdds[option] : 2.0;
                     }
                     
@@ -3247,9 +3250,10 @@ async function loadPoolOdds(eventId) {
                     const betsEl = document.getElementById(`bets-${index}`);
                     const poolEl = document.getElementById(`pool-${index}`);
                     
+                    // Just set the text directly without indicators for initial load
                     if (oddsEl) oddsEl.textContent = odds.toFixed(2);
                     if (betsEl) betsEl.textContent = `${betCount} bets`;
-                    if (poolEl) poolEl.textContent = `â‚¹${poolAmount}`;
+                    if (poolEl) poolEl.textContent = `₹${poolAmount}`;
                 });
             } else {
                 // Fallback to initial odds
@@ -3263,9 +3267,10 @@ async function loadPoolOdds(eventId) {
                     const betsEl = document.getElementById(`bets-${index}`);
                     const poolEl = document.getElementById(`pool-${index}`);
                     
+                    // Just set the text directly without indicators for initial load
                     if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                     if (betsEl) betsEl.textContent = '0 bets';
-                    if (poolEl) poolEl.textContent = 'â‚¹0';
+                    if (poolEl) poolEl.textContent = '₹0';
                 });
             }
         }
