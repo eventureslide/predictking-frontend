@@ -3203,7 +3203,7 @@ async function loadPoolOdds(eventId) {
                 const betsEl = document.getElementById(`bets-${index}`);
                 const poolEl = document.getElementById(`pool-${index}`);
                 
-                // Just set the text directly without indicators for initial load
+                // Set odds directly without indicator (initial load)
                 if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                 if (betsEl) betsEl.textContent = '0 bets';
                 if (poolEl) poolEl.textContent = '₹0';
@@ -3250,7 +3250,7 @@ async function loadPoolOdds(eventId) {
                     const betsEl = document.getElementById(`bets-${index}`);
                     const poolEl = document.getElementById(`pool-${index}`);
                     
-                    // Just set the text directly without indicators for initial load
+                    // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = odds.toFixed(2);
                     if (betsEl) betsEl.textContent = `${betCount} bets`;
                     if (poolEl) poolEl.textContent = `₹${poolAmount}`;
@@ -3267,7 +3267,7 @@ async function loadPoolOdds(eventId) {
                     const betsEl = document.getElementById(`bets-${index}`);
                     const poolEl = document.getElementById(`pool-${index}`);
                     
-                    // Just set the text directly without indicators for initial load
+                    // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                     if (betsEl) betsEl.textContent = '0 bets';
                     if (poolEl) poolEl.textContent = '₹0';
@@ -3299,13 +3299,23 @@ function startOddsPolling(eventId) {
     // Stop any existing polling
     stopOddsPolling();
     
+    // Flag to ignore the first update (initial load)
+    let isFirstUpdate = true;
+    
     // Set up real-time listener for the betting pool
     const poolRef = db.collection('betting_pools').doc(eventId);
     
     oddsListener = poolRef.onSnapshot((doc) => {
         if (doc.exists) {
             const poolData = doc.data();
-            // Update betting modal odds directly
+            
+            if (isFirstUpdate) {
+                // Skip the first update to avoid fake change indicators
+                isFirstUpdate = false;
+                return;
+            }
+            
+            // Update betting modal odds directly (only on real changes)
             updateBettingModalOdds(eventId, poolData);
         }
     }, (error) => {
@@ -3319,14 +3329,49 @@ function startOddsPolling(eventId) {
     const eventListener = eventRef.onSnapshot((doc) => {
         if (doc.exists) {
             const eventData = doc.data();
-            if (eventData.currentOdds) {
-                updateBettingModalOddsFromEvent(eventId, eventData.currentOdds);
+            if (eventData.currentOdds && !isFirstUpdate) {
+                updateBettingModalOddsFromEventDirect(eventId, eventData.currentOdds);
             }
         }
     });
     
     // Store both listeners for cleanup
     window.currentEventListener = eventListener;
+}
+
+function updateBettingModalOddsFromEventDirect(eventId, newOdds) {
+    const currentEvent = events.find(e => e.id === eventId);
+    if (!currentEvent || !currentEvent.options) return;
+    
+    // Get the CURRENT odds from the DOM to compare against
+    const currentDOMOdds = {};
+    currentEvent.options.forEach((option, index) => {
+        const oddsEl = document.getElementById(`odds-${index}`);
+        if (oddsEl) {
+            // Parse only the number, ignore any arrow symbols
+            const oddsText = oddsEl.textContent.replace(/[▲▼\s]/g, '');
+            currentDOMOdds[option] = parseFloat(oddsText) || 0;
+        }
+    });
+    
+    currentEvent.options.forEach((option, index) => {
+        if (newOdds[option]) {
+            const oddsEl = document.getElementById(`odds-${index}`);
+            if (oddsEl) {
+                const currentDOMValue = currentDOMOdds[option];
+                // Only show indicator if odds actually changed from what's currently displayed
+                if (Math.abs(currentDOMValue - newOdds[option]) > 0.01) {
+                    updateBettingModalOddsWithIndicator(oddsEl, currentDOMValue, newOdds[option]);
+                } else {
+                    // Just update the text without indicator
+                    oddsEl.textContent = newOdds[option].toFixed(2);
+                }
+            }
+        }
+    });
+    
+    // Update local event data
+    currentEvent.currentOdds = newOdds;
 }
 
 function updateBettingModalOdds(eventId, poolData) {
@@ -3388,27 +3433,7 @@ function updateBettingModalOdds(eventId, poolData) {
 }
 
 function updateBettingModalOddsFromEvent(eventId, newOdds) {
-    const currentEvent = events.find(e => e.id === eventId);
-    if (!currentEvent || !currentEvent.options) return;
-    
-    currentEvent.options.forEach((option, index) => {
-        if (newOdds[option]) {
-            const oddsEl = document.getElementById(`odds-${index}`);
-            if (oddsEl) {
-                const oldOdds = parseFloat(oddsEl.textContent) || 0;
-                // Only show indicator if odds actually changed significantly
-                if (Math.abs(oldOdds - newOdds[option]) > 0.01) {
-                    updateBettingModalOddsWithIndicator(oddsEl, oldOdds, newOdds[option]);
-                } else {
-                    // Just update the text without indicator
-                    oddsEl.textContent = newOdds[option].toFixed(2);
-                }
-            }
-        }
-    });
-    
-    // Update local event data only
-    currentEvent.currentOdds = newOdds;
+    updateBettingModalOddsFromEventDirect(eventId, newOdds);
 }
 
 function stopOddsPolling() {
