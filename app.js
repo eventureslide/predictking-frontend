@@ -2190,7 +2190,7 @@ function updateTeamOptionsOdds(eventId, newOdds) {
                 const oldOdds = parseFloat(oddsEl.textContent) || 0;
                 // Only show indicator if odds actually changed significantly
                 if (Math.abs(oldOdds - newOdds[teamName]) > 0.01) {
-                    updateOddsWithIndicator(oddsEl, oldOdds, newOdds[teamName]);
+                    updateBettingModalOddsWithIndicator(oddsEl, oldOdds, newOdds[teamName]);
                 } else {
                     // Just update the text without indicator
                     oddsEl.textContent = newOdds[teamName].toFixed(2);
@@ -3398,7 +3398,7 @@ function updateBettingModalOddsFromEvent(eventId, newOdds) {
                 const oldOdds = parseFloat(oddsEl.textContent) || 0;
                 // Only show indicator if odds actually changed significantly
                 if (Math.abs(oldOdds - newOdds[option]) > 0.01) {
-                    updateOddsWithIndicator(oddsEl, oldOdds, newOdds[option]);
+                    updateBettingModalOddsWithIndicator(oddsEl, oldOdds, newOdds[option]);
                 } else {
                     // Just update the text without indicator
                     oddsEl.textContent = newOdds[option].toFixed(2);
@@ -3500,13 +3500,67 @@ function updateOddsWithIndicator(oddsElement, oldOdds, newOdds) {
         existingIndicator.remove();
     }
     
-    // Update the odds value
-    oddsElement.textContent = newOdds.toFixed(2);
+    // Check if this is for the right team
+    const isRightTeam = oddsElement.closest('.team-info-right');
     
-    // Only show indicator if odds actually changed
+    // Create the content with indicator in correct position
     if (oldOdds && oldOdds !== newOdds && Math.abs(oldOdds - newOdds) > 0.001) {
         const indicator = document.createElement('span');
         indicator.className = 'odds-change-indicator';
+        
+        if (newOdds > oldOdds) {
+            indicator.innerHTML = '▲';
+            indicator.classList.add('odds-increase');
+        } else {
+            indicator.innerHTML = '▼';
+            indicator.classList.add('odds-decrease');
+        }
+        
+        if (isRightTeam) {
+            // For right team: indicator first, then odds
+            oddsElement.innerHTML = '';
+            oddsElement.appendChild(indicator);
+            oddsElement.appendChild(document.createTextNode(' ' + newOdds.toFixed(2)));
+        } else {
+            // For left team: odds first, then indicator
+            oddsElement.textContent = newOdds.toFixed(2) + ' ';
+            oddsElement.appendChild(indicator);
+        }
+        
+        // Fade out indicator after 3 seconds
+        setTimeout(() => {
+            if (indicator.parentNode) {
+                indicator.classList.add('fade-out');
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        // Replace with just the odds text
+                        oddsElement.textContent = newOdds.toFixed(2);
+                    }
+                }, 300);
+            }
+        }, 3000);
+    } else {
+        // No change or first load - just show odds
+        oddsElement.textContent = newOdds.toFixed(2);
+    }
+}
+
+function updateBettingModalOddsWithIndicator(oddsElement, oldOdds, newOdds) {
+    if (!oddsElement) return;
+    
+    // Remove any existing indicators
+    const existingIndicator = oddsElement.querySelector('.odds-change-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+    
+    // Always set the odds text first (this keeps the element size consistent)
+    oddsElement.textContent = newOdds.toFixed(2);
+    
+    // Add indicator if odds changed, but position it absolutely so it doesn't affect layout
+    if (oldOdds && oldOdds !== newOdds && Math.abs(oldOdds - newOdds) > 0.001) {
+        const indicator = document.createElement('span');
+        indicator.className = 'odds-change-indicator betting-modal-indicator';
         
         if (newOdds > oldOdds) {
             indicator.innerHTML = '▲';
@@ -3531,9 +3585,6 @@ function updateOddsWithIndicator(oddsElement, oldOdds, newOdds) {
         }, 3000);
     }
 }
-
-
-
 
 function updateOddsDisplay(eventId, newOdds) {
     const currentEvent = events.find(e => e.id === eventId);

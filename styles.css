@@ -3394,7 +3394,6 @@ input:focus, select:focus, textarea:focus {
 
 .odds-change-indicator {
     display: inline-block;
-    margin-left: 4px;
     font-size: 0.8em;
     opacity: 1;
     transition: opacity 0.3s ease;
@@ -3413,15 +3412,9 @@ input:focus, select:focus, textarea:focus {
 }
 
 .team-odds {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
+    display: inline-block;
+    position: relative;
 }
-
-.team-info-right .team-odds {
-    justify-content: flex-end;
-}
-
 
 /* Glowing Currency Coin */
 .currency-coin {
@@ -3543,4 +3536,22 @@ input:focus, select:focus, textarea:focus {
 .modal-tabs {
     flex-shrink: 0; /* Never shrink the tabs */
     margin-top: auto; /* Push to bottom */
+}
+
+
+/* Betting modal specific indicator positioning - doesn't affect layout */
+.team-option-odds {
+    position: relative;
+    display: inline-block;
+    min-width: 3em; /* Reserve space to prevent shifting */
+    text-align: center;
+}
+
+.betting-modal-indicator {
+    position: absolute;
+    left: -1.2em; /* Position to the left of the odds */
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0; /* Remove default margins */
+    pointer-events: none; /* Don't interfere with clicks */
 }
