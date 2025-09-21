@@ -127,6 +127,456 @@ function handleProfilePicUpload(file, gender) {
     });
 }
 
+// Canvas-based star animation that mimics the CSS styling exactly
+class StarField {
+    constructor() {
+        this.canvas = null;
+        this.ctx = null;
+        this.starLayers = [];
+        this.animationId = null;
+        this.isVisible = true;
+        this.startTime = Date.now();
+        
+        this.init();
+    }
+
+    init() {
+        // Create canvas
+        this.canvas = document.createElement('canvas');
+        this.canvas.id = 'star-canvas';
+        this.canvas.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -4;
+            pointer-events: none;
+        `;
+        
+        document.body.insertBefore(this.canvas, document.body.firstChild);
+        
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        this.createStarLayers();
+        this.animate();
+
+        window.addEventListener('resize', () => this.resize());
+        
+        document.addEventListener('visibilitychange', () => {
+            this.isVisible = !document.hidden;
+            if (this.isVisible && !this.animationId) {
+                this.animate();
+            }
+        });
+    }
+
+    resize() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = this.canvas.getBoundingClientRect();
+        
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        
+        this.ctx.scale(dpr, dpr);
+        this.canvas.style.width = rect.width + 'px';
+        this.canvas.style.height = rect.height + 'px';
+        
+        this.createStarLayers();
+    }
+
+    createStarLayers() {
+        this.starLayers = [];
+        
+        // Layer 1: Dense small stars (mimics .main-content::before)
+        this.starLayers.push(this.createLayer1());
+        
+        // Layer 2: Medium stars (mimics .main-content::after)  
+        this.starLayers.push(this.createLayer2());
+        
+        // Layer 3: Large bright stars (mimics body::before)
+        this.starLayers.push(this.createLayer3());
+        
+        // Layer 4: Tiny dense stars (mimics body::after)
+        this.starLayers.push(this.createLayer4());
+    }
+
+    createLayer1() {
+        // Dense small stars - Layer 1 (0.5px stars)
+        const stars = [];
+        const positions = [
+            // Row 1
+            [12, 18, 1], [45, 32, 0.8], [78, 56, 0.6], [123, 29, 1], [156, 71, 0.9], 
+            [189, 43, 0.7], [234, 67, 1], [267, 21, 0.5],
+            // Row 2  
+            [23, 89, 0.8], [67, 112, 1], [98, 134, 0.6], [145, 105, 0.9], [178, 127, 1],
+            [212, 98, 0.7], [245, 143, 0.8], [289, 116, 1],
+            // Row 3
+            [34, 167, 0.6], [78, 189, 1], [123, 178, 0.9], [167, 201, 0.5], [198, 156, 1],
+            [234, 187, 0.8], [278, 169, 0.7], [312, 203, 1]
+        ];
+
+        const tileWidth = 350;
+        const tileHeight = 250;
+        const tilesX = Math.ceil(window.innerWidth * 3 / tileWidth);
+        const tilesY = Math.ceil(window.innerHeight * 3 / tileHeight);
+
+        for (let tx = 0; tx < tilesX; tx++) {
+            for (let ty = 0; ty < tilesY; ty++) {
+                positions.forEach(([x, y, opacity]) => {
+                    stars.push({
+                        baseX: tx * tileWidth + x - window.innerWidth,
+                        baseY: ty * tileHeight + y - window.innerHeight,
+                        size: 0.5,
+                        opacity: opacity,
+                        layer: 1
+                    });
+                });
+            }
+        }
+
+        return {
+            stars: stars,
+            zIndex: -2,
+            baseOpacity: 1.1, // Increased from 0.95
+            driftAnimation: this.getDriftAnimation1(),
+            twinkleAnimations: [
+                { duration: 4000, offset: 0, type: 'twinkle1' },
+                { duration: 6000, offset: 1000, type: 'twinkle2' },
+                { duration: 8000, offset: 2000, type: 'twinkle3' }
+            ]
+        };
+    }
+
+    createLayer2() {
+        // Medium stars - Layer 2 (1px stars)
+        const stars = [];
+        const positions = [
+            [67, 45, 1], [156, 89, 0.9], [234, 123, 0.7], [345, 67, 1], [89, 178, 0.8],
+            [198, 234, 1], [289, 189, 0.6], [123, 67, 0.9], [267, 34, 1], [78, 134, 0.7],
+            [189, 156, 0.8], [312, 123, 1]
+        ];
+
+        const tileWidth = 400;
+        const tileHeight = 300;
+        const tilesX = Math.ceil(window.innerWidth * 3 / tileWidth);
+        const tilesY = Math.ceil(window.innerHeight * 3 / tileHeight);
+
+        for (let tx = 0; tx < tilesX; tx++) {
+            for (let ty = 0; ty < tilesY; ty++) {
+                positions.forEach(([x, y, opacity]) => {
+                    stars.push({
+                        baseX: tx * tileWidth + x - window.innerWidth,
+                        baseY: ty * tileHeight + y - window.innerHeight,
+                        size: 1,
+                        opacity: opacity,
+                        layer: 2
+                    });
+                });
+            }
+        }
+
+        return {
+            stars: stars,
+            zIndex: -1,
+            baseOpacity: 1.0, // Increased from 0.85
+            driftAnimation: this.getDriftAnimation2(),
+            twinkleAnimations: [
+                { duration: 5000, offset: 500, type: 'twinkle4' },
+                { duration: 7000, offset: 2500, type: 'twinkle5' }
+            ]
+        };
+    }
+
+    createLayer3() {
+        // Large bright stars - Layer 3 (2px stars)
+        const stars = [];
+        const positions = [
+            [123, 89, 1], [345, 156, 0.9], [567, 234, 1], [234, 345, 0.8], 
+            [456, 123, 1], [678, 289, 0.9], [89, 456, 0.7], [789, 67, 1]
+        ];
+
+        const tileWidth = 800;
+        const tileHeight = 600;
+        const tilesX = Math.ceil(window.innerWidth * 3 / tileWidth);
+        const tilesY = Math.ceil(window.innerHeight * 3 / tileHeight);
+
+        for (let tx = 0; tx < tilesX; tx++) {
+            for (let ty = 0; ty < tilesY; ty++) {
+                positions.forEach(([x, y, opacity]) => {
+                    stars.push({
+                        baseX: tx * tileWidth + x - window.innerWidth,
+                        baseY: ty * tileHeight + y - window.innerHeight,
+                        size: 2,
+                        opacity: opacity,
+                        layer: 3
+                    });
+                });
+            }
+        }
+
+        return {
+            stars: stars,
+            zIndex: -3,
+            baseOpacity: 0.75, // Increased from 0.6
+            driftAnimation: this.getDriftAnimation3(),
+            pulseAnimations: [
+                { duration: 10000, offset: 0, type: 'pulse1' },
+                { duration: 12000, offset: 3000, type: 'pulse2' }
+            ]
+        };
+    }
+
+    createLayer4() {
+        // Tiny dense stars - Layer 4 (0.3px stars)
+        const stars = [];
+        const positions = [
+            [29, 41, 0.4], [73, 82, 0.3], [127, 53, 0.5], [181, 94, 0.3], [235, 167, 0.4],
+            [289, 128, 0.3], [58, 203, 0.5], [112, 244, 0.4], [166, 215, 0.3], [220, 256, 0.4]
+        ];
+
+        const tileWidth = 300;
+        const tileHeight = 300;
+        const tilesX = Math.ceil(window.innerWidth * 3 / tileWidth);
+        const tilesY = Math.ceil(window.innerHeight * 3 / tileHeight);
+
+        for (let tx = 0; tx < tilesX; tx++) {
+            for (let ty = 0; ty < tilesY; ty++) {
+                positions.forEach(([x, y, opacity]) => {
+                    stars.push({
+                        baseX: tx * tileWidth + x - window.innerWidth,
+                        baseY: ty * tileHeight + y - window.innerHeight,
+                        size: 0.3,
+                        opacity: opacity,
+                        layer: 4
+                    });
+                });
+            }
+        }
+
+        return {
+            stars: stars,
+            zIndex: -4,
+            baseOpacity: 0.65, // Increased from 0.5
+            driftAnimation: this.getDriftAnimation4(),
+            shimmerAnimation: { duration: 3000, offset: 1000 }
+        };
+    }
+
+    // Drift animation functions matching CSS keyframes
+    getDriftAnimation1() {
+        return {
+            duration: 120000, // 120s (2.5x faster)
+            keyframes: [
+                { time: 0, x: 0, y: 0, rotation: 0 },
+                { time: 0.33, x: -60, y: -85, rotation: 120 },
+                { time: 0.66, x: 75, y: -55, rotation: 240 },
+                { time: 1, x: 0, y: 0, rotation: 360 }
+            ]
+        };
+    }
+
+    getDriftAnimation2() {
+        return {
+            duration: 100000, // 100s (2.5x faster)
+            reverse: true,
+            keyframes: [
+                { time: 0, x: 0, y: 0, rotation: 0 },
+                { time: 0.25, x: 85, y: 55, rotation: -90 },
+                { time: 0.5, x: -40, y: 95, rotation: -180 },
+                { time: 0.75, x: -95, y: -35, rotation: -270 },
+                { time: 1, x: 0, y: 0, rotation: -360 }
+            ]
+        };
+    }
+
+    getDriftAnimation3() {
+        return {
+            duration: 80000, // 80s (2.5x faster)
+            keyframes: [
+                { time: 0, x: 0, y: 0, rotation: 0 },
+                { time: 0.4, x: -105, y: 70, rotation: 144 },
+                { time: 0.8, x: 55, y: -105, rotation: 288 },
+                { time: 1, x: 0, y: 0, rotation: 360 }
+            ]
+        };
+    }
+
+    getDriftAnimation4() {
+        return {
+            duration: 140000, // 140s (2.5x faster)
+            reverse: true,
+            keyframes: [
+                { time: 0, x: 0, y: 0, rotation: 0 },
+                { time: 0.5, x: 35, y: -65, rotation: -180 },
+                { time: 1, x: 0, y: 0, rotation: -360 }
+            ]
+        };
+    }
+
+    // Interpolate between keyframes
+    interpolateKeyframes(keyframes, progress) {
+        if (progress >= 1) progress = progress % 1;
+        
+        for (let i = 0; i < keyframes.length - 1; i++) {
+            const current = keyframes[i];
+            const next = keyframes[i + 1];
+            
+            if (progress >= current.time && progress <= next.time) {
+                const segmentProgress = (progress - current.time) / (next.time - current.time);
+                return {
+                    x: current.x + (next.x - current.x) * segmentProgress,
+                    y: current.y + (next.y - current.y) * segmentProgress,
+                    rotation: current.rotation + (next.rotation - current.rotation) * segmentProgress
+                };
+            }
+        }
+        
+        return keyframes[0];
+    }
+
+    // Twinkling animation functions
+    getTwinkleValue(type, progress) {
+        switch (type) {
+            case 'twinkle1':
+                if (progress <= 0.25) return 0.8 + (0.4 - 0.8) * (progress / 0.25);
+                if (progress <= 0.5) return 0.4 + (1 - 0.4) * ((progress - 0.25) / 0.25);
+                if (progress <= 0.75) return 1 + (0.6 - 1) * ((progress - 0.5) / 0.25);
+                return 0.6 + (0.8 - 0.6) * ((progress - 0.75) / 0.25);
+            
+            case 'twinkle2':
+                if (progress <= 0.3) return 0.6 + (0.9 - 0.6) * (progress / 0.3);
+                if (progress <= 0.7) return 0.9 + (0.3 - 0.9) * ((progress - 0.3) / 0.4);
+                return 0.3 + (0.6 - 0.3) * ((progress - 0.7) / 0.3);
+            
+            case 'twinkle3':
+                if (progress <= 0.4) return 0.7 + (0.2 - 0.7) * (progress / 0.4);
+                if (progress <= 0.8) return 0.2 + (0.95 - 0.2) * ((progress - 0.4) / 0.4);
+                return 0.95 + (0.7 - 0.95) * ((progress - 0.8) / 0.2);
+            
+            case 'twinkle4':
+                return progress <= 0.5 ? 0.7 + (1 - 0.7) * (progress / 0.5) : 1 + (0.7 - 1) * ((progress - 0.5) / 0.5);
+            
+            case 'twinkle5':
+                if (progress <= 0.33) return 0.5 + (0.8 - 0.5) * (progress / 0.33);
+                if (progress <= 0.66) return 0.8 + (0.4 - 0.8) * ((progress - 0.33) / 0.33);
+                return 0.4 + (0.5 - 0.4) * ((progress - 0.66) / 0.34);
+        }
+        return 1;
+    }
+
+    getPulseValue(type, progress) {
+        switch (type) {
+            case 'pulse1':
+                const opacity = progress <= 0.5 ? 0.6 + (1 - 0.6) * (progress / 0.5) : 1 + (0.6 - 1) * ((progress - 0.5) / 0.5);
+                const scale = progress <= 0.5 ? 1 + (1.2 - 1) * (progress / 0.5) : 1.2 + (1 - 1.2) * ((progress - 0.5) / 0.5);
+                return { opacity, scale };
+            
+            case 'pulse2':
+                const opacity2 = progress <= 0.5 ? 0.7 + (0.9 - 0.7) * (progress / 0.5) : 0.9 + (0.7 - 0.9) * ((progress - 0.5) / 0.5);
+                const scale2 = progress <= 0.5 ? 1 + (1.1 - 1) * (progress / 0.5) : 1.1 + (1 - 1.1) * ((progress - 0.5) / 0.5);
+                return { opacity: opacity2, scale: scale2 };
+        }
+        return { opacity: 1, scale: 1 };
+    }
+
+    getShimmerValue(progress) {
+        return progress <= 0.5 ? 0.5 + (0.8 - 0.5) * (progress / 0.5) : 0.8 + (0.5 - 0.8) * ((progress - 0.5) / 0.5);
+    }
+
+    animate() {
+        if (!this.isVisible) {
+            this.animationId = null;
+            return;
+        }
+
+        const currentTime = Date.now();
+        const elapsed = currentTime - this.startTime;
+
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw each layer in reverse z-index order (background to foreground)
+        for (let layerIndex = this.starLayers.length - 1; layerIndex >= 0; layerIndex--) {
+            const layer = this.starLayers[layerIndex];
+            
+            // Calculate drift animation
+            const driftProgress = (elapsed % layer.driftAnimation.duration) / layer.driftAnimation.duration;
+            const drift = this.interpolateKeyframes(layer.driftAnimation.keyframes, driftProgress);
+            
+            if (layer.driftAnimation.reverse) {
+                drift.x = -drift.x;
+                drift.y = -drift.y;
+                drift.rotation = -drift.rotation;
+            }
+
+            layer.stars.forEach(star => {
+                // Apply drift transformation
+                const x = star.baseX + drift.x;
+                const y = star.baseY + drift.y;
+                
+                // Skip stars outside viewport (with margin)
+                if (x < -50 || x > window.innerWidth + 50 || y < -50 || y > window.innerHeight + 50) {
+                    return;
+                }
+
+                let finalOpacity = star.opacity * layer.baseOpacity;
+                let finalSize = star.size;
+
+                // Apply twinkle animations
+                if (layer.twinkleAnimations) {
+                    layer.twinkleAnimations.forEach(anim => {
+                        const animProgress = ((elapsed + anim.offset) % anim.duration) / anim.duration;
+                        finalOpacity *= this.getTwinkleValue(anim.type, animProgress);
+                    });
+                }
+
+                // Apply pulse animations  
+                if (layer.pulseAnimations) {
+                    layer.pulseAnimations.forEach(anim => {
+                        const animProgress = ((elapsed + anim.offset) % anim.duration) / anim.duration;
+                        const pulse = this.getPulseValue(anim.type, animProgress);
+                        finalOpacity *= pulse.opacity;
+                        finalSize *= pulse.scale;
+                    });
+                }
+
+                // Apply shimmer animation
+                if (layer.shimmerAnimation) {
+                    const shimmerProgress = ((elapsed + layer.shimmerAnimation.offset) % layer.shimmerAnimation.duration) / layer.shimmerAnimation.duration;
+                    finalOpacity *= this.getShimmerValue(shimmerProgress);
+                }
+
+                // Draw star
+                this.ctx.save();
+                
+                // Warm white color #FFF3DA = rgb(255, 243, 218)
+                this.ctx.fillStyle = `rgba(255, 243, 218, ${Math.max(0, Math.min(1, finalOpacity))})`;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, finalSize, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                this.ctx.restore();
+            });
+        }
+
+        this.animationId = requestAnimationFrame(() => this.animate());
+    }
+
+    destroy() {
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
+        if (this.canvas && this.canvas.parentNode) {
+            this.canvas.parentNode.removeChild(this.canvas);
+        }
+    }
+}
+
+// Initialize stars when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new StarField();
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // Double-check mobile access
     if (!isMobileDevice()) {
