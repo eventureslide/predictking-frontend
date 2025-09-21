@@ -127,15 +127,39 @@ function handleProfilePicUpload(file, gender) {
     });
 }
 
-// Canvas-based star animation that mimics the CSS styling exactly
+// Canvas-based realistic star animation
 class StarField {
     constructor() {
         this.canvas = null;
         this.ctx = null;
-        this.starLayers = [];
+        this.stars = [];
         this.animationId = null;
         this.isVisible = true;
         this.startTime = Date.now();
+        
+        // Smooth global motion for entire star field - start immediately
+        this.globalMotion = {
+            x: 0, y: 0, rotation: 0,
+            velocityX: (Math.random() - 0.5) * 0.3, // Start with initial motion
+            velocityY: (Math.random() - 0.5) * 0.3,
+            rotationSpeed: (Math.random() - 0.5) * 0.0008,
+            targetVelocityX: 0, targetVelocityY: 0, targetRotationSpeed: 0,
+            lastChange: this.startTime,
+            changeInterval: 15000 + Math.random() * 10000 // 15-25 seconds
+        };
+        
+        // Set initial targets same as current values to avoid sudden changes
+        this.globalMotion.targetVelocityX = this.globalMotion.velocityX;
+        this.globalMotion.targetVelocityY = this.globalMotion.velocityY;
+        this.globalMotion.targetRotationSpeed = this.globalMotion.rotationSpeed;
+        
+        // Meteor system
+        this.meteors = [];
+        this.nextMeteorTime = this.startTime + Math.random() * 30000 + 15000; // 15-45 seconds
+        
+        // Moon system
+        this.moon = null;
+        this.nextMoonTime = this.startTime + Math.random() * 120000 + 180000; // 3-8 minutes
         
         this.init();
     }
@@ -158,7 +182,7 @@ class StarField {
         
         this.ctx = this.canvas.getContext('2d');
         this.resize();
-        this.createStarLayers();
+        this.createRealisticStars();
         this.animate();
 
         window.addEventListener('resize', () => this.resize());
@@ -182,306 +206,476 @@ class StarField {
         this.canvas.style.width = rect.width + 'px';
         this.canvas.style.height = rect.height + 'px';
         
-        this.createStarLayers();
+        this.createRealisticStars();
     }
 
-    createStarLayers() {
-        this.starLayers = [];
+    createRealisticStars() {
+        this.stars = [];
         
-        // Layer 1: Dense small stars (mimics .main-content::before)
-        this.starLayers.push(this.createLayer1());
+        // Create expanded area so stars don't disappear during motion
+        const areaWidth = window.innerWidth * 4;
+        const areaHeight = window.innerHeight * 4;
+        const offsetX = -window.innerWidth * 1.5;
+        const offsetY = -window.innerHeight * 1.5;
         
-        // Layer 2: Medium stars (mimics .main-content::after)  
-        this.starLayers.push(this.createLayer2());
-        
-        // Layer 3: Large bright stars (mimics body::before)
-        this.starLayers.push(this.createLayer3());
-        
-        // Layer 4: Tiny dense stars (mimics body::after)
-        this.starLayers.push(this.createLayer4());
-    }
+        // Star distribution: perfectly dense star-filled sky
+        const starCounts = {
+            tiny: Math.floor((window.innerWidth * window.innerHeight) / 450), // A bit more tiny stars
+            small: Math.floor((window.innerWidth * window.innerHeight) / 1600), // A bit more small stars
+            medium: Math.floor((window.innerWidth * window.innerHeight) / 6500), // A bit more medium stars
+            large: Math.floor((window.innerWidth * window.innerHeight) / 40000) + 5 // Keep large stars same
+        };
 
-    createLayer1() {
-        // Dense small stars - Layer 1 (0.5px stars)
-        const stars = [];
-        const positions = [
-            // Row 1
-            [12, 18, 1], [45, 32, 0.8], [78, 56, 0.6], [123, 29, 1], [156, 71, 0.9], 
-            [189, 43, 0.7], [234, 67, 1], [267, 21, 0.5],
-            // Row 2  
-            [23, 89, 0.8], [67, 112, 1], [98, 134, 0.6], [145, 105, 0.9], [178, 127, 1],
-            [212, 98, 0.7], [245, 143, 0.8], [289, 116, 1],
-            // Row 3
-            [34, 167, 0.6], [78, 189, 1], [123, 178, 0.9], [167, 201, 0.5], [198, 156, 1],
-            [234, 187, 0.8], [278, 169, 0.7], [312, 203, 1]
-        ];
-
-        const tileWidth = 350;
-        const tileHeight = 250;
-        const tilesX = Math.ceil(window.innerWidth * 3 / tileWidth);
-        const tilesY = Math.ceil(window.innerHeight * 3 / tileHeight);
-
-        for (let tx = 0; tx < tilesX; tx++) {
-            for (let ty = 0; ty < tilesY; ty++) {
-                positions.forEach(([x, y, opacity]) => {
-                    stars.push({
-                        baseX: tx * tileWidth + x - window.innerWidth,
-                        baseY: ty * tileHeight + y - window.innerHeight,
-                        size: 0.5,
-                        opacity: opacity,
-                        layer: 1
-                    });
-                });
-            }
+        // Create tiny stars (barely visible dots with minimal glow)
+        for (let i = 0; i < starCounts.tiny; i++) {
+            this.stars.push(this.createStar('tiny', areaWidth, areaHeight, offsetX, offsetY));
         }
 
-        return {
-            stars: stars,
-            zIndex: -2,
-            baseOpacity: 1.1, // Increased from 0.95
-            driftAnimation: this.getDriftAnimation1(),
-            twinkleAnimations: [
-                { duration: 4000, offset: 0, type: 'twinkle1' },
-                { duration: 6000, offset: 1000, type: 'twinkle2' },
-                { duration: 8000, offset: 2000, type: 'twinkle3' }
-            ]
-        };
-    }
-
-    createLayer2() {
-        // Medium stars - Layer 2 (1px stars)
-        const stars = [];
-        const positions = [
-            [67, 45, 1], [156, 89, 0.9], [234, 123, 0.7], [345, 67, 1], [89, 178, 0.8],
-            [198, 234, 1], [289, 189, 0.6], [123, 67, 0.9], [267, 34, 1], [78, 134, 0.7],
-            [189, 156, 0.8], [312, 123, 1]
-        ];
-
-        const tileWidth = 400;
-        const tileHeight = 300;
-        const tilesX = Math.ceil(window.innerWidth * 3 / tileWidth);
-        const tilesY = Math.ceil(window.innerHeight * 3 / tileHeight);
-
-        for (let tx = 0; tx < tilesX; tx++) {
-            for (let ty = 0; ty < tilesY; ty++) {
-                positions.forEach(([x, y, opacity]) => {
-                    stars.push({
-                        baseX: tx * tileWidth + x - window.innerWidth,
-                        baseY: ty * tileHeight + y - window.innerHeight,
-                        size: 1,
-                        opacity: opacity,
-                        layer: 2
-                    });
-                });
-            }
+        // Create small stars (small dot with gentle glow)
+        for (let i = 0; i < starCounts.small; i++) {
+            this.stars.push(this.createStar('small', areaWidth, areaHeight, offsetX, offsetY));
         }
 
-        return {
-            stars: stars,
-            zIndex: -1,
-            baseOpacity: 1.0, // Increased from 0.85
-            driftAnimation: this.getDriftAnimation2(),
-            twinkleAnimations: [
-                { duration: 5000, offset: 500, type: 'twinkle4' },
-                { duration: 7000, offset: 2500, type: 'twinkle5' }
-            ]
-        };
-    }
-
-    createLayer3() {
-        // Large bright stars - Layer 3 (2px stars)
-        const stars = [];
-        const positions = [
-            [123, 89, 1], [345, 156, 0.9], [567, 234, 1], [234, 345, 0.8], 
-            [456, 123, 1], [678, 289, 0.9], [89, 456, 0.7], [789, 67, 1]
-        ];
-
-        const tileWidth = 800;
-        const tileHeight = 600;
-        const tilesX = Math.ceil(window.innerWidth * 3 / tileWidth);
-        const tilesY = Math.ceil(window.innerHeight * 3 / tileHeight);
-
-        for (let tx = 0; tx < tilesX; tx++) {
-            for (let ty = 0; ty < tilesY; ty++) {
-                positions.forEach(([x, y, opacity]) => {
-                    stars.push({
-                        baseX: tx * tileWidth + x - window.innerWidth,
-                        baseY: ty * tileHeight + y - window.innerHeight,
-                        size: 2,
-                        opacity: opacity,
-                        layer: 3
-                    });
-                });
-            }
+        // Create medium stars (visible dot with noticeable glow)
+        for (let i = 0; i < starCounts.medium; i++) {
+            this.stars.push(this.createStar('medium', areaWidth, areaHeight, offsetX, offsetY));
         }
 
-        return {
-            stars: stars,
-            zIndex: -3,
-            baseOpacity: 0.75, // Increased from 0.6
-            driftAnimation: this.getDriftAnimation3(),
-            pulseAnimations: [
-                { duration: 10000, offset: 0, type: 'pulse1' },
-                { duration: 12000, offset: 3000, type: 'pulse2' }
-            ]
-        };
-    }
-
-    createLayer4() {
-        // Tiny dense stars - Layer 4 (0.3px stars)
-        const stars = [];
-        const positions = [
-            [29, 41, 0.4], [73, 82, 0.3], [127, 53, 0.5], [181, 94, 0.3], [235, 167, 0.4],
-            [289, 128, 0.3], [58, 203, 0.5], [112, 244, 0.4], [166, 215, 0.3], [220, 256, 0.4]
-        ];
-
-        const tileWidth = 300;
-        const tileHeight = 300;
-        const tilesX = Math.ceil(window.innerWidth * 3 / tileWidth);
-        const tilesY = Math.ceil(window.innerHeight * 3 / tileHeight);
-
-        for (let tx = 0; tx < tilesX; tx++) {
-            for (let ty = 0; ty < tilesY; ty++) {
-                positions.forEach(([x, y, opacity]) => {
-                    stars.push({
-                        baseX: tx * tileWidth + x - window.innerWidth,
-                        baseY: ty * tileHeight + y - window.innerHeight,
-                        size: 0.3,
-                        opacity: opacity,
-                        layer: 4
-                    });
-                });
-            }
+        // Create large stars (bright dot with prominent glow)
+        for (let i = 0; i < starCounts.large; i++) {
+            this.stars.push(this.createStar('large', areaWidth, areaHeight, offsetX, offsetY));
         }
-
-        return {
-            stars: stars,
-            zIndex: -4,
-            baseOpacity: 0.65, // Increased from 0.5
-            driftAnimation: this.getDriftAnimation4(),
-            shimmerAnimation: { duration: 3000, offset: 1000 }
-        };
     }
 
-    // Drift animation functions matching CSS keyframes
-    getDriftAnimation1() {
-        return {
-            duration: 120000, // 120s (2.5x faster)
-            keyframes: [
-                { time: 0, x: 0, y: 0, rotation: 0 },
-                { time: 0.33, x: -60, y: -85, rotation: 120 },
-                { time: 0.66, x: 75, y: -55, rotation: 240 },
-                { time: 1, x: 0, y: 0, rotation: 360 }
-            ]
-        };
-    }
-
-    getDriftAnimation2() {
-        return {
-            duration: 100000, // 100s (2.5x faster)
-            reverse: true,
-            keyframes: [
-                { time: 0, x: 0, y: 0, rotation: 0 },
-                { time: 0.25, x: 85, y: 55, rotation: -90 },
-                { time: 0.5, x: -40, y: 95, rotation: -180 },
-                { time: 0.75, x: -95, y: -35, rotation: -270 },
-                { time: 1, x: 0, y: 0, rotation: -360 }
-            ]
-        };
-    }
-
-    getDriftAnimation3() {
-        return {
-            duration: 80000, // 80s (2.5x faster)
-            keyframes: [
-                { time: 0, x: 0, y: 0, rotation: 0 },
-                { time: 0.4, x: -105, y: 70, rotation: 144 },
-                { time: 0.8, x: 55, y: -105, rotation: 288 },
-                { time: 1, x: 0, y: 0, rotation: 360 }
-            ]
-        };
-    }
-
-    getDriftAnimation4() {
-        return {
-            duration: 140000, // 140s (2.5x faster)
-            reverse: true,
-            keyframes: [
-                { time: 0, x: 0, y: 0, rotation: 0 },
-                { time: 0.5, x: 35, y: -65, rotation: -180 },
-                { time: 1, x: 0, y: 0, rotation: -360 }
-            ]
-        };
-    }
-
-    // Interpolate between keyframes
-    interpolateKeyframes(keyframes, progress) {
-        if (progress >= 1) progress = progress % 1;
-        
-        for (let i = 0; i < keyframes.length - 1; i++) {
-            const current = keyframes[i];
-            const next = keyframes[i + 1];
+    createStar(type, areaWidth, areaHeight, offsetX, offsetY) {
+        const star = {
+            baseX: Math.random() * areaWidth + offsetX,
+            baseY: Math.random() * areaHeight + offsetY,
+            type: type,
             
-            if (progress >= current.time && progress <= next.time) {
-                const segmentProgress = (progress - current.time) / (next.time - current.time);
-                return {
-                    x: current.x + (next.x - current.x) * segmentProgress,
-                    y: current.y + (next.y - current.y) * segmentProgress,
-                    rotation: current.rotation + (next.rotation - current.rotation) * segmentProgress
-                };
+            // Individual star properties
+            baseBrightness: Math.random() * 0.3 + 0.7, // 0.7 to 1.0 (brighter base)
+            
+            // Random twinkling behavior
+            twinklePhase: Math.random() * Math.PI * 2,
+            twinkleSpeed: Math.random() * 0.008 + 0.002, // Very slow natural twinkling
+            twinkleIntensity: Math.random() * 0.4 + 0.2,
+            twinklePattern: Math.random(),
+            
+            // Random timing changes
+            nextPatternChange: this.startTime + Math.random() * 20000 + 10000, // 10-30 seconds
+            
+            // Subtle individual motion
+            localDrift: {
+                x: 0, y: 0,
+                speedX: (Math.random() - 0.5) * 0.01,
+                speedY: (Math.random() - 0.5) * 0.01
             }
-        }
-        
-        return keyframes[0];
-    }
+        };
 
-    // Twinkling animation functions
-    getTwinkleValue(type, progress) {
+        // Set size and glow properties - balanced for visibility
         switch (type) {
-            case 'twinkle1':
-                if (progress <= 0.25) return 0.8 + (0.4 - 0.8) * (progress / 0.25);
-                if (progress <= 0.5) return 0.4 + (1 - 0.4) * ((progress - 0.25) / 0.25);
-                if (progress <= 0.75) return 1 + (0.6 - 1) * ((progress - 0.5) / 0.25);
-                return 0.6 + (0.8 - 0.6) * ((progress - 0.75) / 0.25);
-            
-            case 'twinkle2':
-                if (progress <= 0.3) return 0.6 + (0.9 - 0.6) * (progress / 0.3);
-                if (progress <= 0.7) return 0.9 + (0.3 - 0.9) * ((progress - 0.3) / 0.4);
-                return 0.3 + (0.6 - 0.3) * ((progress - 0.7) / 0.3);
-            
-            case 'twinkle3':
-                if (progress <= 0.4) return 0.7 + (0.2 - 0.7) * (progress / 0.4);
-                if (progress <= 0.8) return 0.2 + (0.95 - 0.2) * ((progress - 0.4) / 0.4);
-                return 0.95 + (0.7 - 0.95) * ((progress - 0.8) / 0.2);
-            
-            case 'twinkle4':
-                return progress <= 0.5 ? 0.7 + (1 - 0.7) * (progress / 0.5) : 1 + (0.7 - 1) * ((progress - 0.5) / 0.5);
-            
-            case 'twinkle5':
-                if (progress <= 0.33) return 0.5 + (0.8 - 0.5) * (progress / 0.33);
-                if (progress <= 0.66) return 0.8 + (0.4 - 0.8) * ((progress - 0.33) / 0.33);
-                return 0.4 + (0.5 - 0.4) * ((progress - 0.66) / 0.34);
+            case 'tiny':
+                star.coreSize = 0.25 + Math.random() * 0.2; // 0.25-0.45px core (more visible)
+                star.maxGlowRadius = 1.3 + Math.random() * 0.7; // 1.3-2.0px glow
+                star.brightness = 0.5 + Math.random() * 0.4; // Better visibility
+                break;
+            case 'small':
+                star.coreSize = 0.4 + Math.random() * 0.25; // 0.4-0.65px core
+                star.maxGlowRadius = 1.8 + Math.random() * 0.9; // 1.8-2.7px glow
+                star.brightness = 0.65 + Math.random() * 0.3; // Good visibility
+                break;
+            case 'medium':
+                star.coreSize = 0.6 + Math.random() * 0.3; // 0.6-0.9px core
+                star.maxGlowRadius = 2.8 + Math.random() * 1.2; // 2.8-4.0px glow
+                star.brightness = 0.75 + Math.random() * 0.2; // Bright but not overwhelming
+                break;
+            case 'large':
+                star.coreSize = 0.8 + Math.random() * 0.4; // 0.8-1.2px core
+                star.maxGlowRadius = 4.0 + Math.random() * 2.5; // 4-6.5px glow
+                star.brightness = 0.85 + Math.random() * 0.15; // Very bright
+                break;
         }
-        return 1;
+
+        return star;
     }
 
-    getPulseValue(type, progress) {
-        switch (type) {
-            case 'pulse1':
-                const opacity = progress <= 0.5 ? 0.6 + (1 - 0.6) * (progress / 0.5) : 1 + (0.6 - 1) * ((progress - 0.5) / 0.5);
-                const scale = progress <= 0.5 ? 1 + (1.2 - 1) * (progress / 0.5) : 1.2 + (1 - 1.2) * ((progress - 0.5) / 0.5);
-                return { opacity, scale };
+    updateGlobalMotion(currentTime) {
+        const elapsed = currentTime - this.globalMotion.lastChange;
+        
+        // Change direction/speed smoothly over time
+        if (elapsed > this.globalMotion.changeInterval) {
+            // Set new target motion (very gentle)
+            this.globalMotion.targetVelocityX = (Math.random() - 0.5) * 0.3;
+            this.globalMotion.targetVelocityY = (Math.random() - 0.5) * 0.3;
+            this.globalMotion.targetRotationSpeed = (Math.random() - 0.5) * 0.0008; // Very slow rotation
             
-            case 'pulse2':
-                const opacity2 = progress <= 0.5 ? 0.7 + (0.9 - 0.7) * (progress / 0.5) : 0.9 + (0.7 - 0.9) * ((progress - 0.5) / 0.5);
-                const scale2 = progress <= 0.5 ? 1 + (1.1 - 1) * (progress / 0.5) : 1.1 + (1 - 1.1) * ((progress - 0.5) / 0.5);
-                return { opacity: opacity2, scale: scale2 };
+            this.globalMotion.lastChange = currentTime;
+            this.globalMotion.changeInterval = 15000 + Math.random() * 10000; // Next change in 15-25s
         }
-        return { opacity: 1, scale: 1 };
+        
+        // Smooth interpolation to target motion (very slow change)
+        const smoothing = 0.0008; // Very slow transition
+        this.globalMotion.velocityX += (this.globalMotion.targetVelocityX - this.globalMotion.velocityX) * smoothing;
+        this.globalMotion.velocityY += (this.globalMotion.targetVelocityY - this.globalMotion.velocityY) * smoothing;
+        this.globalMotion.rotationSpeed += (this.globalMotion.targetRotationSpeed - this.globalMotion.rotationSpeed) * smoothing;
+        
+        // Apply motion
+        this.globalMotion.x += this.globalMotion.velocityX;
+        this.globalMotion.y += this.globalMotion.velocityY;
+        this.globalMotion.rotation += this.globalMotion.rotationSpeed;
     }
 
-    getShimmerValue(progress) {
-        return progress <= 0.5 ? 0.5 + (0.8 - 0.5) * (progress / 0.5) : 0.8 + (0.5 - 0.8) * ((progress - 0.5) / 0.5);
+    createMeteor(currentTime) {
+        // Random entry point from screen edges
+        const side = Math.floor(Math.random() * 4);
+        let startX, startY, endX, endY;
+        
+        switch (side) {
+            case 0: // Top edge
+                startX = Math.random() * window.innerWidth;
+                startY = -50;
+                endX = startX + (Math.random() - 0.5) * window.innerWidth * 1.5;
+                endY = window.innerHeight + 50;
+                break;
+            case 1: // Right edge
+                startX = window.innerWidth + 50;
+                startY = Math.random() * window.innerHeight;
+                endX = -50;
+                endY = startY + (Math.random() - 0.5) * window.innerHeight * 1.5;
+                break;
+            case 2: // Bottom edge
+                startX = Math.random() * window.innerWidth;
+                startY = window.innerHeight + 50;
+                endX = startX + (Math.random() - 0.5) * window.innerWidth * 1.5;
+                endY = -50;
+                break;
+            case 3: // Left edge
+                startX = -50;
+                startY = Math.random() * window.innerHeight;
+                endX = window.innerWidth + 50;
+                endY = startY + (Math.random() - 0.5) * window.innerHeight * 1.5;
+                break;
+        }
+        
+        const meteor = {
+            startX, startY, endX, endY,
+            startTime: currentTime,
+            duration: 1500 + Math.random() * 2000, // 1.5-3.5 seconds
+            brightness: 0.6 + Math.random() * 0.4,
+            trailLength: 40 + Math.random() * 60, // 40-100px trail
+            size: 1 + Math.random() * 2 // 1-3px meteor head
+        };
+        
+        return meteor;
+    }
+
+    createMoon(currentTime) {
+        // Decide randomly if moon moves with sky motion or independently
+        const followsSkyMotion = Math.random() < 0.6; // 60% chance to follow sky motion
+        
+        // Moon always enters from random side
+        const side = Math.floor(Math.random() * 4);
+        let startX, startY, endX, endY;
+        
+        if (followsSkyMotion) {
+            // Moon moves with sky - stationary relative to stars
+            startX = Math.random() * window.innerWidth;
+            startY = Math.random() * window.innerHeight;
+            endX = startX; // Stays in same position relative to sky
+            endY = startY;
+        } else {
+            // Moon moves independently across sky
+            switch (side) {
+                case 0: // Enter from left
+                    startX = -100;
+                    startY = Math.random() * window.innerHeight * 0.6 + window.innerHeight * 0.2;
+                    endX = window.innerWidth + 100;
+                    endY = startY + (Math.random() - 0.5) * window.innerHeight * 0.3;
+                    break;
+                case 1: // Enter from right
+                    startX = window.innerWidth + 100;
+                    startY = Math.random() * window.innerHeight * 0.6 + window.innerHeight * 0.2;
+                    endX = -100;
+                    endY = startY + (Math.random() - 0.5) * window.innerHeight * 0.3;
+                    break;
+                case 2: // Enter from top
+                    startX = Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2;
+                    startY = -100;
+                    endX = startX + (Math.random() - 0.5) * window.innerWidth * 0.3;
+                    endY = window.innerHeight + 100;
+                    break;
+                case 3: // Enter from bottom
+                    startX = Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2;
+                    startY = window.innerHeight + 100;
+                    endX = startX + (Math.random() - 0.5) * window.innerWidth * 0.3;
+                    endY = -100;
+                    break;
+            }
+        }
+        
+        const moon = {
+            startX, startY, endX, endY,
+            startTime: currentTime,
+            duration: followsSkyMotion ? 60000 + Math.random() * 40000 : 45000 + Math.random() * 30000, // 1-1.6 min for stationary, 45-75s for moving
+            size: 15 + Math.random() * 10, // 15-25px radius
+            brightness: 0.7 + Math.random() * 0.2,
+            followsSkyMotion: followsSkyMotion
+        };
+        
+        return moon;
+    }
+
+    updateMeteorsAndMoon(currentTime) {
+        // Create new meteors randomly
+        if (currentTime > this.nextMeteorTime) {
+            this.meteors.push(this.createMeteor(currentTime));
+            this.nextMeteorTime = currentTime + Math.random() * 30000 + 15000; // Next meteor in 15-45 seconds
+        }
+        
+        // Remove completed meteors
+        this.meteors = this.meteors.filter(meteor => 
+            currentTime - meteor.startTime < meteor.duration
+        );
+        
+        // Create new moon very rarely
+        if (!this.moon && currentTime > this.nextMoonTime) {
+            this.moon = this.createMoon(currentTime);
+            this.nextMoonTime = currentTime + Math.random() * 300000 + 300000; // Next moon in 5-15 minutes
+        }
+        
+        // Remove moon when it's done
+        if (this.moon && currentTime - this.moon.startTime > this.moon.duration) {
+            this.moon = null;
+        }
+    }
+
+    drawMeteor(meteor, currentTime) {
+        const elapsed = currentTime - meteor.startTime;
+        const progress = Math.min(1, elapsed / meteor.duration);
+        
+        // Linear movement - no acceleration/deceleration
+        const x = meteor.startX + (meteor.endX - meteor.startX) * progress;
+        const y = meteor.startY + (meteor.endY - meteor.startY) * progress;
+        
+        // Calculate trail points
+        const trailPoints = [];
+        const numTrailPoints = 8;
+        
+        for (let i = 0; i < numTrailPoints; i++) {
+            const trailProgress = Math.max(0, progress - (i / numTrailPoints) * 0.1);
+            const trailX = meteor.startX + (meteor.endX - meteor.startX) * trailProgress;
+            const trailY = meteor.startY + (meteor.endY - meteor.startY) * trailProgress;
+            const trailOpacity = meteor.brightness * (1 - i / numTrailPoints) * (1 - progress * 0.3);
+            
+            trailPoints.push({ x: trailX, y: trailY, opacity: trailOpacity, size: meteor.size * (1 - i / numTrailPoints * 0.7) });
+        }
+        
+        this.ctx.save();
+        
+        // Draw trail (from back to front)
+        trailPoints.reverse().forEach((point, index) => {
+            if (point.opacity > 0) {
+                this.ctx.fillStyle = `rgba(255, 255, 255, ${point.opacity})`;
+                this.ctx.beginPath();
+                this.ctx.arc(point.x, point.y, point.size, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Add slight glow to trail
+                if (index < 3) {
+                    this.ctx.fillStyle = `rgba(255, 255, 255, ${point.opacity * 0.3})`;
+                    this.ctx.beginPath();
+                    this.ctx.arc(point.x, point.y, point.size * 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            }
+        });
+        
+        this.ctx.restore();
+    }
+
+    drawMoon(moon, currentTime) {
+        const elapsed = currentTime - moon.startTime;
+        const progress = elapsed / moon.duration;
+        
+        let x, y;
+        
+        if (moon.followsSkyMotion) {
+            // Moon moves with sky motion (stationary relative to stars)
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            
+            // Apply same transformations as stars
+            let moonX = moon.startX - centerX;
+            let moonY = moon.startY - centerY;
+            
+            // Apply global rotation
+            const cos = Math.cos(this.globalMotion.rotation);
+            const sin = Math.sin(this.globalMotion.rotation);
+            const rotatedX = moonX * cos - moonY * sin;
+            const rotatedY = moonX * sin + moonY * cos;
+            
+            // Apply global drift and translate back
+            x = rotatedX + centerX + this.globalMotion.x;
+            y = rotatedY + centerY + this.globalMotion.y;
+        } else {
+            // Moon moves independently
+            x = moon.startX + (moon.endX - moon.startX) * progress;
+            y = moon.startY + (moon.endY - moon.startY) * progress;
+        }
+        
+        this.ctx.save();
+        
+        // Moon glow - warm white
+        const glowGradient = this.ctx.createRadialGradient(x, y, 0, x, y, moon.size * 2.5);
+        glowGradient.addColorStop(0, `rgba(255, 243, 218, ${moon.brightness * 0.15})`);
+        glowGradient.addColorStop(0.4, `rgba(255, 243, 218, ${moon.brightness * 0.08})`);
+        glowGradient.addColorStop(1, 'rgba(255, 243, 218, 0)');
+        
+        this.ctx.fillStyle = glowGradient;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, moon.size * 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Moon body base - warm white
+        this.ctx.fillStyle = `rgba(255, 243, 218, ${moon.brightness})`;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, moon.size, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Create moon texture with craters and darker regions
+        const craterData = [
+            // Major craters and maria (dark spots) - positioned as fractions of moon radius
+            { x: 0.3, y: -0.2, size: 0.15, darkness: 0.6 }, // Mare Tranquillitatis
+            { x: -0.4, y: 0.1, size: 0.25, darkness: 0.5 }, // Mare Imbrium  
+            { x: 0.1, y: 0.4, size: 0.12, darkness: 0.7 }, // Mare Nectaris
+            { x: -0.2, y: -0.3, size: 0.08, darkness: 0.8 }, // Copernicus crater
+            { x: 0.45, y: 0.2, size: 0.06, darkness: 0.9 }, // Tycho crater
+            { x: -0.1, y: 0.1, size: 0.18, darkness: 0.4 }, // Mare Serenitatis
+            { x: 0.2, y: -0.4, size: 0.1, darkness: 0.75 }, // Mare Crisium
+            { x: -0.35, y: -0.15, size: 0.07, darkness: 0.85 }, // Aristarchus
+            { x: 0.05, y: 0.25, size: 0.09, darkness: 0.65 }, // Smaller mare
+            { x: -0.25, y: 0.35, size: 0.05, darkness: 0.9 }, // Small crater
+            { x: 0.35, y: -0.1, size: 0.04, darkness: 0.95 }, // Tiny bright crater
+            { x: -0.15, y: 0.45, size: 0.06, darkness: 0.8 }  // Edge crater
+        ];
+        
+        // Draw moon surface features
+        craterData.forEach(crater => {
+            const craterX = x + crater.x * moon.size;
+            const craterY = y + crater.y * moon.size;
+            const craterSize = crater.size * moon.size;
+            
+            // Only draw if crater is within moon bounds
+            const distFromCenter = Math.sqrt((crater.x * crater.x) + (crater.y * crater.y));
+            if (distFromCenter < 0.9) { // Keep craters within moon circle
+                this.ctx.fillStyle = `rgba(255, 243, 218, ${moon.brightness * (1 - crater.darkness)})`;
+                this.ctx.beginPath();
+                this.ctx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Add subtle crater rim highlight for larger craters
+                if (crater.size > 0.1) {
+                    this.ctx.strokeStyle = `rgba(255, 243, 218, ${moon.brightness * 0.3})`;
+                    this.ctx.lineWidth = 0.5;
+                    this.ctx.beginPath();
+                    this.ctx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                }
+            }
+        });
+        
+        // Add subtle overall shading for 3D effect
+        const shadingGradient = this.ctx.createRadialGradient(
+            x - moon.size * 0.3, y - moon.size * 0.3, 0, 
+            x, y, moon.size
+        );
+        shadingGradient.addColorStop(0, 'rgba(255, 243, 218, 0)');
+        shadingGradient.addColorStop(0.7, 'rgba(255, 243, 218, 0)');
+        shadingGradient.addColorStop(1, `rgba(200, 200, 180, ${moon.brightness * 0.2})`);
+        
+        this.ctx.fillStyle = shadingGradient;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, moon.size, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.restore();
+    }
+
+    drawRealisticStar(star, currentTime) {
+        // Update individual star patterns randomly
+        if (currentTime > star.nextPatternChange) {
+            star.twinkleSpeed = Math.random() * 0.008 + 0.002;
+            star.twinkleIntensity = Math.random() * 0.4 + 0.2;
+            star.twinklePattern = Math.random();
+            star.nextPatternChange = currentTime + Math.random() * 20000 + 10000;
+        }
+
+        // Apply global motion transformations
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        
+        // Translate relative to center
+        let x = star.baseX - centerX;
+        let y = star.baseY - centerY;
+        
+        // Apply global rotation
+        const cos = Math.cos(this.globalMotion.rotation);
+        const sin = Math.sin(this.globalMotion.rotation);
+        const rotatedX = x * cos - y * sin;
+        const rotatedY = x * sin + y * cos;
+        
+        // Apply global drift and translate back
+        x = rotatedX + centerX + this.globalMotion.x;
+        y = rotatedY + centerY + this.globalMotion.y;
+        
+        // Add subtle individual drift
+        star.localDrift.x += star.localDrift.speedX;
+        star.localDrift.y += star.localDrift.speedY;
+        x += star.localDrift.x;
+        y += star.localDrift.y;
+        
+        // Skip if outside viewport
+        const maxRadius = star.maxGlowRadius * 2;
+        if (x < -maxRadius || x > window.innerWidth + maxRadius || 
+            y < -maxRadius || y > window.innerHeight + maxRadius) {
+            return;
+        }
+
+        // Calculate twinkling
+        star.twinklePhase += star.twinkleSpeed;
+        const twinkle1 = Math.sin(star.twinklePhase) * star.twinkleIntensity;
+        const twinkle2 = Math.sin(star.twinklePhase * 1.3 + star.twinklePattern * 6) * (star.twinkleIntensity * 0.3);
+        
+        const currentBrightness = Math.max(0.1, Math.min(1, 
+            star.baseBrightness * star.brightness + twinkle1 + twinkle2
+        ));
+        
+        const currentGlowRadius = star.maxGlowRadius * (0.4 + currentBrightness * 0.6);
+        
+        this.ctx.save();
+        
+        // Draw glow (outer halo)
+        if (currentGlowRadius > 0.5) {
+            const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius);
+            gradient.addColorStop(0, `rgba(255, 243, 218, ${currentBrightness * 0.9})`); // Brighter center
+            gradient.addColorStop(0.3, `rgba(255, 243, 218, ${currentBrightness * 0.5})`); // Stronger mid glow
+            gradient.addColorStop(0.7, `rgba(255, 243, 218, ${currentBrightness * 0.2})`); // More visible outer glow
+            gradient.addColorStop(1, 'rgba(255, 243, 218, 0)');
+            
+            this.ctx.fillStyle = gradient;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, currentGlowRadius, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        // Draw bright core (the actual "star")
+        this.ctx.fillStyle = `rgba(255, 243, 218, ${Math.min(1, currentBrightness * 1.2)})`;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, star.coreSize * (0.8 + currentBrightness * 0.4), 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.restore();
     }
 
     animate() {
@@ -491,72 +685,24 @@ class StarField {
         }
 
         const currentTime = Date.now();
-        const elapsed = currentTime - this.startTime;
-
+        
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Draw each layer in reverse z-index order (background to foreground)
-        for (let layerIndex = this.starLayers.length - 1; layerIndex >= 0; layerIndex--) {
-            const layer = this.starLayers[layerIndex];
-            
-            // Calculate drift animation
-            const driftProgress = (elapsed % layer.driftAnimation.duration) / layer.driftAnimation.duration;
-            const drift = this.interpolateKeyframes(layer.driftAnimation.keyframes, driftProgress);
-            
-            if (layer.driftAnimation.reverse) {
-                drift.x = -drift.x;
-                drift.y = -drift.y;
-                drift.rotation = -drift.rotation;
-            }
-
-            layer.stars.forEach(star => {
-                // Apply drift transformation
-                const x = star.baseX + drift.x;
-                const y = star.baseY + drift.y;
-                
-                // Skip stars outside viewport (with margin)
-                if (x < -50 || x > window.innerWidth + 50 || y < -50 || y > window.innerHeight + 50) {
-                    return;
-                }
-
-                let finalOpacity = star.opacity * layer.baseOpacity;
-                let finalSize = star.size;
-
-                // Apply twinkle animations
-                if (layer.twinkleAnimations) {
-                    layer.twinkleAnimations.forEach(anim => {
-                        const animProgress = ((elapsed + anim.offset) % anim.duration) / anim.duration;
-                        finalOpacity *= this.getTwinkleValue(anim.type, animProgress);
-                    });
-                }
-
-                // Apply pulse animations  
-                if (layer.pulseAnimations) {
-                    layer.pulseAnimations.forEach(anim => {
-                        const animProgress = ((elapsed + anim.offset) % anim.duration) / anim.duration;
-                        const pulse = this.getPulseValue(anim.type, animProgress);
-                        finalOpacity *= pulse.opacity;
-                        finalSize *= pulse.scale;
-                    });
-                }
-
-                // Apply shimmer animation
-                if (layer.shimmerAnimation) {
-                    const shimmerProgress = ((elapsed + layer.shimmerAnimation.offset) % layer.shimmerAnimation.duration) / layer.shimmerAnimation.duration;
-                    finalOpacity *= this.getShimmerValue(shimmerProgress);
-                }
-
-                // Draw star
-                this.ctx.save();
-                
-                // Warm white color #FFF3DA = rgb(255, 243, 218)
-                this.ctx.fillStyle = `rgba(255, 243, 218, ${Math.max(0, Math.min(1, finalOpacity))})`;
-                this.ctx.beginPath();
-                this.ctx.arc(x, y, finalSize, 0, Math.PI * 2);
-                this.ctx.fill();
-                
-                this.ctx.restore();
-            });
+        
+        // Update smooth global motion
+        this.updateGlobalMotion(currentTime);
+        
+        // Update meteors and moon
+        this.updateMeteorsAndMoon(currentTime);
+        
+        // Draw all stars
+        this.stars.forEach(star => this.drawRealisticStar(star, currentTime));
+        
+        // Draw meteors
+        this.meteors.forEach(meteor => this.drawMeteor(meteor, currentTime));
+        
+        // Draw moon if present
+        if (this.moon) {
+            this.drawMoon(this.moon, currentTime);
         }
 
         this.animationId = requestAnimationFrame(() => this.animate());
