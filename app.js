@@ -50,7 +50,7 @@ function checkViewportSize() {
                 padding: 2rem;
                 z-index: 10000;
             ">
-                <div style="font-size: 4rem; margin-bottom: 2rem;">â™›</div>
+                <div style="font-size: 4rem; margin-bottom: 2rem;">Ã¢â„¢â€º</div>
                 <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: 2px;">PREDICTKING</h1>
                 <h2 style="font-size: 1.5rem; margin-bottom: 2rem; color: #888;">Please Use Mobile Device</h2>
                 <p style="font-size: 1.1rem; max-width: 500px; line-height: 1.6;">
@@ -185,7 +185,11 @@ class StarField {
         this.createRealisticStars();
         this.animate();
 
-        window.addEventListener('resize', () => this.resize());
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => this.resize(), 150);
+        });
         
         document.addEventListener('visibilitychange', () => {
             this.isVisible = !document.hidden;
@@ -199,14 +203,26 @@ class StarField {
         const dpr = window.devicePixelRatio || 1;
         const rect = this.canvas.getBoundingClientRect();
         
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
+        // Only resize if dimensions actually changed significantly
+        const newWidth = rect.width * dpr;
+        const newHeight = rect.height * dpr;
+        
+        if (Math.abs(this.canvas.width - newWidth) < 10 && 
+            Math.abs(this.canvas.height - newHeight) < 10) {
+            return; // Skip resize if change is minimal (scroll-induced)
+        }
+        
+        this.canvas.width = newWidth;
+        this.canvas.height = newHeight;
         
         this.ctx.scale(dpr, dpr);
         this.canvas.style.width = rect.width + 'px';
         this.canvas.style.height = rect.height + 'px';
         
-        this.createRealisticStars();
+        // Only recreate stars if this is a significant resize (orientation change, etc.)
+        if (!this.stars || this.stars.length === 0) {
+            this.createRealisticStars();
+        }
     }
 
     createRealisticStars() {
@@ -1004,10 +1020,10 @@ if (profilePicInput) {
         const button = document.querySelector('.file-upload-btn');
         
         if (file) {
-            button.textContent = `📷 ${file.name}`;
+            button.textContent = `ðŸ“· ${file.name}`;
             button.style.color = 'var(--primary-color)';
         } else {
-            button.textContent = '📷 Upload Profile Picture';
+            button.textContent = 'ðŸ“· Upload Profile Picture';
             button.style.color = '';
         }
     });
@@ -1735,12 +1751,12 @@ function updateBalance() {
     }
 }
 
-// Quero (₮Ξ) - Universal currency for PredictKing
+// Quero (â‚®Îž) - Universal currency for PredictKing
 // Etymology: "Quero" derives from Latin "quaero" meaning "I seek/desire"
 // symbolizing the player's quest for victory and rewards in prediction gaming
 function formatCurrency(amount) {
     const flooredAmount = Math.floor(amount); // Floor the amount to remove decimals
-    return `<span class="currency-coin">₮Ξ</span>${flooredAmount}`;
+    return `<span class="currency-coin">â‚®Îž</span>${flooredAmount}`;
 }
 
 function getStatusColor(status) {
@@ -2889,7 +2905,7 @@ function createPoolBettingUI() {
                         <h4>${option}</h4>
                         <div class="odds" id="odds-${index}">Loading...</div>
                         <div class="bet-count" id="bets-${index}">0 bets</div>
-                        <div class="pool-amount" id="pool-${index}">â‚¹0</div>
+                        <div class="pool-amount" id="pool-${index}">Ã¢â€šÂ¹0</div>
                     </div>
                 `).join('')}
             </div>
@@ -2997,17 +3013,17 @@ function createPriceLadder() {
             <span>Back Team B</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(100, 'team_a')">
-            <span>â‚¹100</span>
+            <span>Ã¢â€šÂ¹100</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(200, 'team_a')">
-            <span>â‚¹200</span>
+            <span>Ã¢â€šÂ¹200</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(500, 'team_a')">
-            <span>â‚¹500</span>
+            <span>Ã¢â€šÂ¹500</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
@@ -3291,7 +3307,7 @@ function updateInstantOddsDisplay(eventId, newOdds, betOption, betAmount) {
                 }
                 if (poolEl) {
                     const currentPool = parseInt(poolEl.textContent.replace(/[^\d]/g, '')) || 0;
-                    poolEl.textContent = `₹${currentPool + betAmount}`;
+                    poolEl.textContent = `â‚¹${currentPool + betAmount}`;
                 }
             }
         });
@@ -3327,7 +3343,7 @@ async function loadPoolOdds(eventId) {
                 // Set odds directly without indicator (initial load)
                 if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                 if (betsEl) betsEl.textContent = '0 bets';
-                if (poolEl) poolEl.textContent = '₹0';
+                if (poolEl) poolEl.textContent = 'â‚¹0';
             });
         } else {
             poolData = poolDoc.data();
@@ -3374,7 +3390,7 @@ async function loadPoolOdds(eventId) {
                     // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = odds.toFixed(2);
                     if (betsEl) betsEl.textContent = `${betCount} bets`;
-                    if (poolEl) poolEl.textContent = `₹${poolAmount}`;
+                    if (poolEl) poolEl.textContent = `â‚¹${poolAmount}`;
                 });
             } else {
                 // Fallback to initial odds
@@ -3391,7 +3407,7 @@ async function loadPoolOdds(eventId) {
                     // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                     if (betsEl) betsEl.textContent = '0 bets';
-                    if (poolEl) poolEl.textContent = '₹0';
+                    if (poolEl) poolEl.textContent = 'â‚¹0';
                 });
             }
         }
@@ -3470,7 +3486,7 @@ function updateBettingModalOddsFromEventDirect(eventId, newOdds) {
         const oddsEl = document.getElementById(`odds-${index}`);
         if (oddsEl) {
             // Parse only the number, ignore any arrow symbols
-            const oddsText = oddsEl.textContent.replace(/[▲▼\s]/g, '');
+            const oddsText = oddsEl.textContent.replace(/[â–²â–¼\s]/g, '');
             currentDOMOdds[option] = parseFloat(oddsText) || 0;
         }
     });
@@ -3543,7 +3559,7 @@ function updateBettingModalOdds(eventId, poolData) {
                 }
             }
             if (betsEl) betsEl.textContent = `${betCount} bets`;
-            if (poolEl) poolEl.textContent = `₹${Math.max(0, optionPool)}`;
+            if (poolEl) poolEl.textContent = `â‚¹${Math.max(0, optionPool)}`;
         });
     }
     
@@ -3689,10 +3705,10 @@ function updateOddsWithIndicator(oddsElement, oldOdds, newOdds) {
         indicator.className = 'odds-change-indicator';
         
         if (newOdds > oldOdds) {
-            indicator.innerHTML = '▲';
+            indicator.innerHTML = 'â–²';
             indicator.classList.add('odds-increase');
         } else {
-            indicator.innerHTML = '▼';
+            indicator.innerHTML = 'â–¼';
             indicator.classList.add('odds-decrease');
         }
         
@@ -3743,10 +3759,10 @@ function updateBettingModalOddsWithIndicator(oddsElement, oldOdds, newOdds) {
         indicator.className = 'odds-change-indicator betting-modal-indicator';
         
         if (newOdds > oldOdds) {
-            indicator.innerHTML = '▲';
+            indicator.innerHTML = 'â–²';
             indicator.classList.add('odds-increase');
         } else {
-            indicator.innerHTML = '▼';
+            indicator.innerHTML = 'â–¼';
             indicator.classList.add('odds-decrease');
         }
         
@@ -3791,47 +3807,43 @@ function updateOddsDisplay(eventId, newOdds) {
 }
 
 function updateEventBarsRealTime(eventId = null, oldOdds = {}, newOdds = {}) {
-    // Update all event bars with new odds and pot data
-    events.forEach(event => {
-        // If eventId is specified, only update that event
-        if (eventId && event.id !== eventId) return;
-        
-        const teams = event.options || ['Team A', 'Team B'];
-        const currentOdds = event.currentOdds || event.initialOdds || {};
-        
-        // Get old odds for this specific event
-        const eventOldOdds = eventId === event.id ? oldOdds : {};
-        const eventNewOdds = eventId === event.id ? newOdds : currentOdds;
-        
-        // Update odds in event bars
-        const team1Odds = eventNewOdds[teams[0]] || currentOdds[teams[0]] || 2.0;
-        const team2Odds = eventNewOdds[teams[1]] || currentOdds[teams[1]] || 2.0;
-        
-        // Find the event bar elements
-        const eventBars = document.querySelectorAll('.event-bar');
-        eventBars.forEach(bar => {
-            const barTitle = bar.querySelector('.event-title-text');
-            if (barTitle && barTitle.textContent === event.title) {
-                // Update team odds with indicators
-                const team1OddsEl = bar.querySelector('.team-left .team-odds');
-                const team2OddsEl = bar.querySelector('.team-right .team-odds');
-                
-                if (team1OddsEl) {
-                    const oldTeam1Odds = eventOldOdds[teams[0]] || parseFloat(team1OddsEl.textContent) || 0;
-                    updateOddsWithIndicator(team1OddsEl, oldTeam1Odds, team1Odds);
-                }
-                if (team2OddsEl) {
-                    const oldTeam2Odds = eventOldOdds[teams[1]] || parseFloat(team2OddsEl.textContent) || 0;
-                    updateOddsWithIndicator(team2OddsEl, oldTeam2Odds, team2Odds);
-                }
-                
-                // Update VS/Pool display
-                const vsPoolEl = bar.querySelector(`#vs-${event.id}`);
-                if (vsPoolEl && vsPoolEl.classList.contains('pool-text')) {
-                    vsPoolEl.innerHTML = `Pool ${formatCurrency(event.totalPot || 0)}`;
-                }
+    // If no eventId specified, don't update anything
+    if (!eventId) return;
+    
+    // Find the specific event
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+    
+    const teams = event.options || ['Team A', 'Team B'];
+    
+    // Update odds in event bars - but only for the specific event
+    const team1Odds = newOdds[teams[0]] || event.currentOdds[teams[0]] || event.initialOdds[teams[0]] || 2.0;
+    const team2Odds = newOdds[teams[1]] || event.currentOdds[teams[1]] || event.initialOdds[teams[1]] || 2.0;
+    
+    // Find the specific event bar
+    const eventBars = document.querySelectorAll('.event-bar');
+    eventBars.forEach(bar => {
+        const barTitle = bar.querySelector('.event-title-text');
+        if (barTitle && barTitle.textContent === event.title) {
+            // Update team odds with indicators
+            const team1OddsEl = bar.querySelector('.team-left .team-odds');
+            const team2OddsEl = bar.querySelector('.team-right .team-odds');
+            
+            if (team1OddsEl) {
+                const oldTeam1Odds = oldOdds[teams[0]] || parseFloat(team1OddsEl.textContent) || 0;
+                updateOddsWithIndicator(team1OddsEl, oldTeam1Odds, team1Odds);
             }
-        });
+            if (team2OddsEl) {
+                const oldTeam2Odds = oldOdds[teams[1]] || parseFloat(team2OddsEl.textContent) || 0;
+                updateOddsWithIndicator(team2OddsEl, oldTeam2Odds, team2Odds);
+            }
+            
+            // Update VS/Pool display
+            const vsPoolEl = bar.querySelector(`#vs-${event.id}`);
+            if (vsPoolEl && vsPoolEl.classList.contains('pool-text')) {
+                vsPoolEl.innerHTML = `Pool ${formatCurrency(event.totalPot || 0)}`;
+            }
+        }
     });
 }
 
