@@ -3161,6 +3161,35 @@ input:focus, select:focus, textarea:focus {
     font-family: 'Orbitron', monospace;
     text-transform: uppercase;
     margin-bottom: 1rem;
+    /* Prevent text overflow issues */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Responsive button text sizing */
+@media (max-width: 480px) {
+    .place-bet-btn {
+        font-size: 0.9rem;
+        padding: 0.9rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .place-bet-btn {
+        font-size: 0.8rem;
+        padding: 0.8rem;
+    }
+}
+
+@media (max-width: 350px) {
+    .place-bet-btn {
+        font-size: 0.75rem;
+        padding: 0.7rem;
+    }
 }
 
 .place-bet-btn:disabled {

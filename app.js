@@ -2351,13 +2351,12 @@ function updatePlaceBetButton() {
     
     if (amount && team && parseInt(amount) > 0) {
         btn.disabled = false;
-        // REPLACE THIS LINE:
-        btn.textContent = `Place Bet ${formatCurrency(parseInt(amount))} on ${team}`;
-        // WITH:
-        btn.innerHTML = `Place Bet ${formatCurrency(parseInt(amount))} on ${team}`;
+        // Truncate team name if too long to prevent button width issues
+        const truncatedTeam = team.length > 8 ? team.substring(0, 8) + '...' : team;
+        btn.innerHTML = `Bet ${formatCurrency(parseInt(amount))} on ${truncatedTeam}`;
     } else {
         btn.disabled = true;
-        btn.textContent = 'Place Bet'; // This one is fine as it has no currency
+        btn.textContent = 'Place Bet';
     }
 }
 
@@ -3819,12 +3818,13 @@ function updateEventBarsRealTime(eventId = null, oldOdds = {}, newOdds = {}) {
         const team1Odds = eventNewOdds[teams[0]] || currentOdds[teams[0]] || 2.0;
         const team2Odds = eventNewOdds[teams[1]] || currentOdds[teams[1]] || 2.0;
         
-        // Find the event bar elements
+        // Find the event bar elements by unique event ID instead of title
         const eventBars = document.querySelectorAll('.event-bar');
         eventBars.forEach(bar => {
-            const barTitle = bar.querySelector('.event-title-text');
-            if (barTitle && barTitle.textContent === event.title) {
-                // Update team odds with indicators
+            // Use the VS element ID to match the specific event
+            const vsPoolEl = bar.querySelector(`#vs-${event.id}`);
+            if (vsPoolEl) {
+                // This is the correct event bar for this specific event
                 const team1OddsEl = bar.querySelector('.team-left .team-odds');
                 const team2OddsEl = bar.querySelector('.team-right .team-odds');
                 
@@ -3838,8 +3838,7 @@ function updateEventBarsRealTime(eventId = null, oldOdds = {}, newOdds = {}) {
                 }
                 
                 // Update VS/Pool display
-                const vsPoolEl = bar.querySelector(`#vs-${event.id}`);
-                if (vsPoolEl && vsPoolEl.classList.contains('pool-text')) {
+                if (vsPoolEl.classList.contains('pool-text')) {
                     vsPoolEl.innerHTML = `Pool ${formatCurrency(event.totalPot || 0)}`;
                 }
             }
