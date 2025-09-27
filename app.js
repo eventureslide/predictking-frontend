@@ -1066,7 +1066,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCollections();
     
     // Check if we're on EVC page
-    if (window.location.pathname.includes('evc.html')) {
+    if (window.location.pathname.includes('fwd.html')) {
         showEVCLoadingScreen();
         
         // Ensure everything loads before showing page
@@ -1766,7 +1766,7 @@ function logout() {
     showNotification('Logged out successfully', 'success');
     
     setTimeout(() => {
-        window.location.href = 'homepage.html';
+        window.location.href = 'tqpsut.html';
     }, 1000);
 }
 
@@ -4469,11 +4469,11 @@ async function userHadBetOnEvent(eventId) {
 
 // EVC Functions
 function goToEVC() {
-    window.location.href = 'evc.html';
+    window.location.href = 'fwd.html';
 }
 
 function goHome() {
-    window.location.href = 'homepage.html';
+    window.location.href = 'tqpsut.html';
 }
 
 function watchAd() {
@@ -5557,7 +5557,7 @@ function logout() {
     
     // Redirect to homepage after a brief delay
     setTimeout(() => {
-        window.location.href = 'homepage.html';
+        window.location.href = 'tqpsut.html';
     }, 1000);
 }
 
@@ -5682,7 +5682,7 @@ function toggleNavigation() {
     
     // Check if we're on EVC page or main page
     const isEVCPage = document.body.classList.contains('evc-page') || 
-                      window.location.pathname.includes('evc.html');
+                      window.location.pathname.includes('fwd.html');
     
     let visibleIcons;
     
@@ -6014,12 +6014,12 @@ function copySHAFromSettings() {
 // Add these functions if they don't exist
 function goToEVC() {
     console.log('Going to EVC page...'); // Debug log
-    window.location.href = 'evc.html';
+    window.location.href = 'fwd.html';
 }
 
 function goHome() {
     console.log('Going to homepage...'); // Debug log
-    window.location.href = 'homepage.html';
+    window.location.href = 'tqpsut.html';
 }
 
 
