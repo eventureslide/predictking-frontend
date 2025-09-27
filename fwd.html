@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#141414">
+    <title>PredictKing - Earn Virtual Currency</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Emoji&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+</head>
+<body class="evc-page">
+    <!-- Mobile Detection -->
+    <script>
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   window.innerWidth <= 768;
+        }
+        
+        if (!isMobileDevice()) {
+            document.body.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(135deg, #141414, #1a1a1a);
+                    color: #FFF3DA;
+                    font-family: 'Orbitron', monospace;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    text-align: center;
+                    padding: 2rem;
+                    z-index: 10000;
+                ">
+                    <div style="font-size: 4rem; margin-bottom: 2rem;">👑</div>
+                    <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: 2px;">PREDICTKING</h1>
+                    <h2 style="font-size: 1.5rem; margin-bottom: 2rem; color: #888;">Mobile Experience Only</h2>
+                    <div style="max-width: 600px; line-height: 1.6;">
+                        <p style="font-size: 1.2rem; margin-bottom: 2rem;">
+                            PredictKing is designed exclusively for mobile devices to provide the best betting experience.
+                        </p>
+                        <div style="background: rgba(255, 243, 218, 0.1); padding: 2rem; border-radius: 12px; border: 1px solid #FFF3DA;">
+                            <h3 style="margin-bottom: 1rem; color: #FFF3DA;">To Access PredictKing:</h3>
+                            <ul style="list-style: none; padding: 0; text-align: left;">
+                                <li style="margin-bottom: 0.8rem;">📱 Open this website on your mobile phone</li>
+                                <li style="margin-bottom: 0.8rem;">🌐 Use Chrome, Safari, or Firefox mobile browser</li>
+                                <li style="margin-bottom: 0.8rem;">📲 Save to home screen for easy access</li>
+                            </ul>
+                        </div>
+                        <p style="margin-top: 2rem; font-size: 0.9rem; color: #888;">
+                            For the best experience, we recommend using your smartphone in portrait mode.
+                        </p>
+                    </div>
+                </div>
+            `;
+            // Stop all other scripts from running
+            throw new Error('Desktop access blocked');
+        }
+    </script>
+    <!-- Loading Screen -->
+    <div id="evc-loading-screen" class="loading-screen">
+        <div class="logo-container">
+            <div class="crown-icon">👑</div>
+            <h1 class="logo pulsing">PREDICTKING</h1>
+            <p class="motto">Earn. Win. Dominate.</p>
+        </div>
+        <div class="loading-bar">
+            <div class="loading-fill"></div>
+        </div>
+    </div>
+    <div id="main-app" class="main-app evc-page">
+        <!-- Header -->
+        <!-- Replace the header in fwd.html: -->
+       <header class="header">
+    <div class="header-main">
+            <div class="header-logged-in">
+                <div class="crown-icon" onclick="goHome()">👑</div>
+                <h1 class="logo" onclick="goHome()">PREDICTKING</h1>
+            </div>
+        </div>
+    </header>
+
+        <!-- Main Content -->
+        <main class="main-content evc-content">
+            <h2>EARN VIRTUAL CURRENCY</h2>
+            <p>Complete tasks to earn coins and boost your betting power!</p>
+
+            <div class="earning-options">
+                <!-- Watch Ads -->
+                <div class="earning-card active">
+                    <div class="card-icon">📺</div>
+                    <h3>Watch Ads</h3>
+                    <p>Earn <span class="reward-amount" id="ad-reward">50</span> coins per ad</p>
+                    <button class="earn-btn" onclick="watchAd()">WATCH AD</button>
+                </div>
+
+                <!-- Complete Surveys -->
+                <div class="earning-card disabled">
+                    <div class="card-icon">📋</div>
+                    <h3>Complete Surveys</h3>
+                    <p>Earn up to 500 coins</p>
+                    <button class="earn-btn disabled">COMING SOON</button>
+                </div>
+
+                <!-- Referral Program -->
+                <div class="earning-card disabled">
+                    <div class="card-icon">👥</div>
+                    <h3>Refer Friends</h3>
+                    <p>Earn 1000 coins per referral</p>
+                    <button class="earn-btn disabled">COMING SOON</button>
+                </div>
+
+                <!-- Daily Tasks -->
+                <div class="earning-card disabled">
+                    <div class="card-icon">📅</div>
+                    <h3>Daily Tasks</h3>
+                    <p>Complete daily challenges</p>
+                    <button class="earn-btn disabled">COMING SOON</button>
+                </div>
+
+                <!-- Social Media -->
+                <div class="earning-card disabled">
+                    <div class="card-icon">📱</div>
+                    <h3>Social Media Tasks</h3>
+                    <p>Share and earn coins</p>
+                    <button class="earn-btn disabled">COMING SOON</button>
+                </div>
+
+                <!-- Spin Wheel -->
+                <div class="earning-card disabled">
+                    <div class="card-icon">🎯</div>
+                    <h3>Lucky Spin</h3>
+                    <p>Try your luck daily</p>
+                    <button class="earn-btn disabled">COMING SOON</button>
+                </div>
+            </div>
+
+            <!-- Recent Earnings -->
+            <div class="recent-earnings">
+                <h3 onclick="showRecentEarnings()" style="cursor: pointer;">Recent Earnings</h3>
+                <div class="earnings-list" id="earnings-list">
+                    <!-- Recent earnings will be displayed here -->
+                </div>
+            </div>
+
+            
+        </main>
+
+
+        <div class="bottom-sticky-section" id="bottom-sticky">
+            <div class="bottom-content">
+                <div class="stats-compact" id="stats-section">
+                    <div class="stat-item-compact">
+                        <span class="stat-label-compact">Active Players:</span>
+                        <span id="active-players-bottom" class="stat-value-compact">0</span>
+                    </div>
+                    <div class="stat-item-compact">
+                        <span class="stat-label-compact">Total Pot:</span>
+                        <span id="total-pot-bottom" class="stat-value-compact">₹0</span>
+                    </div>
+                </div>
+                <!-- ADD THIS BUTTON -->
+                <button class="evc-btn-compact disabled" id="earn-coins-btn" onclick="goHome()">EARN COINS</button>
+            </div>
+            
+            <!-- Central Toggle Navigation for EVC -->
+            <div class="nav-toggle-container">
+                <button class="nav-toggle-btn" onclick="toggleNavigation()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <div class="nav-icons-container">
+                    <div class="nav-icon evc-1" onclick="goHome()" title="Home">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="nav-icon evc-2" onclick="showWallet()" title="Wallet">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ad Modal -->
+    <div id="ad-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cleanupAdTimer(); closeModal('ad-modal')">&times;</span>
+            <h2>Watch Advertisement</h2>
+            <div class="ad-container">
+                <iframe id="ad-video" width="100%" height="300" frameborder="0" allowfullscreen allow="autoplay; fullscreen"></iframe>
+            </div>
+            <div class="ad-controls">
+                <div class="ad-progress">
+                    <span id="ad-timer">30</span> seconds remaining
+                </div>
+                <button id="claim-reward" class="primary-btn hidden" onclick="claimAdReward()">CLAIM REWARD</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Modal -->
+    <div id="wallet-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('wallet-modal')">&times;</span>
+            <h2>WALLET</h2>
+            <div class="wallet-balance">
+                <h3>Current Balance</h3>
+                <div class="balance-display" id="wallet-balance">₹0</div>
+            </div>
+            <div class="wallet-actions">
+                <button class="secondary-btn" onclick="goHome()">BACK TO BETTING</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Popup -->
+    <div id="notification" class="notification hidden">
+        <span id="notification-text"></span>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
