@@ -2,18 +2,21 @@
     "name": "PredictKing",
     "short_name": "PredictKing",
     "description": "Predict. Win. Dominate.",
-    "start_url": "/tqpsut.html",
+    "start_url": "/predictking-frontend/tqpsut.html",
     "display": "standalone",
     "orientation": "portrait",
     "theme_color": "#141414",
     "background_color": "#141414",
     "icons": [
         {
-            "src": "https://i.ibb.co/s94C9KXd/Blackvariant-Button-Ui-App-Pack-One-Lite-Icon-512.png",
+            "src": "/predictking-frontend/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/predictking-frontend/icons/icon-512.png",
             "sizes": "512x512",
             "type": "image/png"
         }
     ]
-
 }
-
