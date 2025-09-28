@@ -9,10 +9,11 @@
     "background_color": "#141414",
     "icons": [
         {
-            "src": "icon-512.png",
+            "src": "https://i.ibb.co/s94C9KXd/Blackvariant-Button-Ui-App-Pack-One-Lite-Icon-512.png",
             "sizes": "512x512",
             "type": "image/png"
         }
     ]
 
 }
+
