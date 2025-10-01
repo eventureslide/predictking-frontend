@@ -1089,34 +1089,47 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Ensure everything loads before showing page
-    Promise.all([
+    Promise.allSettled([
         checkLoginStatus(),
         loadEvents(),
         loadStats(),
         new Promise(resolve => {
-            // Wait for actual loading completion
             let completed = 0;
             const checkProgress = () => {
                 completed += 25;
                 if (completed >= 100) {
-                    setTimeout(resolve, 500); // Small delay after completion
+                    setTimeout(resolve, 500);
                 } else {
-                    setTimeout(checkProgress, 750); // Staggered progress
+                    setTimeout(checkProgress, 750);
                 }
             };
             checkProgress();
         })
-    ]).then(() => {
+    ]).then(results => {
+        // Always show main app
         if (document.getElementById('loading-screen')) {
             hideLoadingScreen();
         }
-        updateThemeBasedOnUser();
-        startRealTimeUpdates();
-        startActivePlayerTracking();
-        startGlobalRealTimeListeners(); // Add this for real-time odds
-        startUpcomingEventsChecker(); // Add this line
-        showPostRefreshWelcomeMessage();
+
+        // Log errors and show notification if any failed
+        results.forEach((res, index) => {
+            if (res.status === "rejected") {
+                console.error("Loading error:", res.reason);
+
+                let taskName = ["Login Check", "Events", "Stats", "Progress Timer"][index];
+                showNotification(`${taskName} failed to load.`, "error");
+            }
+        });
+
+        // Continue with partial initialization
+        try { updateThemeBasedOnUser(); } catch (e) { console.error("Theme error", e); }
+        try { startRealTimeUpdates(); } catch (e) { console.error("Realtime updates error", e); }
+        try { startActivePlayerTracking(); } catch (e) { console.error("Player tracking error", e); }
+        try { startGlobalRealTimeListeners(); } catch (e) { console.error("Global listeners error", e); }
+        try { startUpcomingEventsChecker(); } catch (e) { console.error("Events checker error", e); }
+        try { showPostRefreshWelcomeMessage(); } catch (e) { console.error("Welcome message error", e); }
     });
+
 });
 
 
