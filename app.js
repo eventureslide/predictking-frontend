@@ -138,35 +138,15 @@ class StarField {
         this.isVisible = true;
         this.startTime = Date.now();
         
-        // Mobile detection and optimization
-        this.isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        this.lastFrameTime = null;
-        
-        // Reduce complexity on mobile
-        if (this.isMobile) {
-            this.loadRadius = 2;
-            this.gridSize = 600;
-        } else {
-            this.loadRadius = 3;
-            this.gridSize = 500;
-        }
-        
-        // RANDOM STARTING POSITION - Add these lines
-        const randomStartX = (Math.random() - 0.5) * window.innerWidth * 2;
-        const randomStartY = (Math.random() - 0.5) * window.innerHeight * 2;
-        const randomStartRotation = Math.random() * Math.PI * 2;
-        
-        // Smooth global motion - with random start
+        // Smooth global motion for entire star field - start immediately
         this.globalMotion = {
-            x: randomStartX, // Random start X
-            y: randomStartY, // Random start Y
-            rotation: randomStartRotation, // Random start rotation
-            velocityX: (Math.random() - 0.5) * 0.4,
-            velocityY: (Math.random() - 0.5) * 0.4,
-            rotationSpeed: (Math.random() - 0.5) * 0.001,
+            x: 0, y: 0, rotation: 0,
+            velocityX: (Math.random() - 0.5) * 0.2, // Start with initial motion
+            velocityY: (Math.random() - 0.5) * 0.2,
+            rotationSpeed: (Math.random() - 0.5) * 0.0005,
             targetVelocityX: 0, targetVelocityY: 0, targetRotationSpeed: 0,
             lastChange: this.startTime,
-            changeInterval: 15000 + Math.random() * 10000
+            changeInterval: 20000 + Math.random() * 15000 // 20-35 seconds
         };
         
         // Set initial targets same as current values to avoid sudden changes
@@ -183,6 +163,7 @@ class StarField {
         this.nextMoonTime = this.startTime + Math.random() * 120000 + 180000; // 3-8 minutes
         
         // Define realistic stellar colors based on spectral classification
+        // Define realistic stellar colors based on spectral classification
         this.stellarColors = {
             O: { r: 157, g: 180, b: 255, temp: 30000 }, // Blue
             B: { r: 162, g: 185, b: 255, temp: 20000 }, // Blue-white
@@ -190,13 +171,18 @@ class StarField {
             F: { r: 249, g: 245, b: 255, temp: 6500 },  // Yellow-white
             G: { r: 255, g: 237, b: 227, temp: 5500 },  // Yellow (like Sun)
             K: { r: 255, g: 218, b: 181, temp: 4000 },  // Orange
-            M: { r: 255, g: 181, b: 108, temp: 3000 }   // Red
+            M: { r: 255, g: 181, b: 108, temp: 3000 },  // Red
+            // SPACE FLAME COLORS (rare)
+            FLAME_ORANGE: { r: 255, g: 140, b: 60, temp: 3500 },  // Deep orange flame
+            FLAME_RED: { r: 255, g: 80, b: 40, temp: 2800 },      // Red flame
+            FLAME_PINK: { r: 255, g: 120, b: 150, temp: 3200 }    // Pink-red flame
         };
         
         this.init();
     }
 
     init() {
+        // Create canvas
         this.canvas = document.createElement('canvas');
         this.canvas.id = 'star-canvas';
         this.canvas.style.cssText = `
@@ -207,18 +193,11 @@ class StarField {
             height: 100vh;
             z-index: -4;
             pointer-events: none;
-            will-change: transform;
         `;
         
         document.body.insertBefore(this.canvas, document.body.firstChild);
         
-        // Use willReadFrequently for better mobile performance
-        this.ctx = this.canvas.getContext('2d', { 
-            alpha: true,
-            desynchronized: true, // Reduces input lag
-            willReadFrequently: false
-        });
-        
+        this.ctx = this.canvas.getContext('2d');
         this.resize();
         this.createRealisticStars();
         this.animate();
@@ -228,7 +207,6 @@ class StarField {
         document.addEventListener('visibilitychange', () => {
             this.isVisible = !document.hidden;
             if (this.isVisible && !this.animationId) {
-                this.lastFrameTime = null; // Reset frame timing
                 this.animate();
             }
         });
@@ -249,16 +227,16 @@ class StarField {
     }
 
     getRandomStellarType() {
-            // MORE WARM WHITE STARS - Realistic distribution
-            const rand = Math.random();
-            if (rand < 0.0005) return 'O'; // Very rare blue
-            if (rand < 0.005) return 'B';  // Rare blue-white
-            if (rand < 0.12) return 'A';   // Common white (INCREASED from 0.04)
-            if (rand < 0.35) return 'F';   // Common yellow-white (INCREASED from 0.12)
-            if (rand < 0.50) return 'G';   // Solar yellow (DECREASED from 0.22)
-            if (rand < 0.65) return 'K';   // Orange (DECREASED from 0.42)
-            return 'M'; // Red dwarfs (still common but less visible)
-        }
+        // Realistic distribution based on actual stellar statistics
+        const rand = Math.random();
+        if (rand < 0.001) return 'O'; // Very rare
+        if (rand < 0.01) return 'B';  // Rare
+        if (rand < 0.04) return 'A';  // Uncommon
+        if (rand < 0.12) return 'F';  // Less common
+        if (rand < 0.22) return 'G';  // Solar-type (like our Sun)
+        if (rand < 0.42) return 'K';  // Common
+        return 'M'; // Most common (red dwarfs)
+    }
 
     createRealisticStars() {
         this.stars = [];
@@ -273,28 +251,26 @@ class StarField {
         // LOWER numbers = FEWER stars, HIGHER numbers = MORE stars
         // Each grid cell is 500x500 pixels (250,000 square pixels)
         
-        // Star density per grid cell - BALANCED FOR MOBILE WITH MORE STARS:
+        // Star density per grid cell - ADJUST THESE VALUES TO CHANGE STAR POPULATION:
+        // Star density per grid cell - DECREASED POPULATION
         this.starDensity = {
-            // Mobile gets fewer complex stars, desktop gets more
-            faint: this.isMobile 
-                ? Math.floor((this.gridSize * this.gridSize) / 5000)   // ~50 mobile
-                : Math.floor((this.gridSize * this.gridSize) / 2000),  // ~125 desktop
+            // Faintest stars (slightly reduced)
+            faint: Math.floor((this.gridSize * this.gridSize) / 2500), // ~100 per cell (was 167)
             
-            dim: this.isMobile
-                ? Math.floor((this.gridSize * this.gridSize) / 10000)  // ~25 mobile  
-                : Math.floor((this.gridSize * this.gridSize) / 5000),  // ~50 desktop
+            // Dim stars (reduced)
+            dim: Math.floor((this.gridSize * this.gridSize) / 7000), // ~36 per cell (was 71)
             
-            bright: this.isMobile
-                ? Math.floor((this.gridSize * this.gridSize) / 20000)  // ~13 mobile
-                : Math.floor((this.gridSize * this.gridSize) / 10000), // ~25 desktop
+            // Bright stars (significantly reduced)
+            bright: Math.floor((this.gridSize * this.gridSize) / 15000), // ~13 per cell (was 31)
             
-            brilliant: this.isMobile
-                ? Math.floor((this.gridSize * this.gridSize) / 100000) + 1  // ~3 mobile
-                : Math.floor((this.gridSize * this.gridSize) / 70000) + 1   // ~7 desktop
+            // Brilliant stars (significantly reduced)
+            brilliant: Math.floor((this.gridSize * this.gridSize) / 100000) + 1 // ~2 per cell (was 10)
         };
 
-        // TOTAL: ~91 stars per cell on mobile (was 61)
-        // TOTAL: ~207 stars per cell on desktop (was 279)
+        // TOTAL STARS PER GRID CELL: ~151 (was ~279)
+        // Large stars reduced by ~75%
+        
+        // TOTAL STARS PER GRID CELL: ~279 (was ~688)
         // This represents about a 60% reduction in star population
         
         // HOW TO ADJUST STAR POPULATION:
@@ -389,8 +365,8 @@ class StarField {
             
             // Realistic twinkling - more prominent for brighter stars
             twinklePhase: getRandom() * Math.PI * 2,
-            twinkleSpeed: getRandom() * 0.015 + 0.005, // Increased variation: 0.005 to 0.020
-            twinkleIntensity: magnitude === 'brilliant' ? getRandom() * 0.7 + 0.2 : getRandom() * 0.5 + 0.15,
+            twinkleSpeed: getRandom() * 0.015 + 0.005,  // Increased variation
+            twinkleIntensity: magnitude === 'brilliant' ? getRandom() * 0.6 + 0.3 : getRandom() * 0.4 + 0.2,
             twinklePattern: getRandom(),
             
             // Chromatic scintillation
@@ -415,25 +391,26 @@ class StarField {
         };
 
         // Set size and brightness properties based on magnitude
+        // Set size and brightness properties based on magnitude
         switch (magnitude) {
             case 'faint':
-                star.coreSize = 0.2 + getRandom() * 0.15;
-                star.maxGlowRadius = 0.8 + getRandom() * 0.4;
-                star.brightness = 0.25 + getRandom() * 0.35;
+                star.coreSize = 0.15 + getRandom() * 0.1; // Smaller
+                star.maxGlowRadius = 0; // NO GLOW for faint stars
+                star.brightness = 0.3 + getRandom() * 0.3;
                 break;
             case 'dim':
-                star.coreSize = 0.3 + getRandom() * 0.2;
-                star.maxGlowRadius = 1.2 + getRandom() * 0.6;
-                star.brightness = 0.45 + getRandom() * 0.3;
+                star.coreSize = 0.25 + getRandom() * 0.15;
+                star.maxGlowRadius = 0.6 + getRandom() * 0.3; // Reduced glow
+                star.brightness = 0.5 + getRandom() * 0.25;
                 break;
             case 'bright':
-                star.coreSize = 0.5 + getRandom() * 0.3;
-                star.maxGlowRadius = 2.0 + getRandom() * 1.0;
+                star.coreSize = 0.4 + getRandom() * 0.2;
+                star.maxGlowRadius = 1.5 + getRandom() * 0.8;
                 star.brightness = 0.7 + getRandom() * 0.2;
                 break;
             case 'brilliant':
-                star.coreSize = 0.8 + getRandom() * 0.4;
-                star.maxGlowRadius = 3.5 + getRandom() * 2.0;
+                star.coreSize = 0.6 + getRandom() * 0.3;
+                star.maxGlowRadius = 2.8 + getRandom() * 1.5;
                 star.brightness = 0.85 + getRandom() * 0.15;
                 if (star.hasDiffractionSpikes) {
                     star.spikeLength = 8 + getRandom() * 12;
@@ -452,7 +429,11 @@ class StarField {
         if (random < 0.12) return 'F';
         if (random < 0.22) return 'G';
         if (random < 0.42) return 'K';
-        return 'M';
+        if (random < 0.76) return 'M';
+        // SPACE FLAME COLORS - very rare sprinkle
+        if (random < 0.80) return 'FLAME_ORANGE';
+        if (random < 0.84) return 'FLAME_RED';
+        return 'FLAME_PINK';
     }
 
     // Update the star grid based on current viewport and motion
@@ -512,7 +493,7 @@ class StarField {
             
             // Realistic twinkling - more prominent for brighter stars
             twinklePhase: Math.random() * Math.PI * 2,
-            twinkleSpeed: Math.random() * 0.015 + 0.005, // More variation
+            twinkleSpeed: Math.random() * 0.012 + 0.003, // Natural atmospheric scintillation
             twinkleIntensity: magnitude === 'brilliant' ? Math.random() * 0.6 + 0.3 : Math.random() * 0.4 + 0.2,
             twinklePattern: Math.random(),
             
@@ -571,110 +552,72 @@ class StarField {
     updateGlobalMotion(currentTime) {
         const elapsed = currentTime - this.globalMotion.lastChange;
         
-        // Change direction/speed more frequently with more variation
         if (elapsed > this.globalMotion.changeInterval) {
-            // More dramatic motion changes
-            this.globalMotion.targetVelocityX = (Math.random() - 0.5) * 0.8; // Increased range
-            this.globalMotion.targetVelocityY = (Math.random() - 0.5) * 0.8;
-            this.globalMotion.targetRotationSpeed = (Math.random() - 0.5) * 0.002; // Faster rotation
+            this.globalMotion.targetVelocityX = (Math.random() - 0.5) * 0.4;
+            this.globalMotion.targetVelocityY = (Math.random() - 0.5) * 0.4;
+            this.globalMotion.targetRotationSpeed = (Math.random() - 0.5) * 0.001;
             
             this.globalMotion.lastChange = currentTime;
-            this.globalMotion.changeInterval = 15000 + Math.random() * 10000; // 15-25 seconds
+            this.globalMotion.changeInterval = 20000 + Math.random() * 15000;
         }
         
-        // Faster interpolation for more responsive motion
-        const smoothing = 0.001; // Increased from 0.0006
+        const smoothing = 0.0006;
         this.globalMotion.velocityX += (this.globalMotion.targetVelocityX - this.globalMotion.velocityX) * smoothing;
         this.globalMotion.velocityY += (this.globalMotion.targetVelocityY - this.globalMotion.velocityY) * smoothing;
         this.globalMotion.rotationSpeed += (this.globalMotion.targetRotationSpeed - this.globalMotion.rotationSpeed) * smoothing;
         
-        // Apply motion
+        // Apply camera motion
         this.globalMotion.x += this.globalMotion.velocityX;
         this.globalMotion.y += this.globalMotion.velocityY;
         this.globalMotion.rotation += this.globalMotion.rotationSpeed;
+        
+        // INFINITE WRAP - Update grid when camera moves far
+        const moveThreshold = this.gridSize * 0.5;
+        if (Math.abs(this.globalMotion.x) > moveThreshold || Math.abs(this.globalMotion.y) > moveThreshold) {
+            this.updateStarGrid();
+        }
     }
 
     createMeteor(currentTime) {
-        // Realistic meteor colors - space flame palette
-        const meteorColors = [
-            {r: 255, g: 250, b: 240, name: 'white-hot'},      // Hot white (25%)
-            {r: 255, g: 200, b: 150, name: 'orange'},         // Orange (20%)
-            {r: 200, g: 220, b: 255, name: 'blue-white'},     // Blue-white (15%)
-            {r: 120, g: 200, b: 200, name: 'teal'},           // Teal/cyan (12%)
-            {r: 180, g: 255, b: 200, name: 'green'},          // Green (10%)
-            {r: 240, g: 180, b: 255, name: 'violet'},         // Violet (8%)
-            {r: 255, g: 255, b: 63, name: 'neon-yellow'},     // Neon yellow (5%)
-            {r: 255, g: 77, b: 109, name: 'bright-pink'}      // Bright pink (5%)
-        ];
-        
-        // Weighted random color selection
-        const colorRand = Math.random();
-        let selectedColor;
-        if (colorRand < 0.25) selectedColor = meteorColors[0];      // 25%
-        else if (colorRand < 0.45) selectedColor = meteorColors[1]; // 20%
-        else if (colorRand < 0.60) selectedColor = meteorColors[2]; // 15%
-        else if (colorRand < 0.72) selectedColor = meteorColors[3]; // 12%
-        else if (colorRand < 0.82) selectedColor = meteorColors[4]; // 10%
-        else if (colorRand < 0.90) selectedColor = meteorColors[5]; // 8%
-        else if (colorRand < 0.95) selectedColor = meteorColors[6]; // 5% neon yellow
-        else selectedColor = meteorColors[7];                        // 5% bright pink
-        
+        // Random entry point from screen edges
         const side = Math.floor(Math.random() * 4);
         let startX, startY, endX, endY;
-        
-        const meteorAngle = (Math.random() * 60 - 30) * (Math.PI / 180);
-        const speed = 600 + Math.random() * 800; // Variable speeds: 600-1400px
         
         switch (side) {
             case 0: // Top edge
                 startX = Math.random() * window.innerWidth;
                 startY = -50;
-                endX = startX + Math.cos(meteorAngle) * speed;
-                endY = startY + speed;
+                endX = startX + (Math.random() - 0.5) * window.innerWidth * 1.5;
+                endY = window.innerHeight + 50;
                 break;
             case 1: // Right edge
                 startX = window.innerWidth + 50;
-                startY = Math.random() * window.innerHeight * 0.5;
-                endX = startX - speed;
-                endY = startY + Math.abs(Math.sin(meteorAngle)) * speed;
+                startY = Math.random() * window.innerHeight;
+                endX = -50;
+                endY = startY + (Math.random() - 0.5) * window.innerHeight * 1.5;
                 break;
-            case 2: // Left edge  
+            case 2: // Bottom edge
+                startX = Math.random() * window.innerWidth;
+                startY = window.innerHeight + 50;
+                endX = startX + (Math.random() - 0.5) * window.innerWidth * 1.5;
+                endY = -50;
+                break;
+            case 3: // Left edge
                 startX = -50;
-                startY = Math.random() * window.innerHeight * 0.5;
-                endX = startX + speed;
-                endY = startY + Math.abs(Math.sin(meteorAngle)) * speed;
+                startY = Math.random() * window.innerHeight;
+                endX = window.innerWidth + 50;
+                endY = startY + (Math.random() - 0.5) * window.innerHeight * 1.5;
                 break;
-            case 3: // Diagonal
-                startX = Math.random() * window.innerWidth * 0.3;
-                startY = -50;
-                endX = startX + speed * 1.5;
-                endY = window.innerHeight + 50;
-                break;
-        }
-        
-        // Varied durations: some fast (0.6s), some slow (3.5s)
-        const speedCategory = Math.random();
-        let duration;
-        if (speedCategory < 0.3) {
-            duration = 600 + Math.random() * 600; // Fast: 0.6-1.2s
-        } else if (speedCategory < 0.7) {
-            duration = 1200 + Math.random() * 1000; // Medium: 1.2-2.2s
-        } else {
-            duration = 2200 + Math.random() * 1300; // Slow: 2.2-3.5s
         }
         
         const meteor = {
             startX, startY, endX, endY,
             startTime: currentTime,
-            duration: duration,
-            brightness: 0.75 + Math.random() * 0.25,
-            trailLength: 60 + Math.random() * 100,
-            size: 1.2 + Math.random() * 2.3, // Varied rock sizes
-            color: selectedColor,
-            fadeIn: 0.12,
-            // Rock-like properties
-            tumbleSpeed: Math.random() * 0.02, // Rotation effect
-            irregularity: 0.7 + Math.random() * 0.6 // Shape variation
+            duration: 1200 + Math.random() * 2500, // 1.2-3.7 seconds
+            brightness: 0.7 + Math.random() * 0.3,
+            trailLength: 50 + Math.random() * 80, // 50-130px trail
+            size: 1.2 + Math.random() * 2.5, // 1.2-3.7px meteor head
+            color: Math.random() < 0.7 ? {r: 255, g: 245, b: 200} : {r: 255, g: 180, b: 120} // Mostly white-hot, some orange
         };
         
         return meteor;
@@ -762,95 +705,50 @@ class StarField {
 
     drawMeteor(meteor, currentTime) {
         const elapsed = currentTime - meteor.startTime;
-        let progress = elapsed / meteor.duration;
+        const progress = Math.min(1, elapsed / meteor.duration);
         
-        // Fade in/out
-        let opacity = 1;
-        if (progress < meteor.fadeIn) {
-            opacity = progress / meteor.fadeIn;
+        // Linear movement
+        const x = meteor.startX + (meteor.endX - meteor.startX) * progress;
+        const y = meteor.startY + (meteor.endY - meteor.startY) * progress;
+        
+        // Calculate trail points
+        const trailPoints = [];
+        const numTrailPoints = 10;
+        
+        for (let i = 0; i < numTrailPoints; i++) {
+            const trailProgress = Math.max(0, progress - (i / numTrailPoints) * 0.12);
+            const trailX = meteor.startX + (meteor.endX - meteor.startX) * trailProgress;
+            const trailY = meteor.startY + (meteor.endY - meteor.startY) * trailProgress;
+            const trailOpacity = meteor.brightness * (1 - i / numTrailPoints) * (1 - progress * 0.2);
+            
+            trailPoints.push({ 
+                x: trailX, 
+                y: trailY, 
+                opacity: trailOpacity, 
+                size: meteor.size * (1 - i / numTrailPoints * 0.6) 
+            });
         }
-        if (progress > 0.85) {
-            opacity = (1 - progress) / 0.15;
-        }
-        
-        progress = Math.min(1, progress);
-        
-        // Slight deceleration (more realistic)
-        const easeProgress = 1 - Math.pow(1 - progress, 1.8);
-        
-        const x = meteor.startX + (meteor.endX - meteor.startX) * easeProgress;
-        const y = meteor.startY + (meteor.endY - meteor.startY) * easeProgress;
-        
-        // Tumbling angle for rock effect
-        const tumbleAngle = elapsed * meteor.tumbleSpeed;
         
         this.ctx.save();
         
-        // Draw irregular rock head (not perfect circle)
-        this.ctx.translate(x, y);
-        this.ctx.rotate(tumbleAngle);
-        
-        // Irregular shape using multiple small circles
-        const coreSize = meteor.size * meteor.irregularity;
-        
-        // Main core with slight irregularity
-        this.ctx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${opacity})`;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, coreSize, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        // Add smaller offset circles for rock texture
-        for (let i = 0; i < 3; i++) {
-            const angle = (i * Math.PI * 2 / 3) + tumbleAngle;
-            const offsetX = Math.cos(angle) * coreSize * 0.4;
-            const offsetY = Math.sin(angle) * coreSize * 0.4;
-            const smallSize = coreSize * 0.5;
-            
-            this.ctx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${opacity * 0.7})`;
-            this.ctx.beginPath();
-            this.ctx.arc(offsetX, offsetY, smallSize, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-        
-        // Bright glow around rock
-        const glowGradient = this.ctx.createRadialGradient(0, 0, 0, 0, 0, coreSize * 3);
-        glowGradient.addColorStop(0, `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${opacity * 0.6})`);
-        glowGradient.addColorStop(0.5, `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${opacity * 0.2})`);
-        glowGradient.addColorStop(1, `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, 0)`);
-        
-        this.ctx.fillStyle = glowGradient;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, coreSize * 3, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        this.ctx.restore();
-        
-        // Draw plasma trail behind the rock
-        const numTrailPoints = 12;
-        
-        for (let i = 1; i <= numTrailPoints; i++) {
-            const trailProgress = Math.max(0, easeProgress - (i / numTrailPoints) * 0.18);
-            const trailX = meteor.startX + (meteor.endX - meteor.startX) * trailProgress;
-            const trailY = meteor.startY + (meteor.endY - meteor.startY) * trailProgress;
-            const trailOpacity = opacity * (1 - i / numTrailPoints) * 0.8;
-            const trailSize = meteor.size * (1 - i / numTrailPoints * 0.8) * meteor.irregularity;
-            
-            if (trailOpacity > 0.05) {
-                // Trail segment
-                this.ctx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${trailOpacity})`;
+        // Draw trail (from back to front)
+        trailPoints.reverse().forEach((point, index) => {
+            if (point.opacity > 0) {
+                // Main trail
+                this.ctx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${point.opacity})`;
                 this.ctx.beginPath();
-                this.ctx.arc(trailX, trailY, trailSize, 0, Math.PI * 2);
+                this.ctx.arc(point.x, point.y, point.size, 0, Math.PI * 2);
                 this.ctx.fill();
                 
-                // Diffuse glow on trail
-                if (i < 6) {
-                    this.ctx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${trailOpacity * 0.3})`;
+                // Trail glow
+                if (index < 4) {
+                    this.ctx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${point.opacity * 0.25})`;
                     this.ctx.beginPath();
-                    this.ctx.arc(trailX, trailY, trailSize * 2.5, 0, Math.PI * 2);
+                    this.ctx.arc(point.x, point.y, point.size * 2.5, 0, Math.PI * 2);
                     this.ctx.fill();
                 }
             }
-        }
+        });
         
         this.ctx.restore();
     }
@@ -964,11 +862,17 @@ class StarField {
         
         this.ctx.save();
         
-        // Create diffraction spikes - 4 spikes at 90 degree angles
-        const spikeAngles = [0, Math.PI/2, Math.PI, 3*Math.PI/2];
+        // Random rotation angle for this star's spikes (stored on first call)
+        if (!star.spikeRotation) {
+            star.spikeRotation = Math.random() * Math.PI / 4; // 0-45 degrees random rotation
+        }
+        
+        // Create 4 spikes in cross pattern with random rotation
+        const baseAngles = [0, Math.PI/2, Math.PI, 3*Math.PI/2];
         const spikeOpacity = brightness * star.spikeIntensity * 0.8;
         
-        spikeAngles.forEach(angle => {
+        baseAngles.forEach(baseAngle => {
+            const angle = baseAngle + star.spikeRotation;
             this.ctx.strokeStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${spikeOpacity})`;
             this.ctx.lineWidth = 0.8;
             this.ctx.lineCap = 'round';
@@ -997,140 +901,116 @@ class StarField {
     }
 
     drawRealisticStar(star, currentTime) {
-        // Mobile-optimized rendering with batching
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
+        // Update individual star patterns randomly
+        if (currentTime > star.nextPatternChange) {
+            star.twinkleSpeed = Math.random() * 0.015 + 0.004;
+            star.twinkleIntensity = star.magnitude === 'brilliant' ? Math.random() * 0.6 + 0.3 : Math.random() * 0.4 + 0.2;
+            star.twinklePattern = Math.random();
+            star.chromaticSpeed = Math.random() * 0.010 + 0.003;
+            star.nextPatternChange = currentTime + Math.random() * 25000 + 15000;
+        }
+
+        // CAMERA TRANSFORM (much faster than moving individual stars)
+        const x = star.baseX + this.globalMotion.x;
+        const y = star.baseY + this.globalMotion.y;
         
-        let x = star.baseX - centerX;
-        let y = star.baseY - centerY;
-        
-        const cos = Math.cos(this.globalMotion.rotation);
-        const sin = Math.sin(this.globalMotion.rotation);
-        const rotatedX = x * cos - y * sin;
-        const rotatedY = x * sin + y * cos;
-        
-        x = rotatedX + centerX + this.globalMotion.x;
-        y = rotatedY + centerY + this.globalMotion.y;
-        
-        star.localDrift.x += star.localDrift.speedX;
-        star.localDrift.y += star.localDrift.speedY;
-        x += star.localDrift.x;
-        y += star.localDrift.y;
-        
-        // Early culling - skip if far outside viewport
-        const maxRadius = star.maxGlowRadius * 2;
+        // Skip if outside viewport (with buffer)
+        const maxRadius = star.maxGlowRadius * 3;
         if (x < -maxRadius || x > window.innerWidth + maxRadius || 
             y < -maxRadius || y > window.innerHeight + maxRadius) {
             return;
         }
 
-        // Simplified twinkling calculation (less math)
+        // Calculate atmospheric scintillation (twinkling) - INDEPENDENT
         star.twinklePhase += star.twinkleSpeed;
-        const twinkle = Math.sin(star.twinklePhase) * star.twinkleIntensity;
-        const currentBrightness = Math.max(0.2, Math.min(1.2, 
-            star.baseBrightness * star.brightness + twinkle
+        const primaryTwinkle = Math.sin(star.twinklePhase) * star.twinkleIntensity;
+        const secondaryTwinkle = Math.sin(star.twinklePhase * 1.7 + star.twinklePattern * 8) * (star.twinkleIntensity * 0.4);
+        const tertiaryTwinkle = Math.sin(star.twinklePhase * 2.3 + star.twinklePattern * 12) * (star.twinkleIntensity * 0.2);
+        
+        // Calculate chromatic scintillation
+        star.chromaticPhase += star.chromaticSpeed;
+        const chromaticShift = Math.sin(star.chromaticPhase) * star.chromaticIntensity;
+        
+        const currentBrightness = Math.max(0.15, Math.min(1.2, 
+            star.baseBrightness * star.brightness + primaryTwinkle + secondaryTwinkle + tertiaryTwinkle
         ));
         
-        const currentGlowRadius = star.maxGlowRadius * (0.7 + currentBrightness * 0.3);
-        const currentCoreSize = star.coreSize * (0.9 + currentBrightness * 0.1);
+        // Apply chromatic effects
+        const colorShift = chromaticShift * 0.3;
+        const adjustedColor = {
+            r: Math.max(0, Math.min(255, star.color.r + colorShift * 30)),
+            g: Math.max(0, Math.min(255, star.color.g + colorShift * 15)),
+            b: Math.max(0, Math.min(255, star.color.b - colorShift * 10))
+        };
         
-        // Simplified color (remove chromatic calculations for mobile)
-        const adjustedColor = star.color;
+        const currentGlowRadius = star.maxGlowRadius * (0.6 + currentBrightness * 0.4);
+        const currentCoreSize = star.coreSize * (0.8 + currentBrightness * 0.3);
         
-        // OPTIMIZED RENDERING - Fewer layers, simpler gradients
+        this.ctx.save();
         
-        // Only draw outer glow for bright stars
-        // Realistic star rendering - minimal glow, cross diffraction
-        if (star.magnitude === 'brilliant' || star.magnitude === 'bright') {
-            // Subtle cross diffraction spikes (like real stars through atmosphere)
-            this.ctx.save();
-            this.ctx.strokeStyle = `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.3})`;
-            this.ctx.lineWidth = 0.5;
-            this.ctx.lineCap = 'round';
-            
-            const spikeLength = currentGlowRadius * (star.magnitude === 'brilliant' ? 2.5 : 1.5);
-            
-            // Four-point diffraction cross
-            for (let i = 0; i < 4; i++) {
-                const angle = (i * Math.PI / 2) + (star.twinklePhase * 0.1); // Slight rotation
-                this.ctx.beginPath();
-                this.ctx.moveTo(x, y);
-                this.ctx.lineTo(
-                    x + Math.cos(angle) * spikeLength,
-                    y + Math.sin(angle) * spikeLength
-                );
-                this.ctx.stroke();
-            }
-            this.ctx.restore();
-            
-            // Minimal halo (much smaller than before)
-            // Realistic star rendering - mix of cross diffraction and circular glow
-            if (star.magnitude === 'brilliant' || star.magnitude === 'bright') {
-                // Use star's unique pattern to decide rendering style (60% cross, 40% circular)
-                const useCrossDiffraction = star.twinklePattern > 0.99;
-                
-                if (useCrossDiffraction) {
-                    // Cross diffraction spikes (like real stars through atmosphere)
-                    this.ctx.save();
-                    this.ctx.strokeStyle = `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.3})`;
-                    this.ctx.lineWidth = 0.5;
-                    this.ctx.lineCap = 'round';
-                    
-                    const spikeLength = currentGlowRadius * (star.magnitude === 'brilliant' ? 2.5 : 1.5);
-                    
-                    // Four-point diffraction cross
-                    for (let i = 0; i < 4; i++) {
-                        const angle = (i * Math.PI / 2) + (star.twinklePhase * 0.1);
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(x, y);
-                        this.ctx.lineTo(
-                            x + Math.cos(angle) * spikeLength,
-                            y + Math.sin(angle) * spikeLength
-                        );
-                        this.ctx.stroke();
-                    }
-                    this.ctx.restore();
-                    
-                    // Minimal halo for brilliant stars
-                    if (star.magnitude === 'brilliant') {
-                        const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius * 0.8);
-                        gradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.2})`);
-                        gradient.addColorStop(0.7, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.05})`);
-                        gradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
-                        
-                        this.ctx.fillStyle = gradient;
-                        this.ctx.beginPath();
-                        this.ctx.arc(x, y, currentGlowRadius * 0.8, 0, Math.PI * 2);
-                        this.ctx.fill();
-                    }
-                } else {
-                    // Classic circular glow (original style, kept for variety)
-                    const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius * 1.5);
-                    gradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.4})`);
-                    gradient.addColorStop(0.5, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.15})`);
-                    gradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
-                    
-                    this.ctx.fillStyle = gradient;
-                    this.ctx.beginPath();
-                    this.ctx.arc(x, y, currentGlowRadius * 1.5, 0, Math.PI * 2);
-                    this.ctx.fill();
-                }
-            }
+        // Draw diffraction spikes first
+        if (star.hasDiffractionSpikes && currentBrightness > 0.7) {
+            this.drawDiffractionSpikes(x, y, star, currentBrightness);
         }
         
-        // Single core rendering (no multiple layers)
-        if (currentCoreSize > 0.3) {
+        // ONLY DRAW GLOW FOR LARGER STARS (performance optimization)
+        if (star.magnitude !== 'faint' && currentGlowRadius > 0.8) {
+            // Outer atmospheric glow
+            const outerGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius * 1.8);
+            outerGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.3})`);
+            outerGradient.addColorStop(0.5, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.08})`);
+            outerGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
+            
+            this.ctx.fillStyle = outerGradient;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, currentGlowRadius * 1.8, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Main glow
+            const mainGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius);
+            mainGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.6})`);
+            mainGradient.addColorStop(0.6, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.18})`);
+            mainGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
+            
+            this.ctx.fillStyle = mainGradient;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, currentGlowRadius, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        // Draw star core - SIMPLE DOT FOR FAINT STARS
+        if (star.magnitude === 'faint') {
+            // Just a simple dot - no glow
             this.ctx.fillStyle = `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness)})`;
+            this.ctx.fillRect(x - 0.5, y - 0.5, 1, 1);
+        } else if (currentCoreSize > 0.3) {
+            // Bright stellar disk for larger stars
+            const coreGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentCoreSize * 1.5);
+            coreGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 1.1)})`);
+            coreGradient.addColorStop(0.7, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 0.9)})`);
+            coreGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 0.6)})`);
+            
+            this.ctx.fillStyle = coreGradient;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, currentCoreSize * 1.5, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Bright center point
+            this.ctx.fillStyle = `rgba(${Math.min(255, adjustedColor.r + 20)}, ${Math.min(255, adjustedColor.g + 15)}, ${Math.min(255, adjustedColor.b + 10)}, ${Math.min(1, currentBrightness * 1.3)})`;
             this.ctx.beginPath();
             this.ctx.arc(x, y, currentCoreSize, 0, Math.PI * 2);
             this.ctx.fill();
-        } else {
-            // Tiny stars - just a pixel
-            this.ctx.fillStyle = `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.6})`;
-            this.ctx.fillRect(x, y, 1, 1);
+            
+            // Brilliant stars get extra bright center
+            if (star.magnitude === 'brilliant' && currentBrightness > 0.8) {
+                this.ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, currentBrightness * 0.8)})`;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, currentCoreSize * 0.4, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
         }
         
-        // Skip diffraction spikes on mobile for performance
+        this.ctx.restore();
     }
 
     animate() {
@@ -1141,30 +1021,27 @@ class StarField {
 
         const currentTime = Date.now();
         
-        // Mobile optimization: Skip frames if running slow
-        if (!this.lastFrameTime) this.lastFrameTime = currentTime;
-        const deltaTime = currentTime - this.lastFrameTime;
-        
-        // Target 30fps on mobile (every 33ms), 60fps on desktop
-        const targetFrameTime = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 33 : 16;
-        
-        if (deltaTime < targetFrameTime) {
-            this.animationId = requestAnimationFrame(() => this.animate());
-            return;
-        }
-        
-        this.lastFrameTime = currentTime;
-        
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
+        // Update smooth global motion
         this.updateGlobalMotion(currentTime);
+        
+        // Update star grid based on new viewport position
         this.updateStarGrid();
+        
+        // Update meteors and moon
         this.updateMeteorsAndMoon(currentTime);
         
-        // Batch rendering for better performance
+        // Draw all stars with realistic rendering
         this.stars.forEach(star => this.drawRealisticStar(star, currentTime));
+        
+        // Draw meteors
         this.meteors.forEach(meteor => this.drawMeteor(meteor, currentTime));
-        if (this.moon) this.drawMoon(this.moon, currentTime);
+        
+        // Draw moon if present
+        if (this.moon) {
+            this.drawMoon(this.moon, currentTime);
+        }
 
         this.animationId = requestAnimationFrame(() => this.animate());
     }
