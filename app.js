@@ -145,14 +145,18 @@ class StarField {
         this.lastFrameTime = 0;
         
         // Smooth global motion for entire star field - start immediately
+        // Smooth global motion for entire star field - start immediately
+        // Smooth global motion for entire star field - start immediately with random position
         this.globalMotion = {
-            x: 0, y: 0, rotation: 0,
-            velocityX: (Math.random() - 0.5) * 0.2, // Start with initial motion
-            velocityY: (Math.random() - 0.5) * 0.2,
-            rotationSpeed: (Math.random() - 0.5) * 0.0005,
+            x: (Math.random() - 0.5) * 5000, // Random starting X position (-2500 to +2500)
+            y: (Math.random() - 0.5) * 5000, // Random starting Y position (-2500 to +2500)
+            rotation: Math.random() * Math.PI * 2, // Random starting rotation (0 to 2π)
+            velocityX: (Math.random() - 0.5) * 0.6,
+            velocityY: (Math.random() - 0.5) * 0.6,
+            rotationSpeed: (Math.random() - 0.5) * 0.0015,
             targetVelocityX: 0, targetVelocityY: 0, targetRotationSpeed: 0,
             lastChange: this.startTime,
-            changeInterval: 20000 + Math.random() * 15000 // 20-35 seconds
+            changeInterval: 20000 + Math.random() * 15000
         };
         
         // Set initial targets same as current values to avoid sudden changes
@@ -262,7 +266,7 @@ class StarField {
         // Reduce star count on mobile for better performance
         const densityMultiplier = this.isMobile ? 0.5 : 1.0; // 50% fewer stars on mobile
         this.starDensity = {
-            faint: Math.floor((this.gridSize * this.gridSize) / 2500 * densityMultiplier),
+            faint: Math.floor((this.gridSize * this.gridSize) / 1500 * densityMultiplier),
 
             // Dim stars (reduced)
             dim: Math.floor((this.gridSize * this.gridSize) / 7000), // ~36 per cell (was 71)
@@ -560,15 +564,15 @@ class StarField {
         const elapsed = currentTime - this.globalMotion.lastChange;
         
         if (elapsed > this.globalMotion.changeInterval) {
-            this.globalMotion.targetVelocityX = (Math.random() - 0.5) * 0.4;
-            this.globalMotion.targetVelocityY = (Math.random() - 0.5) * 0.4;
-            this.globalMotion.targetRotationSpeed = (Math.random() - 0.5) * 0.001;
+            this.globalMotion.targetVelocityX = (Math.random() - 0.5) * 1.2; // Increased from 0.4 to 1.2 (3x faster)
+            this.globalMotion.targetVelocityY = (Math.random() - 0.5) * 1.2; // Increased from 0.4 to 1.2 (3x faster)
+            this.globalMotion.targetRotationSpeed = (Math.random() - 0.5) * 0.003; // Increased from 0.001 to 0.003 (3x faster)
             
             this.globalMotion.lastChange = currentTime;
-            this.globalMotion.changeInterval = 20000 + Math.random() * 15000;
+            this.globalMotion.changeInterval = 20000 + Math.random() * 15000; // Kept same for randomness
         }
         
-        const smoothing = 0.0006;
+        const smoothing = 0.0006; // Kept same for smooth transitions
         this.globalMotion.velocityX += (this.globalMotion.targetVelocityX - this.globalMotion.velocityX) * smoothing;
         this.globalMotion.velocityY += (this.globalMotion.targetVelocityY - this.globalMotion.velocityY) * smoothing;
         this.globalMotion.rotationSpeed += (this.globalMotion.targetRotationSpeed - this.globalMotion.rotationSpeed) * smoothing;
@@ -2319,6 +2323,7 @@ function displayEvents() {
 function createEventCard(event) {
     const card = document.createElement('div');
     card.className = 'event-bar';
+    card.setAttribute('data-event-id', event.id);
     card.onclick = () => handleEventBarClick(event);
     
     // Calculate time remaining for upcoming events and auto-update status
@@ -2388,8 +2393,8 @@ function createEventCard(event) {
     card.innerHTML = `
         <div class="event-bar-header">
             <div class="event-title-section">
-                <span class="event-title-text">${event.title}</span>
-                <img src="${event.profilePic}" alt="Event" class="event-profile-mini">
+                <span class="event-title-text" onclick="event.stopPropagation(); toggleEventTitle('${event.id}')" style="cursor: pointer; transition: all 0.15s ease;">${event.title}</span>
+                <img src="${event.profilePic}" alt="Event" class="event-profile-mini" onclick="event.stopPropagation(); toggleEventProfilePic('${event.id}')" style="cursor: pointer; transition: all 0.15s ease;">
             </div>
         </div>
         
@@ -2428,6 +2433,55 @@ function createEventCard(event) {
     setTimeout(() => startVsPoolAnimation(event.id, event.totalPot || 0), 1000);
     
     return card;
+}
+
+// Toggle functionality for event card elements
+function toggleEventTitle(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+    
+    const titleElements = document.querySelectorAll(`[data-event-id="${eventId}"] .event-title-text`);
+    titleElements.forEach(el => {
+        const currentText = el.textContent;
+        const isShowingTitle = currentText === event.title;
+        
+        // Fade out
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-5px)';
+        
+        setTimeout(() => {
+            // Switch text
+            el.textContent = isShowingTitle ? (event.leagueName || event.title) : event.title;
+            
+            // Fade in
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, 150);
+    });
+}
+
+function toggleEventProfilePic(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+    
+    const picElements = document.querySelectorAll(`[data-event-id="${eventId}"] .event-profile-mini`);
+    picElements.forEach(el => {
+        const currentSrc = el.src;
+        const isShowingProfile = currentSrc === event.profilePic;
+        
+        // Fade out with scale
+        el.style.opacity = '0';
+        el.style.transform = 'scale(0.8)';
+        
+        setTimeout(() => {
+            // Switch image
+            el.src = isShowingProfile ? (event.leaguePic || event.profilePic) : event.profilePic;
+            
+            // Fade in with scale
+            el.style.opacity = '1';
+            el.style.transform = 'scale(1)';
+        }, 150);
+    });
 }
 
 function handleEventBarClick(event) {
