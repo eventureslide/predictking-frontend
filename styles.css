@@ -3720,3 +3720,8 @@ input:focus, select:focus, textarea:focus {
     z-index: 10;
     pointer-events: none;
 }
+
+/* Accurate loading bar animation */
+.loading-fill {
+    transition: width 0.3s ease-out;
+}

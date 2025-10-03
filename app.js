@@ -50,7 +50,7 @@ function checkViewportSize() {
                 padding: 2rem;
                 z-index: 10000;
             ">
-                <div style="font-size: 4rem; margin-bottom: 2rem;">â™›</div>
+                <div style="font-size: 4rem; margin-bottom: 2rem;">Ã¢â„¢â€º</div>
                 <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: 2px;">PREDICTKING</h1>
                 <h2 style="font-size: 1.5rem; margin-bottom: 2rem; color: #888;">Please Use Mobile Device</h2>
                 <p style="font-size: 1.1rem; max-width: 500px; line-height: 1.6;">
@@ -137,6 +137,12 @@ class StarField {
         this.animationId = null;
         this.isVisible = true;
         this.startTime = Date.now();
+        
+        // Mobile optimization flags
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        this.targetFPS = this.isMobile ? 30 : 60; // Lower FPS on mobile
+        this.frameInterval = 1000 / this.targetFPS;
+        this.lastFrameTime = 0;
         
         // Smooth global motion for entire star field - start immediately
         this.globalMotion = {
@@ -253,10 +259,11 @@ class StarField {
         
         // Star density per grid cell - ADJUST THESE VALUES TO CHANGE STAR POPULATION:
         // Star density per grid cell - DECREASED POPULATION
+        // Reduce star count on mobile for better performance
+        const densityMultiplier = this.isMobile ? 0.5 : 1.0; // 50% fewer stars on mobile
         this.starDensity = {
-            // Faintest stars (slightly reduced)
-            faint: Math.floor((this.gridSize * this.gridSize) / 2500), // ~100 per cell (was 167)
-            
+            faint: Math.floor((this.gridSize * this.gridSize) / 2500 * densityMultiplier),
+
             // Dim stars (reduced)
             dim: Math.floor((this.gridSize * this.gridSize) / 7000), // ~36 per cell (was 71)
             
@@ -1021,6 +1028,14 @@ class StarField {
 
         const currentTime = Date.now();
         
+        // Frame rate limiting for smooth mobile performance
+        const elapsed = currentTime - this.lastFrameTime;
+        if (elapsed < this.frameInterval) {
+            this.animationId = requestAnimationFrame(() => this.animate());
+            return;
+        }
+        this.lastFrameTime = currentTime - (elapsed % this.frameInterval);
+        
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
         // Update smooth global motion
@@ -1057,9 +1072,7 @@ class StarField {
 }
 
 // Initialize stars when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    new StarField();
-});
+
 
 document.addEventListener('DOMContentLoaded', function() {
     // Double-check mobile access
@@ -1070,58 +1083,129 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize collections
     initializeCollections();
     
+    // Detect mobile device for optimization
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     // Check if we're on EVC page
     if (window.location.pathname.includes('fwd.html')) {
         showEVCLoadingScreen();
         
-        // Ensure everything loads before showing page
-        Promise.all([
-            checkLoginStatus(),
-            new Promise(resolve => setTimeout(resolve, 3000)) // Minimum 3 seconds
-        ]).then(() => {
-            updateThemeBasedOnUser();
-            hideEVCLoadingScreen();
-            startActivePlayerTracking();
-            startGlobalRealTimeListeners(); // Add this
-            showPostRefreshWelcomeMessage();
-        });
+        // Parallel loading - Firebase operations independent of animations
+        checkLoginStatus()
+            .then(() => {
+                updateThemeBasedOnUser();
+                hideEVCLoadingScreen();
+                startActivePlayerTracking();
+                startGlobalRealTimeListeners();
+                showPostRefreshWelcomeMessage();
+            })
+            .catch(error => {
+                console.error('EVC loading error:', error);
+                hideEVCLoadingScreen();
+                showNotification('Failed to load page. Please refresh.', 'error');
+            });
+        
+        // Start star animation separately (non-blocking)
+        setTimeout(() => {
+            new StarField();
+        }, 200);
+        
         return;
     }
     
-    // Check if elements exist before using them
+    // Main page loading with accurate progress tracking
     if (document.getElementById('loading-screen')) {
         showLoadingScreen();
     }
     
-    // Ensure everything loads before showing page
-    Promise.all([
-        checkLoginStatus(),
-        loadEvents(),
-        loadStats(),
-        new Promise(resolve => {
-            // Wait for actual loading completion
-            let completed = 0;
-            const checkProgress = () => {
-                completed += 25;
-                if (completed >= 100) {
-                    setTimeout(resolve, 500); // Small delay after completion
-                } else {
-                    setTimeout(checkProgress, 750); // Staggered progress
-                }
-            };
-            checkProgress();
-        })
-    ]).then(() => {
-        if (document.getElementById('loading-screen')) {
-            hideLoadingScreen();
+    // Progress tracking variables
+    let loadingProgress = 0;
+    const updateLoadingBar = (progress) => {
+        const loadingFill = document.querySelector('.loading-fill');
+        if (loadingFill) {
+            loadingFill.style.width = progress + '%';
         }
-        updateThemeBasedOnUser();
-        startRealTimeUpdates();
-        startActivePlayerTracking();
-        startGlobalRealTimeListeners(); // Add this for real-time odds
-        startUpcomingEventsChecker(); // Add this line
-        showPostRefreshWelcomeMessage();
-    });
+    };
+    
+    // Start all Firebase operations in parallel (independent of animations)
+    const loginPromise = checkLoginStatus()
+        .then(() => {
+            loadingProgress += 33;
+            updateLoadingBar(loadingProgress);
+            console.log('Login check complete');
+        })
+        .catch(error => {
+            console.error('Login check failed:', error);
+            loadingProgress += 33;
+            updateLoadingBar(loadingProgress);
+        });
+    
+    const eventsPromise = loadEvents()
+        .then(() => {
+            loadingProgress += 33;
+            updateLoadingBar(loadingProgress);
+            console.log('Events loaded');
+        })
+        .catch(error => {
+            console.error('Events loading failed:', error);
+            loadingProgress += 33;
+            updateLoadingBar(loadingProgress);
+        });
+    
+    const statsPromise = loadStats()
+        .then(() => {
+            loadingProgress += 34;
+            updateLoadingBar(loadingProgress);
+            console.log('Stats loaded');
+        })
+        .catch(error => {
+            console.error('Stats loading failed:', error);
+            loadingProgress += 34;
+            updateLoadingBar(loadingProgress);
+        });
+    
+    // Wait for all Firebase operations to complete
+    Promise.all([loginPromise, eventsPromise, statsPromise])
+        .then(() => {
+            // Ensure loading bar shows 100%
+            updateLoadingBar(100);
+            console.log('All loading complete');
+            
+            // Show page immediately after loading completes (no artificial delay)
+            setTimeout(() => {
+                if (document.getElementById('loading-screen')) {
+                    hideLoadingScreen();
+                }
+                updateThemeBasedOnUser();
+                startRealTimeUpdates();
+                startActivePlayerTracking();
+                startGlobalRealTimeListeners();
+                startUpcomingEventsChecker();
+                showPostRefreshWelcomeMessage();
+            }, 300); // Minimal 300ms for smooth transition
+        })
+        .catch(error => {
+            console.error('Critical loading error:', error);
+            updateLoadingBar(100);
+            setTimeout(() => {
+                if (document.getElementById('loading-screen')) {
+                    hideLoadingScreen();
+                }
+                showNotification('Some features may not be available. Please refresh.', 'warning');
+            }, 300);
+        });
+    
+    // Initialize star animation AFTER and INDEPENDENTLY of Firebase loading
+    // This prevents animation from blocking database operations
+    setTimeout(() => {
+        try {
+            new StarField();
+            console.log('Star animation initialized');
+        } catch (error) {
+            console.error('Star animation failed (non-critical):', error);
+            // Don't block page if animation fails
+        }
+    }, isMobile ? 500 : 200); // Longer delay on mobile for better performance
 });
 
 
@@ -1342,10 +1426,10 @@ if (profilePicInput) {
         const button = document.querySelector('.file-upload-btn');
         
         if (file) {
-            button.textContent = `📷 ${file.name}`;
+            button.textContent = `ðŸ“· ${file.name}`;
             button.style.color = 'var(--primary-color)';
         } else {
-            button.textContent = '📷 Upload Profile Picture';
+            button.textContent = 'ðŸ“· Upload Profile Picture';
             button.style.color = '';
         }
     });
@@ -1904,12 +1988,24 @@ function checkLoginStatus() {
     return new Promise((resolve) => {
         const savedCode = localStorage.getItem('userCode');
         if (savedCode) {
+            // Add timeout to prevent infinite hanging
+            const timeoutId = setTimeout(() => {
+                console.log('Login check timed out, proceeding anyway');
+                updateLayoutBasedOnLoginStatus();
+                resolve();
+            }, 5000); // 5 second timeout
+            
             loginUser(savedCode, true)  // silent login - no refresh
-                .then(() => { 
+                .then(() => {
+                    clearTimeout(timeoutId);
                     updateLayoutBasedOnLoginStatus();
                     resolve();
                 })
-                .catch(() => {
+                .catch((error) => {
+                    clearTimeout(timeoutId);
+                    console.error('Silent login failed:', error);
+                    // Clear invalid code
+                    localStorage.removeItem('userCode');
                     updateLayoutBasedOnLoginStatus();
                     resolve();
                 });
@@ -2073,12 +2169,12 @@ function updateBalance() {
     }
 }
 
-// Quero (₮Ξ) - Universal currency for PredictKing
+// Quero (â‚®Îž) - Universal currency for PredictKing
 // Etymology: "Quero" derives from Latin "quaero" meaning "I seek/desire"
 // symbolizing the player's quest for victory and rewards in prediction gaming
 function formatCurrency(amount) {
     const flooredAmount = Math.floor(amount); // Floor the amount to remove decimals
-    return `<span class="currency-coin">₮Ξ</span>${flooredAmount}`;
+    return `<span class="currency-coin">â‚®Îž</span>${flooredAmount}`;
 }
 
 function getStatusColor(status) {
@@ -3226,7 +3322,7 @@ function createPoolBettingUI() {
                         <h4>${option}</h4>
                         <div class="odds" id="odds-${index}">Loading...</div>
                         <div class="bet-count" id="bets-${index}">0 bets</div>
-                        <div class="pool-amount" id="pool-${index}">â‚¹0</div>
+                        <div class="pool-amount" id="pool-${index}">Ã¢â€šÂ¹0</div>
                     </div>
                 `).join('')}
             </div>
@@ -3334,17 +3430,17 @@ function createPriceLadder() {
             <span>Back Team B</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(100, 'team_a')">
-            <span>â‚¹100</span>
+            <span>Ã¢â€šÂ¹100</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(200, 'team_a')">
-            <span>â‚¹200</span>
+            <span>Ã¢â€šÂ¹200</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(500, 'team_a')">
-            <span>â‚¹500</span>
+            <span>Ã¢â€šÂ¹500</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
@@ -3628,7 +3724,7 @@ function updateInstantOddsDisplay(eventId, newOdds, betOption, betAmount) {
                 }
                 if (poolEl) {
                     const currentPool = parseInt(poolEl.textContent.replace(/[^\d]/g, '')) || 0;
-                    poolEl.textContent = `₹${currentPool + betAmount}`;
+                    poolEl.textContent = `â‚¹${currentPool + betAmount}`;
                 }
             }
         });
@@ -3664,7 +3760,7 @@ async function loadPoolOdds(eventId) {
                 // Set odds directly without indicator (initial load)
                 if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                 if (betsEl) betsEl.textContent = '0 bets';
-                if (poolEl) poolEl.textContent = '₹0';
+                if (poolEl) poolEl.textContent = 'â‚¹0';
             });
         } else {
             poolData = poolDoc.data();
@@ -3711,7 +3807,7 @@ async function loadPoolOdds(eventId) {
                     // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = odds.toFixed(2);
                     if (betsEl) betsEl.textContent = `${betCount} bets`;
-                    if (poolEl) poolEl.textContent = `₹${poolAmount}`;
+                    if (poolEl) poolEl.textContent = `â‚¹${poolAmount}`;
                 });
             } else {
                 // Fallback to initial odds
@@ -3728,7 +3824,7 @@ async function loadPoolOdds(eventId) {
                     // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                     if (betsEl) betsEl.textContent = '0 bets';
-                    if (poolEl) poolEl.textContent = '₹0';
+                    if (poolEl) poolEl.textContent = 'â‚¹0';
                 });
             }
         }
@@ -3807,7 +3903,7 @@ function updateBettingModalOddsFromEventDirect(eventId, newOdds) {
         const oddsEl = document.getElementById(`odds-${index}`);
         if (oddsEl) {
             // Parse only the number, ignore any arrow symbols
-            const oddsText = oddsEl.textContent.replace(/[▲▼\s]/g, '');
+            const oddsText = oddsEl.textContent.replace(/[â–²â–¼\s]/g, '');
             currentDOMOdds[option] = parseFloat(oddsText) || 0;
         }
     });
@@ -3880,7 +3976,7 @@ function updateBettingModalOdds(eventId, poolData) {
                 }
             }
             if (betsEl) betsEl.textContent = `${betCount} bets`;
-            if (poolEl) poolEl.textContent = `₹${Math.max(0, optionPool)}`;
+            if (poolEl) poolEl.textContent = `â‚¹${Math.max(0, optionPool)}`;
         });
     }
     
@@ -4026,10 +4122,10 @@ function updateOddsWithIndicator(oddsElement, oldOdds, newOdds) {
         indicator.className = 'odds-change-indicator';
         
         if (newOdds > oldOdds) {
-            indicator.innerHTML = '▲';
+            indicator.innerHTML = 'â–²';
             indicator.classList.add('odds-increase');
         } else {
-            indicator.innerHTML = '▼';
+            indicator.innerHTML = 'â–¼';
             indicator.classList.add('odds-decrease');
         }
         
@@ -4080,10 +4176,10 @@ function updateBettingModalOddsWithIndicator(oddsElement, oldOdds, newOdds) {
         indicator.className = 'odds-change-indicator betting-modal-indicator';
         
         if (newOdds > oldOdds) {
-            indicator.innerHTML = '▲';
+            indicator.innerHTML = 'â–²';
             indicator.classList.add('odds-increase');
         } else {
-            indicator.innerHTML = '▼';
+            indicator.innerHTML = 'â–¼';
             indicator.classList.add('odds-decrease');
         }
         
