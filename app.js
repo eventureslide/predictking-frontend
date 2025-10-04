@@ -180,7 +180,12 @@ class StarField {
         
         document.body.insertBefore(this.canvas, document.body.firstChild);
         
-        this.ctx = this.canvas.getContext('2d');
+        this.ctx = this.canvas.getContext('2d', {
+            alpha: false, // No transparency = faster
+            desynchronized: true // Allow async rendering
+        });
+        
+
         this.resize();
         this.createRealisticStars();
         this.animate();
@@ -206,7 +211,13 @@ class StarField {
         this.canvas.style.width = rect.width + 'px';
         this.canvas.style.height = rect.height + 'px';
         
-        this.createRealisticStars();
+        // DON'T recreate stars on resize - preserve existing layout
+        // this.createRealisticStars(); // REMOVE THIS LINE
+        
+        // Only create stars if none exist (first load)
+        if (this.stars.length === 0) {
+            this.createRealisticStars();
+        }
     }
 
     getRandomStellarType() {
@@ -574,13 +585,18 @@ class StarField {
         const y = star.y;
 
         star.twinklePhase += star.twinkleSpeed;
-        const primaryTwinkle = Math.sin(star.twinklePhase) * star.twinkleIntensity;
-        const secondaryTwinkle = Math.sin(star.twinklePhase * 1.7 + star.twinklePattern * 8) * (star.twinkleIntensity * 0.4);
-        const tertiaryTwinkle = Math.sin(star.twinklePhase * 2.3 + star.twinklePattern * 12) * (star.twinkleIntensity * 0.2);
+        const sinTwinkle = Math.sin(star.twinklePhase);
+        const sinTwinkle2 = Math.sin(star.twinklePhase * 1.7 + star.twinklePattern * 8);
+        const sinTwinkle3 = Math.sin(star.twinklePhase * 2.3 + star.twinklePattern * 12);
+        
+        const primaryTwinkle = sinTwinkle * star.twinkleIntensity;
+        const secondaryTwinkle = sinTwinkle2 * (star.twinkleIntensity * 0.4);
+        const tertiaryTwinkle = sinTwinkle3 * (star.twinkleIntensity * 0.2);
         
         star.chromaticPhase += star.chromaticSpeed;
         const chromaticShift = Math.sin(star.chromaticPhase) * star.chromaticIntensity;
         
+
         const currentBrightness = Math.max(0.15, Math.min(1.2, 
             star.baseBrightness * star.brightness + primaryTwinkle + secondaryTwinkle + tertiaryTwinkle
         ));
@@ -652,6 +668,27 @@ class StarField {
         this.ctx.restore();
     }
 
+    // ADD this NEW method after drawRealisticStar()
+    drawStarsBatched(currentTime) {
+        // Group stars by brightness for batched rendering
+        const brightStars = [];
+        const dimStars = [];
+        
+        this.stars.forEach(star => {
+            if (star.magnitude === 'brilliant' || star.magnitude === 'bright') {
+                brightStars.push(star);
+            } else {
+                dimStars.push(star);
+            }
+        });
+        
+        // Draw dim stars first (background layer)
+        dimStars.forEach(star => this.drawRealisticStar(star, currentTime));
+        
+        // Draw bright stars on top (foreground layer)
+        brightStars.forEach(star => this.drawRealisticStar(star, currentTime));
+    }
+
     animate() {
         if (!this.isVisible) {
             this.animationId = null;
@@ -660,12 +697,15 @@ class StarField {
 
         const currentTime = Date.now();
         
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.globalCompositeOperation = 'source-over';
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+        this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
         
-        // REMOVED: updateGlobalMotion call
+        // REPLACE this line:
+        // this.stars.forEach(star => this.drawRealisticStar(star, currentTime));
         
-        // Stars are now static - only twinkling animates
-        this.stars.forEach(star => this.drawRealisticStar(star, currentTime));
+        // WITH batched rendering:
+        this.drawStarsBatched(currentTime);
         
         this.updateMeteorsAndMoon(currentTime);
         this.meteors.forEach(meteor => this.drawMeteor(meteor, currentTime));
