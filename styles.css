@@ -1363,7 +1363,7 @@ input:focus, select:focus, textarea:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-left: 10px;  /* ADD THIS LINE */
+    padding-left: 15px;  /* ADD THIS LINE */
     z-index: 10001;
     font-weight: 700;
     font-size: 1.1rem;
