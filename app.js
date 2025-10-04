@@ -543,19 +543,19 @@ class StarField {
             // Set new target motion with more varied patterns
             this.globalMotion.targetVelocityX = (Math.random() - 0.5) * 0.4;
             this.globalMotion.targetVelocityY = (Math.random() - 0.5) * 0.4;
-            this.globalMotion.targetRotationSpeed = (Math.random() - 0.5) * 0.001; // Gentle rotation
+            this.globalMotion.targetRotationSpeed = (Math.random() - 0.5) * 0.001;
             
             this.globalMotion.lastChange = currentTime;
-            this.globalMotion.changeInterval = 20000 + Math.random() * 15000; // Next change in 20-35s
+            this.globalMotion.changeInterval = 20000 + Math.random() * 15000;
         }
         
         // Smooth interpolation to target motion
-        const smoothing = 0.0006; // Very gradual transition
+        const smoothing = 0.0006;
         this.globalMotion.velocityX += (this.globalMotion.targetVelocityX - this.globalMotion.velocityX) * smoothing;
         this.globalMotion.velocityY += (this.globalMotion.targetVelocityY - this.globalMotion.velocityY) * smoothing;
         this.globalMotion.rotationSpeed += (this.globalMotion.targetRotationSpeed - this.globalMotion.rotationSpeed) * smoothing;
         
-        // Apply motion
+        // Apply motion - THIS MOVES THE CAMERA, NOT THE STARS
         this.globalMotion.x += this.globalMotion.velocityX;
         this.globalMotion.y += this.globalMotion.velocityY;
         this.globalMotion.rotation += this.globalMotion.rotationSpeed;
@@ -743,23 +743,9 @@ class StarField {
         let x, y;
         
         if (moon.followsSkyMotion) {
-            // Moon moves with sky motion (stationary relative to stars)
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-            
-            // Apply same transformations as stars
-            let moonX = moon.startX - centerX;
-            let moonY = moon.startY - centerY;
-            
-            // Apply global rotation
-            const cos = Math.cos(this.globalMotion.rotation);
-            const sin = Math.sin(this.globalMotion.rotation);
-            const rotatedX = moonX * cos - moonY * sin;
-            const rotatedY = moonX * sin + moonY * cos;
-            
-            // Apply global drift and translate back
-            x = rotatedX + centerX + this.globalMotion.x;
-            y = rotatedY + centerY + this.globalMotion.y;
+            // Moon moves with camera - SIMPLIFIED (no rotation)
+            x = moon.startX - this.globalMotion.x;
+            y = moon.startY - this.globalMotion.y;
         } else {
             // Moon moves independently
             x = moon.startX + (moon.endX - moon.startX) * progress;
@@ -768,7 +754,8 @@ class StarField {
         
         this.ctx.save();
         
-        // Moon glow - warm white with realistic lunar coloring
+        // [Rest of the moon drawing code remains the same...]
+        // Moon glow
         const glowGradient = this.ctx.createRadialGradient(x, y, 0, x, y, moon.size * 2.8);
         glowGradient.addColorStop(0, `rgba(250, 245, 230, ${moon.brightness * 0.18})`);
         glowGradient.addColorStop(0.4, `rgba(250, 245, 230, ${moon.brightness * 0.1})`);
@@ -779,13 +766,13 @@ class StarField {
         this.ctx.arc(x, y, moon.size * 2.8, 0, Math.PI * 2);
         this.ctx.fill();
         
-        // Moon body - realistic lunar surface color
+        // Moon body
         this.ctx.fillStyle = `rgba(240, 235, 220, ${moon.brightness})`;
         this.ctx.beginPath();
         this.ctx.arc(x, y, moon.size, 0, Math.PI * 2);
         this.ctx.fill();
         
-        // Enhanced moon surface details
+        // Surface details and shading (same as before)
         const craterData = [
             { x: 0.3, y: -0.2, size: 0.15, darkness: 0.6 },
             { x: -0.4, y: 0.1, size: 0.25, darkness: 0.5 },
@@ -823,7 +810,6 @@ class StarField {
             }
         });
         
-        // Realistic lunar terminator shading
         const shadingGradient = this.ctx.createRadialGradient(
             x - moon.size * 0.35, y - moon.size * 0.35, 0, 
             x, y, moon.size
@@ -887,36 +873,22 @@ class StarField {
             star.nextPatternChange = currentTime + Math.random() * 25000 + 15000;
         }
 
-        // Apply global motion transformations
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
+        // SIMPLIFIED: Camera offset (no rotation for better performance)
+        const x = star.baseX - this.globalMotion.x;
+        const y = star.baseY - this.globalMotion.y;
         
-        // Translate relative to center
-        let x = star.baseX - centerX;
-        let y = star.baseY - centerY;
-        
-        // Apply global rotation
-        const cos = Math.cos(this.globalMotion.rotation);
-        const sin = Math.sin(this.globalMotion.rotation);
-        const rotatedX = x * cos - y * sin;
-        const rotatedY = x * sin + y * cos;
-        
-        // Apply global drift and translate back
-        x = rotatedX + centerX + this.globalMotion.x;
-        y = rotatedY + centerY + this.globalMotion.y;
-        
-        // Add subtle individual drift
-        star.localDrift.x += star.localDrift.speedX;
-        star.localDrift.y += star.localDrift.speedY;
-        x += star.localDrift.x;
-        y += star.localDrift.y;
-        
-        // Skip if outside viewport
+        // Skip if outside viewport (with buffer for smooth edges)
         const maxRadius = star.maxGlowRadius * 3;
         if (x < -maxRadius || x > window.innerWidth + maxRadius || 
             y < -maxRadius || y > window.innerHeight + maxRadius) {
             return;
         }
+
+        // Add subtle individual drift
+        star.localDrift.x += star.localDrift.speedX;
+        star.localDrift.y += star.localDrift.speedY;
+        const finalX = x + star.localDrift.x;
+        const finalY = y + star.localDrift.y;
 
         // Calculate atmospheric scintillation (twinkling)
         star.twinklePhase += star.twinkleSpeed;
@@ -924,7 +896,7 @@ class StarField {
         const secondaryTwinkle = Math.sin(star.twinklePhase * 1.7 + star.twinklePattern * 8) * (star.twinkleIntensity * 0.4);
         const tertiaryTwinkle = Math.sin(star.twinklePhase * 2.3 + star.twinklePattern * 12) * (star.twinkleIntensity * 0.2);
         
-        // Calculate chromatic scintillation (color shifting)
+        // Calculate chromatic scintillation
         star.chromaticPhase += star.chromaticSpeed;
         const chromaticShift = Math.sin(star.chromaticPhase) * star.chromaticIntensity;
         
@@ -932,7 +904,7 @@ class StarField {
             star.baseBrightness * star.brightness + primaryTwinkle + secondaryTwinkle + tertiaryTwinkle
         ));
         
-        // Apply chromatic effects to color
+        // Apply chromatic effects
         const colorShift = chromaticShift * 0.3;
         const adjustedColor = {
             r: Math.max(0, Math.min(255, star.color.r + colorShift * 30)),
@@ -945,63 +917,46 @@ class StarField {
         
         this.ctx.save();
         
-        // Draw diffraction spikes first (behind the star)
+        // Draw diffraction spikes
         if (star.hasDiffractionSpikes && currentBrightness > 0.7) {
-            this.drawDiffractionSpikes(x, y, star, currentBrightness);
+            this.drawDiffractionSpikes(finalX, finalY, star, currentBrightness);
         }
         
-        // Draw atmospheric glow (outer halo) - multiple layers for realism
+        // Draw atmospheric glow (simplified for mobile)
         if (currentGlowRadius > 0.8) {
-            // Outer atmospheric glow
-            const outerGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius * 1.8);
-            outerGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.3})`);
-            outerGradient.addColorStop(0.2, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.15})`);
-            outerGradient.addColorStop(0.5, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.08})`);
-            outerGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
-            
-            this.ctx.fillStyle = outerGradient;
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, currentGlowRadius * 1.8, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Main atmospheric glow
-            const mainGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius);
+            const mainGradient = this.ctx.createRadialGradient(finalX, finalY, 0, finalX, finalY, currentGlowRadius);
             mainGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.6})`);
-            mainGradient.addColorStop(0.3, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.35})`);
             mainGradient.addColorStop(0.6, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.18})`);
             mainGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
             
             this.ctx.fillStyle = mainGradient;
             this.ctx.beginPath();
-            this.ctx.arc(x, y, currentGlowRadius, 0, Math.PI * 2);
+            this.ctx.arc(finalX, finalY, currentGlowRadius, 0, Math.PI * 2);
             this.ctx.fill();
         }
         
-        // Draw star core with realistic stellar disk
+        // Draw star core
         if (currentCoreSize > 0.3) {
-            // Bright stellar disk
-            const coreGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentCoreSize * 1.5);
+            const coreGradient = this.ctx.createRadialGradient(finalX, finalY, 0, finalX, finalY, currentCoreSize * 1.5);
             coreGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 1.1)})`);
-            coreGradient.addColorStop(0.7, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 0.9)})`);
             coreGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 0.6)})`);
             
             this.ctx.fillStyle = coreGradient;
             this.ctx.beginPath();
-            this.ctx.arc(x, y, currentCoreSize * 1.5, 0, Math.PI * 2);
+            this.ctx.arc(finalX, finalY, currentCoreSize * 1.5, 0, Math.PI * 2);
             this.ctx.fill();
         }
         
-        // Draw bright center point
+        // Bright center point
         this.ctx.fillStyle = `rgba(${Math.min(255, adjustedColor.r + 20)}, ${Math.min(255, adjustedColor.g + 15)}, ${Math.min(255, adjustedColor.b + 10)}, ${Math.min(1, currentBrightness * 1.3)})`;
         this.ctx.beginPath();
-        this.ctx.arc(x, y, currentCoreSize, 0, Math.PI * 2);
+        this.ctx.arc(finalX, finalY, currentCoreSize, 0, Math.PI * 2);
         this.ctx.fill();
         
-        // Add bright central point for brilliant stars
         if (star.magnitude === 'brilliant' && currentBrightness > 0.8) {
             this.ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, currentBrightness * 0.8)})`;
             this.ctx.beginPath();
-            this.ctx.arc(x, y, currentCoreSize * 0.4, 0, Math.PI * 2);
+            this.ctx.arc(finalX, finalY, currentCoreSize * 0.4, 0, Math.PI * 2);
             this.ctx.fill();
         }
         
