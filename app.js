@@ -50,7 +50,7 @@ function checkViewportSize() {
                 padding: 2rem;
                 z-index: 10000;
             ">
-                <div style="font-size: 4rem; margin-bottom: 2rem;">â™›</div>
+                <div style="font-size: 4rem; margin-bottom: 2rem;">Ã¢â„¢â€º</div>
                 <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: 2px;">PREDICTKING</h1>
                 <h2 style="font-size: 1.5rem; margin-bottom: 2rem; color: #888;">Please Use Mobile Device</h2>
                 <p style="font-size: 1.1rem; max-width: 500px; line-height: 1.6;">
@@ -128,7 +128,6 @@ function handleProfilePicUpload(file, gender) {
 }
 
 // Canvas-based realistic star animation
-// Canvas-based realistic star animation
 class StarField {
     constructor() {
         this.canvas = null;
@@ -138,46 +137,35 @@ class StarField {
         this.isVisible = true;
         this.startTime = Date.now();
         
-        // Smooth global motion for entire star field - start immediately
-        this.globalMotion = {
-            x: 0, y: 0, rotation: 0,
-            velocityX: (Math.random() - 0.5) * 0.2, // Start with initial motion
-            velocityY: (Math.random() - 0.5) * 0.2,
-            rotationSpeed: (Math.random() - 0.5) * 0.0005,
-            targetVelocityX: 0, targetVelocityY: 0, targetRotationSpeed: 0,
-            lastChange: this.startTime,
-            changeInterval: 20000 + Math.random() * 15000 // 20-35 seconds
-        };
-        
-        // Set initial targets same as current values to avoid sudden changes
-        this.globalMotion.targetVelocityX = this.globalMotion.velocityX;
-        this.globalMotion.targetVelocityY = this.globalMotion.velocityY;
-        this.globalMotion.targetRotationSpeed = this.globalMotion.rotationSpeed;
+        // REMOVED: globalMotion object completely
+        // Stars now have FIXED positions based on random seed
         
         // Meteor system
         this.meteors = [];
-        this.nextMeteorTime = this.startTime + Math.random() * 30000 + 15000; // 15-45 seconds
+        this.nextMeteorTime = this.startTime + Math.random() * 30000 + 15000;
         
         // Moon system
         this.moon = null;
-        this.nextMoonTime = this.startTime + Math.random() * 120000 + 180000; // 3-8 minutes
+        this.nextMoonTime = this.startTime + Math.random() * 120000 + 180000;
         
-        // Define realistic stellar colors based on spectral classification
+        // Random offset for this page load - creates different sky regions
+        this.skyOffsetX = Math.random() * 10000 - 5000; // Random X offset
+        this.skyOffsetY = Math.random() * 10000 - 5000; // Random Y offset
+        
         this.stellarColors = {
-            O: { r: 157, g: 180, b: 255, temp: 30000 }, // Blue
-            B: { r: 162, g: 185, b: 255, temp: 20000 }, // Blue-white
-            A: { r: 213, g: 224, b: 255, temp: 8500 },  // White
-            F: { r: 249, g: 245, b: 255, temp: 6500 },  // Yellow-white
-            G: { r: 255, g: 237, b: 227, temp: 5500 },  // Yellow (like Sun)
-            K: { r: 255, g: 218, b: 181, temp: 4000 },  // Orange
-            M: { r: 255, g: 181, b: 108, temp: 3000 }   // Red
+            O: { r: 157, g: 180, b: 255, temp: 30000 },
+            B: { r: 162, g: 185, b: 255, temp: 20000 },
+            A: { r: 213, g: 224, b: 255, temp: 8500 },
+            F: { r: 249, g: 245, b: 255, temp: 6500 },
+            G: { r: 255, g: 237, b: 227, temp: 5500 },
+            K: { r: 255, g: 218, b: 181, temp: 4000 },
+            M: { r: 255, g: 181, b: 108, temp: 3000 }
         };
         
         this.init();
     }
 
     init() {
-        // Create canvas
         this.canvas = document.createElement('canvas');
         this.canvas.id = 'star-canvas';
         this.canvas.style.cssText = `
@@ -222,312 +210,98 @@ class StarField {
     }
 
     getRandomStellarType() {
-        // Realistic distribution based on actual stellar statistics
         const rand = Math.random();
-        if (rand < 0.001) return 'O'; // Very rare
-        if (rand < 0.01) return 'B';  // Rare
-        if (rand < 0.04) return 'A';  // Uncommon
-        if (rand < 0.12) return 'F';  // Less common
-        if (rand < 0.22) return 'G';  // Solar-type (like our Sun)
-        if (rand < 0.42) return 'K';  // Common
-        return 'M'; // Most common (red dwarfs)
+        if (rand < 0.001) return 'O';
+        if (rand < 0.01) return 'B';
+        if (rand < 0.04) return 'A';
+        if (rand < 0.12) return 'F';
+        if (rand < 0.22) return 'G';
+        if (rand < 0.42) return 'K';
+        return 'M';
     }
 
     createRealisticStars() {
         this.stars = [];
         
-        // Initialize the star grid system for infinite sky
-        this.starGrid = new Map();
-        this.gridSize = 500; // Size of each grid cell in pixels
-        this.loadRadius = 3; // How many grid cells to load around viewport
-        
-        // ===== STAR POPULATION CONTROL =====
-        // These values control how many stars appear in the sky.
-        // LOWER numbers = FEWER stars, HIGHER numbers = MORE stars
-        // Each grid cell is 500x500 pixels (250,000 square pixels)
-        
-        // Star density per grid cell - ADJUST THESE VALUES TO CHANGE STAR POPULATION:
-        this.starDensity = {
-            // Faintest, barely visible stars (most numerous in real sky)
-            faint: Math.floor((this.gridSize * this.gridSize) / 2000), // ~167 per cell (was 417)
-            
-            // Dim but clearly visible stars  
-            dim: Math.floor((this.gridSize * this.gridSize) / 5000), // ~71 per cell (was 179)
-            
-            // Bright, prominent stars
-            bright: Math.floor((this.gridSize * this.gridSize) / 10000), // ~31 per cell (was 71)
-            
-            // Brilliant stars (brightest, most noticeable)
-            brilliant: Math.floor((this.gridSize * this.gridSize) / 70000) + 1 // ~10 per cell (was 21)
-        };
-        
-        // TOTAL STARS PER GRID CELL: ~279 (was ~688)
-        // This represents about a 60% reduction in star population
-        
-        // HOW TO ADJUST STAR POPULATION:
-        // 1. To make the sky even sparser: INCREASE the divisor numbers above
-        //    Example: Change 1500 to 2000 for even fewer faint stars
-        // 2. To make the sky denser: DECREASE the divisor numbers above
-        //    Example: Change 1500 to 1000 for more faint stars
-        // 3. To remove a star type entirely: Set its value to 0
-        //    Example: brilliant: 0 (removes all brilliant stars)
-        // 4. To emphasize bright stars over faint ones: 
-        //    Increase faint/dim divisors, decrease bright/brilliant divisors
-        
-        // Load initial star grid around viewport
-        this.updateStarGrid();
-    }
-
-    // Convert world coordinates to grid coordinates
-    worldToGrid(x, y) {
-        return {
-            gridX: Math.floor(x / this.gridSize),
-            gridY: Math.floor(y / this.gridSize)
-        };
-    }
-
-    // Generate a unique seed for a grid cell
-    getGridSeed(gridX, gridY) {
-        // Simple hash function to generate consistent random seed for each grid cell
-        return ((gridX * 73856093) ^ (gridY * 19349663)) % 1000000;
-    }
-
-    // Seeded random number generator
-    seededRandom(seed) {
-        const x = Math.sin(seed) * 10000;
-        return x - Math.floor(x);
-    }
-
-    // Generate stars for a specific grid cell
-    generateGridStars(gridX, gridY) {
-        const gridKey = `${gridX},${gridY}`;
-        if (this.starGrid.has(gridKey)) {
-            return this.starGrid.get(gridKey);
-        }
-
-        const stars = [];
-        const baseSeed = this.getGridSeed(gridX, gridY);
-        let seedCounter = 0;
-
-        // Generate each star type for this grid cell
-        const starTypes = ['faint', 'dim', 'bright', 'brilliant'];
-        
-        starTypes.forEach(type => {
-            const count = this.starDensity[type];
-            for (let i = 0; i < count; i++) {
-                // Use seeded random for consistent star placement
-                const xSeed = baseSeed + seedCounter++;
-                const ySeed = baseSeed + seedCounter++;
-                const propSeed = baseSeed + seedCounter++;
-                
-                const localX = this.seededRandom(xSeed) * this.gridSize;
-                const localY = this.seededRandom(ySeed) * this.gridSize;
-                
-                const worldX = gridX * this.gridSize + localX;
-                const worldY = gridY * this.gridSize + localY;
-                
-                // Create star with seeded properties for consistency
-                const star = this.createStarWithSeed(type, worldX, worldY, propSeed);
-                stars.push(star);
-            }
-        });
-
-        this.starGrid.set(gridKey, stars);
-        return stars;
-    }
-
-    // Create a star with seeded random properties for consistency
-    createStarWithSeed(magnitude, worldX, worldY, seed) {
-        let seedCounter = 0;
-        const getRandom = () => this.seededRandom(seed + seedCounter++);
-        
-        const spectralType = this.getRandomStellarTypeWithSeed(getRandom());
-        const color = this.stellarColors[spectralType];
-        
-        const star = {
-            baseX: worldX,
-            baseY: worldY,
-            magnitude: magnitude,
-            spectralType: spectralType,
-            color: color,
-            
-            // Individual star properties using seeded random
-            baseBrightness: getRandom() * 0.3 + 0.7,
-            
-            // Realistic twinkling - more prominent for brighter stars
-            twinklePhase: getRandom() * Math.PI * 2,
-            twinkleSpeed: getRandom() * 0.012 + 0.003,
-            twinkleIntensity: magnitude === 'brilliant' ? getRandom() * 0.6 + 0.3 : getRandom() * 0.4 + 0.2,
-            twinklePattern: getRandom(),
-            
-            // Chromatic scintillation
-            chromaticPhase: getRandom() * Math.PI * 2,
-            chromaticSpeed: getRandom() * 0.008 + 0.002,
-            chromaticIntensity: getRandom() * 0.3 + 0.1,
-            
-            // Random timing changes
-            nextPatternChange: this.startTime + getRandom() * 25000 + 15000,
-            
-            // Subtle individual motion
-            localDrift: {
-                x: 0, y: 0,
-                speedX: (getRandom() - 0.5) * 0.008,
-                speedY: (getRandom() - 0.5) * 0.008
-            },
-            
-            // Diffraction spikes for bright stars
-            hasDiffractionSpikes: magnitude === 'brilliant' && getRandom() < 0.6,
-            spikeLength: 0,
-            spikeIntensity: 0
-        };
-
-        // Set size and brightness properties based on magnitude
-        switch (magnitude) {
-            case 'faint':
-                star.coreSize = 0.2 + getRandom() * 0.15;
-                star.maxGlowRadius = 0.8 + getRandom() * 0.4;
-                star.brightness = 0.25 + getRandom() * 0.35;
-                break;
-            case 'dim':
-                star.coreSize = 0.3 + getRandom() * 0.2;
-                star.maxGlowRadius = 1.2 + getRandom() * 0.6;
-                star.brightness = 0.45 + getRandom() * 0.3;
-                break;
-            case 'bright':
-                star.coreSize = 0.5 + getRandom() * 0.3;
-                star.maxGlowRadius = 2.0 + getRandom() * 1.0;
-                star.brightness = 0.7 + getRandom() * 0.2;
-                break;
-            case 'brilliant':
-                star.coreSize = 0.8 + getRandom() * 0.4;
-                star.maxGlowRadius = 3.5 + getRandom() * 2.0;
-                star.brightness = 0.85 + getRandom() * 0.15;
-                if (star.hasDiffractionSpikes) {
-                    star.spikeLength = 8 + getRandom() * 12;
-                    star.spikeIntensity = 0.3 + getRandom() * 0.4;
-                }
-                break;
-        }
-
-        return star;
-    }
-
-    getRandomStellarTypeWithSeed(random) {
-        if (random < 0.001) return 'O';
-        if (random < 0.01) return 'B';
-        if (random < 0.04) return 'A';
-        if (random < 0.12) return 'F';
-        if (random < 0.22) return 'G';
-        if (random < 0.42) return 'K';
-        return 'M';
-    }
-
-    // Update the star grid based on current viewport and motion
-    updateStarGrid() {
-        // Calculate current viewport bounds including global motion
-        const centerX = window.innerWidth / 2 - this.globalMotion.x;
-        const centerY = window.innerHeight / 2 - this.globalMotion.y;
+        // Use viewport size with random offset for this load
         const viewWidth = window.innerWidth;
         const viewHeight = window.innerHeight;
         
-        // Calculate grid bounds to load (with buffer for smooth transitions)
-        const buffer = this.gridSize * this.loadRadius;
-        const minX = centerX - viewWidth/2 - buffer;
-        const maxX = centerX + viewWidth/2 + buffer;
-        const minY = centerY - viewHeight/2 - buffer;
-        const maxY = centerY + viewHeight/2 + buffer;
+        // Apply random offset to create different sky regions each load
+        const offsetX = this.skyOffsetX;
+        const offsetY = this.skyOffsetY;
         
-        const minGrid = this.worldToGrid(minX, minY);
-        const maxGrid = this.worldToGrid(maxX, maxY);
+        this.starDensity = {
+            faint: Math.floor((viewWidth * viewHeight) / 2000),
+            dim: Math.floor((viewWidth * viewHeight) / 5000),
+            bright: Math.floor((viewWidth * viewHeight) / 10000),
+            brilliant: Math.floor((viewWidth * viewHeight) / 70000) + 1
+        };
         
-        // Generate stars for visible grid cells
-        const newStars = [];
-        for (let gx = minGrid.gridX; gx <= maxGrid.gridX; gx++) {
-            for (let gy = minGrid.gridY; gy <= maxGrid.gridY; gy++) {
-                const gridStars = this.generateGridStars(gx, gy);
-                newStars.push(...gridStars);
+        // Generate stars for current viewport with offset
+        Object.keys(this.starDensity).forEach(magnitude => {
+            const count = this.starDensity[magnitude];
+            for (let i = 0; i < count; i++) {
+                const star = this.createStar(magnitude, viewWidth, viewHeight, offsetX, offsetY);
+                this.stars.push(star);
             }
-        }
-        
-        this.stars = newStars;
-        
-        // Clean up distant grid cells to manage memory (keep only nearby cells)
-        const keysToDelete = [];
-        for (const key of this.starGrid.keys()) {
-            const [gx, gy] = key.split(',').map(Number);
-            if (gx < minGrid.gridX - this.loadRadius || gx > maxGrid.gridX + this.loadRadius ||
-                gy < minGrid.gridY - this.loadRadius || gy > maxGrid.gridY + this.loadRadius) {
-                keysToDelete.push(key);
-            }
-        }
-        keysToDelete.forEach(key => this.starGrid.delete(key));
+        });
     }
 
     createStar(magnitude, areaWidth, areaHeight, offsetX, offsetY) {
         const spectralType = this.getRandomStellarType();
         const color = this.stellarColors[spectralType];
         
+        // FIXED position - no motion applied during animation
         const star = {
-            baseX: Math.random() * areaWidth + offsetX,
-            baseY: Math.random() * areaHeight + offsetY,
+            x: Math.random() * areaWidth, // Fixed X
+            y: Math.random() * areaHeight, // Fixed Y
             magnitude: magnitude,
             spectralType: spectralType,
             color: color,
             
-            // Individual star properties
-            baseBrightness: Math.random() * 0.3 + 0.7, // 0.7 to 1.0
+            baseBrightness: Math.random() * 0.3 + 0.7,
             
-            // Realistic twinkling - more prominent for brighter stars
+            // Twinkling properties
             twinklePhase: Math.random() * Math.PI * 2,
-            twinkleSpeed: Math.random() * 0.012 + 0.003, // Natural atmospheric scintillation
+            twinkleSpeed: Math.random() * 0.012 + 0.003,
             twinkleIntensity: magnitude === 'brilliant' ? Math.random() * 0.6 + 0.3 : Math.random() * 0.4 + 0.2,
             twinklePattern: Math.random(),
             
-            // Chromatic scintillation (color changes due to atmosphere)
             chromaticPhase: Math.random() * Math.PI * 2,
             chromaticSpeed: Math.random() * 0.008 + 0.002,
             chromaticIntensity: Math.random() * 0.3 + 0.1,
             
-            // Random timing changes
-            nextPatternChange: this.startTime + Math.random() * 25000 + 15000, // 15-40 seconds
+            nextPatternChange: this.startTime + Math.random() * 25000 + 15000,
             
-            // Subtle individual motion (proper motion simulation)
-            localDrift: {
-                x: 0, y: 0,
-                speedX: (Math.random() - 0.5) * 0.008,
-                speedY: (Math.random() - 0.5) * 0.008
-            },
-            
-            // Diffraction spikes for bright stars
             hasDiffractionSpikes: magnitude === 'brilliant' && Math.random() < 0.6,
             spikeLength: 0,
             spikeIntensity: 0
         };
 
-        // Set size and brightness properties based on magnitude
         switch (magnitude) {
             case 'faint':
-                star.coreSize = 0.2 + Math.random() * 0.15; // Very small core
-                star.maxGlowRadius = 0.8 + Math.random() * 0.4; // Minimal glow
-                star.brightness = 0.25 + Math.random() * 0.35; // Very dim
+                star.coreSize = 0.2 + Math.random() * 0.15;
+                star.maxGlowRadius = 0.8 + Math.random() * 0.4;
+                star.brightness = 0.25 + Math.random() * 0.35;
                 break;
             case 'dim':
-                star.coreSize = 0.3 + Math.random() * 0.2; // Small core
-                star.maxGlowRadius = 1.2 + Math.random() * 0.6; // Small glow
-                star.brightness = 0.45 + Math.random() * 0.3; // Dim but visible
+                star.coreSize = 0.3 + Math.random() * 0.2;
+                star.maxGlowRadius = 1.2 + Math.random() * 0.6;
+                star.brightness = 0.45 + Math.random() * 0.3;
                 break;
             case 'bright':
-                star.coreSize = 0.5 + Math.random() * 0.3; // Medium core
-                star.maxGlowRadius = 2.0 + Math.random() * 1.0; // Noticeable glow
-                star.brightness = 0.7 + Math.random() * 0.2; // Bright
+                star.coreSize = 0.5 + Math.random() * 0.3;
+                star.maxGlowRadius = 2.0 + Math.random() * 1.0;
+                star.brightness = 0.7 + Math.random() * 0.2;
                 break;
             case 'brilliant':
-                star.coreSize = 0.8 + Math.random() * 0.4; // Large core
-                star.maxGlowRadius = 3.5 + Math.random() * 2.0; // Prominent glow
-                star.brightness = 0.85 + Math.random() * 0.15; // Very bright
+                star.coreSize = 0.8 + Math.random() * 0.4;
+                star.maxGlowRadius = 3.5 + Math.random() * 2.0;
+                star.brightness = 0.85 + Math.random() * 0.15;
                 if (star.hasDiffractionSpikes) {
-                    star.spikeLength = 8 + Math.random() * 12; // 8-20px spikes
-                    star.spikeIntensity = 0.3 + Math.random() * 0.4; // Spike brightness
+                    star.spikeLength = 8 + Math.random() * 12;
+                    star.spikeIntensity = 0.3 + Math.random() * 0.4;
                 }
                 break;
         }
@@ -535,57 +309,32 @@ class StarField {
         return star;
     }
 
-    updateGlobalMotion(currentTime) {
-        const elapsed = currentTime - this.globalMotion.lastChange;
-        
-        // Change direction/speed smoothly over time
-        if (elapsed > this.globalMotion.changeInterval) {
-            // Set new target motion with more varied patterns
-            this.globalMotion.targetVelocityX = (Math.random() - 0.5) * 0.4;
-            this.globalMotion.targetVelocityY = (Math.random() - 0.5) * 0.4;
-            this.globalMotion.targetRotationSpeed = (Math.random() - 0.5) * 0.001;
-            
-            this.globalMotion.lastChange = currentTime;
-            this.globalMotion.changeInterval = 20000 + Math.random() * 15000;
-        }
-        
-        // Smooth interpolation to target motion
-        const smoothing = 0.0006;
-        this.globalMotion.velocityX += (this.globalMotion.targetVelocityX - this.globalMotion.velocityX) * smoothing;
-        this.globalMotion.velocityY += (this.globalMotion.targetVelocityY - this.globalMotion.velocityY) * smoothing;
-        this.globalMotion.rotationSpeed += (this.globalMotion.targetRotationSpeed - this.globalMotion.rotationSpeed) * smoothing;
-        
-        // Apply motion - THIS MOVES THE CAMERA, NOT THE STARS
-        this.globalMotion.x += this.globalMotion.velocityX;
-        this.globalMotion.y += this.globalMotion.velocityY;
-        this.globalMotion.rotation += this.globalMotion.rotationSpeed;
-    }
+    // REMOVED: updateGlobalMotion function completely
 
     createMeteor(currentTime) {
-        // Random entry point from screen edges
         const side = Math.floor(Math.random() * 4);
         let startX, startY, endX, endY;
         
         switch (side) {
-            case 0: // Top edge
+            case 0:
                 startX = Math.random() * window.innerWidth;
                 startY = -50;
                 endX = startX + (Math.random() - 0.5) * window.innerWidth * 1.5;
                 endY = window.innerHeight + 50;
                 break;
-            case 1: // Right edge
+            case 1:
                 startX = window.innerWidth + 50;
                 startY = Math.random() * window.innerHeight;
                 endX = -50;
                 endY = startY + (Math.random() - 0.5) * window.innerHeight * 1.5;
                 break;
-            case 2: // Bottom edge
+            case 2:
                 startX = Math.random() * window.innerWidth;
                 startY = window.innerHeight + 50;
                 endX = startX + (Math.random() - 0.5) * window.innerWidth * 1.5;
                 endY = -50;
                 break;
-            case 3: // Left edge
+            case 3:
                 startX = -50;
                 startY = Math.random() * window.innerHeight;
                 endX = window.innerWidth + 50;
@@ -593,94 +342,66 @@ class StarField {
                 break;
         }
         
-        const meteor = {
+        return {
             startX, startY, endX, endY,
             startTime: currentTime,
-            duration: 1200 + Math.random() * 2500, // 1.2-3.7 seconds
+            duration: 1200 + Math.random() * 2500,
             brightness: 0.7 + Math.random() * 0.3,
-            trailLength: 50 + Math.random() * 80, // 50-130px trail
-            size: 1.2 + Math.random() * 2.5, // 1.2-3.7px meteor head
-            color: Math.random() < 0.7 ? {r: 255, g: 245, b: 200} : {r: 255, g: 180, b: 120} // Mostly white-hot, some orange
+            trailLength: 50 + Math.random() * 80,
+            size: 1.2 + Math.random() * 2.5,
+            color: Math.random() < 0.7 ? {r: 255, g: 245, b: 200} : {r: 255, g: 180, b: 120}
         };
-        
-        return meteor;
     }
 
     createMoon(currentTime) {
-        // Decide randomly if moon moves with sky motion or independently
-        const followsSkyMotion = Math.random() < 0.6; // 60% chance to follow sky motion
-        
-        // Moon always enters from random side
+        // Moon is ALWAYS static (never moves with sky)
         const side = Math.floor(Math.random() * 4);
-        let startX, startY, endX, endY;
+        let x, y;
         
-        if (followsSkyMotion) {
-            // Moon moves with sky - stationary relative to stars
-            startX = Math.random() * window.innerWidth;
-            startY = Math.random() * window.innerHeight;
-            endX = startX; // Stays in same position relative to sky
-            endY = startY;
-        } else {
-            // Moon moves independently across sky
-            switch (side) {
-                case 0: // Enter from left
-                    startX = -100;
-                    startY = Math.random() * window.innerHeight * 0.6 + window.innerHeight * 0.2;
-                    endX = window.innerWidth + 100;
-                    endY = startY + (Math.random() - 0.5) * window.innerHeight * 0.3;
-                    break;
-                case 1: // Enter from right
-                    startX = window.innerWidth + 100;
-                    startY = Math.random() * window.innerHeight * 0.6 + window.innerHeight * 0.2;
-                    endX = -100;
-                    endY = startY + (Math.random() - 0.5) * window.innerHeight * 0.3;
-                    break;
-                case 2: // Enter from top
-                    startX = Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2;
-                    startY = -100;
-                    endX = startX + (Math.random() - 0.5) * window.innerWidth * 0.3;
-                    endY = window.innerHeight + 100;
-                    break;
-                case 3: // Enter from bottom
-                    startX = Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2;
-                    startY = window.innerHeight + 100;
-                    endX = startX + (Math.random() - 0.5) * window.innerWidth * 0.3;
-                    endY = -100;
-                    break;
-            }
+        switch (side) {
+            case 0:
+                x = Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2;
+                y = Math.random() * window.innerHeight * 0.3;
+                break;
+            case 1:
+                x = Math.random() * window.innerWidth * 0.3 + window.innerWidth * 0.65;
+                y = Math.random() * window.innerHeight * 0.6 + window.innerHeight * 0.2;
+                break;
+            case 2:
+                x = Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2;
+                y = Math.random() * window.innerHeight * 0.3 + window.innerHeight * 0.65;
+                break;
+            case 3:
+                x = Math.random() * window.innerWidth * 0.3;
+                y = Math.random() * window.innerHeight * 0.6 + window.innerHeight * 0.2;
+                break;
         }
         
-        const moon = {
-            startX, startY, endX, endY,
+        return {
+            x: x,
+            y: y,
             startTime: currentTime,
-            duration: followsSkyMotion ? 60000 + Math.random() * 40000 : 45000 + Math.random() * 30000, // 1-1.6 min for stationary, 45-75s for moving
-            size: 15 + Math.random() * 10, // 15-25px radius
-            brightness: 0.7 + Math.random() * 0.2,
-            followsSkyMotion: followsSkyMotion
+            duration: 60000 + Math.random() * 40000, // Visible for 1-1.6 minutes
+            size: 15 + Math.random() * 10,
+            brightness: 0.7 + Math.random() * 0.2
         };
-        
-        return moon;
     }
 
     updateMeteorsAndMoon(currentTime) {
-        // Create new meteors randomly
         if (currentTime > this.nextMeteorTime) {
             this.meteors.push(this.createMeteor(currentTime));
-            this.nextMeteorTime = currentTime + Math.random() * 30000 + 15000; // Next meteor in 15-45 seconds
+            this.nextMeteorTime = currentTime + Math.random() * 30000 + 15000;
         }
         
-        // Remove completed meteors
         this.meteors = this.meteors.filter(meteor => 
             currentTime - meteor.startTime < meteor.duration
         );
         
-        // Create new moon very rarely
         if (!this.moon && currentTime > this.nextMoonTime) {
             this.moon = this.createMoon(currentTime);
-            this.nextMoonTime = currentTime + Math.random() * 300000 + 300000; // Next moon in 5-15 minutes
+            this.nextMoonTime = currentTime + Math.random() * 300000 + 300000;
         }
         
-        // Remove moon when it's done
         if (this.moon && currentTime - this.moon.startTime > this.moon.duration) {
             this.moon = null;
         }
@@ -690,11 +411,9 @@ class StarField {
         const elapsed = currentTime - meteor.startTime;
         const progress = Math.min(1, elapsed / meteor.duration);
         
-        // Linear movement
         const x = meteor.startX + (meteor.endX - meteor.startX) * progress;
         const y = meteor.startY + (meteor.endY - meteor.startY) * progress;
         
-        // Calculate trail points
         const trailPoints = [];
         const numTrailPoints = 10;
         
@@ -714,16 +433,13 @@ class StarField {
         
         this.ctx.save();
         
-        // Draw trail (from back to front)
         trailPoints.reverse().forEach((point, index) => {
             if (point.opacity > 0) {
-                // Main trail
                 this.ctx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${point.opacity})`;
                 this.ctx.beginPath();
                 this.ctx.arc(point.x, point.y, point.size, 0, Math.PI * 2);
                 this.ctx.fill();
                 
-                // Trail glow
                 if (index < 4) {
                     this.ctx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${point.opacity * 0.25})`;
                     this.ctx.beginPath();
@@ -737,34 +453,9 @@ class StarField {
     }
 
     drawMoon(moon, currentTime) {
-        const elapsed = currentTime - moon.startTime;
-        const progress = elapsed / moon.duration;
+        const x = moon.x;
+        const y = moon.y;
         
-        let x, y;
-        
-        if (moon.followsSkyMotion) {
-            // Moon moves with camera - apply rotation
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-            
-            let moonX = moon.startX - centerX;
-            let moonY = moon.startY - centerY;
-            
-            // Apply camera rotation
-            const cos = Math.cos(-this.globalMotion.rotation);
-            const sin = Math.sin(-this.globalMotion.rotation);
-            const rotatedX = moonX * cos - moonY * sin;
-            const rotatedY = moonX * sin + moonY * cos;
-            
-            x = rotatedX + centerX - this.globalMotion.x;
-            y = rotatedY + centerY - this.globalMotion.y;
-        } else {
-            // Moon moves independently
-            x = moon.startX + (moon.endX - moon.startX) * progress;
-            y = moon.startY + (moon.endY - moon.startY) * progress;
-        }
-        
-        // [Rest of moon drawing code stays the same - all the crater/shading code]
         this.ctx.save();
         
         const glowGradient = this.ctx.createRadialGradient(x, y, 0, x, y, moon.size * 2.8);
@@ -840,7 +531,6 @@ class StarField {
         
         this.ctx.save();
         
-        // Create diffraction spikes - 4 spikes at 90 degree angles
         const spikeAngles = [0, Math.PI/2, Math.PI, 3*Math.PI/2];
         const spikeOpacity = brightness * star.spikeIntensity * 0.8;
         
@@ -854,13 +544,11 @@ class StarField {
             const endX = x + Math.cos(angle) * star.spikeLength;
             const endY = y + Math.sin(angle) * star.spikeLength;
             
-            // Main spike
             this.ctx.beginPath();
             this.ctx.moveTo(startX, startY);
             this.ctx.lineTo(endX, endY);
             this.ctx.stroke();
             
-            // Secondary fainter spike
             this.ctx.strokeStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${spikeOpacity * 0.4})`;
             this.ctx.lineWidth = 0.4;
             this.ctx.beginPath();
@@ -873,52 +561,61 @@ class StarField {
     }
 
     drawRealisticStar(star, currentTime) {
-        // Camera transformation with rotation
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-        
-        let x = star.baseX - centerX;
-        let y = star.baseY - centerY;
-        
-        // Apply camera rotation (negative because camera rotates opposite to world)
-        const cos = Math.cos(-this.globalMotion.rotation);
-        const sin = Math.sin(-this.globalMotion.rotation);
-        const rotatedX = x * cos - y * sin;
-        const rotatedY = x * sin + y * cos;
-        
-        // Apply camera position and translate back
-        x = rotatedX + centerX - this.globalMotion.x;
-        y = rotatedY + centerY - this.globalMotion.y;
-        
-        // Skip if outside viewport
-        const maxRadius = star.maxGlowRadius * 3;
-        if (x < -maxRadius || x > window.innerWidth + maxRadius || 
-            y < -maxRadius || y > window.innerHeight + maxRadius) {
-            return;
+        if (currentTime > star.nextPatternChange) {
+            star.twinkleSpeed = Math.random() * 0.015 + 0.004;
+            star.twinkleIntensity = star.magnitude === 'brilliant' ? Math.random() * 0.6 + 0.3 : Math.random() * 0.4 + 0.2;
+            star.twinklePattern = Math.random();
+            star.chromaticSpeed = Math.random() * 0.010 + 0.003;
+            star.nextPatternChange = currentTime + Math.random() * 25000 + 15000;
         }
 
-        // REMOVED: All twinkling calculations
-        // REMOVED: Chromatic scintillation
-        // REMOVED: Local drift updates
+        // STATIC POSITION - no motion transformations
+        const x = star.x;
+        const y = star.y;
+
+        star.twinklePhase += star.twinkleSpeed;
+        const primaryTwinkle = Math.sin(star.twinklePhase) * star.twinkleIntensity;
+        const secondaryTwinkle = Math.sin(star.twinklePhase * 1.7 + star.twinklePattern * 8) * (star.twinkleIntensity * 0.4);
+        const tertiaryTwinkle = Math.sin(star.twinklePhase * 2.3 + star.twinklePattern * 12) * (star.twinkleIntensity * 0.2);
         
-        // Use static brightness (no animation)
-        const currentBrightness = star.baseBrightness * star.brightness;
-        const adjustedColor = star.color; // No color shifting
+        star.chromaticPhase += star.chromaticSpeed;
+        const chromaticShift = Math.sin(star.chromaticPhase) * star.chromaticIntensity;
+        
+        const currentBrightness = Math.max(0.15, Math.min(1.2, 
+            star.baseBrightness * star.brightness + primaryTwinkle + secondaryTwinkle + tertiaryTwinkle
+        ));
+        
+        const colorShift = chromaticShift * 0.3;
+        const adjustedColor = {
+            r: Math.max(0, Math.min(255, star.color.r + colorShift * 30)),
+            g: Math.max(0, Math.min(255, star.color.g + colorShift * 15)),
+            b: Math.max(0, Math.min(255, star.color.b - colorShift * 10))
+        };
         
         const currentGlowRadius = star.maxGlowRadius * (0.6 + currentBrightness * 0.4);
         const currentCoreSize = star.coreSize * (0.8 + currentBrightness * 0.3);
         
         this.ctx.save();
         
-        // Draw diffraction spikes for brilliant stars
         if (star.hasDiffractionSpikes && currentBrightness > 0.7) {
             this.drawDiffractionSpikes(x, y, star, currentBrightness);
         }
         
-        // Draw atmospheric glow
         if (currentGlowRadius > 0.8) {
+            const outerGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius * 1.8);
+            outerGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.3})`);
+            outerGradient.addColorStop(0.2, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.15})`);
+            outerGradient.addColorStop(0.5, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.08})`);
+            outerGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
+            
+            this.ctx.fillStyle = outerGradient;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, currentGlowRadius * 1.8, 0, Math.PI * 2);
+            this.ctx.fill();
+            
             const mainGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius);
             mainGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.6})`);
+            mainGradient.addColorStop(0.3, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.35})`);
             mainGradient.addColorStop(0.6, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.18})`);
             mainGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
             
@@ -928,10 +625,10 @@ class StarField {
             this.ctx.fill();
         }
         
-        // Draw star core
         if (currentCoreSize > 0.3) {
             const coreGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentCoreSize * 1.5);
             coreGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 1.1)})`);
+            coreGradient.addColorStop(0.7, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 0.9)})`);
             coreGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 0.6)})`);
             
             this.ctx.fillStyle = coreGradient;
@@ -940,7 +637,6 @@ class StarField {
             this.ctx.fill();
         }
         
-        // Bright center point
         this.ctx.fillStyle = `rgba(${Math.min(255, adjustedColor.r + 20)}, ${Math.min(255, adjustedColor.g + 15)}, ${Math.min(255, adjustedColor.b + 10)}, ${Math.min(1, currentBrightness * 1.3)})`;
         this.ctx.beginPath();
         this.ctx.arc(x, y, currentCoreSize, 0, Math.PI * 2);
@@ -964,41 +660,16 @@ class StarField {
 
         const currentTime = Date.now();
         
-        // Check if camera is actually moving
-        const cameraMoving = Math.abs(this.globalMotion.velocityX) > 0.001 || 
-                            Math.abs(this.globalMotion.velocityY) > 0.001 || 
-                            Math.abs(this.globalMotion.rotationSpeed) > 0.00001;
-        
-        const hasMeteors = this.meteors.length > 0;
-        const hasMoon = this.moon !== null;
-        const inTransition = currentTime - this.globalMotion.lastChange < 500;
-        
-        // CRITICAL: Only render when something actually changes
-        if (!cameraMoving && !hasMeteors && !hasMoon && !inTransition) {
-            // Sky is completely static - skip rendering
-            this.animationId = requestAnimationFrame(() => this.animate());
-            return;
-        }
-        
-        // Clear and redraw only when needed
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Update camera motion
-        this.updateGlobalMotion(currentTime);
+        // REMOVED: updateGlobalMotion call
         
-        // Update star grid based on camera position
-        this.updateStarGrid();
-        
-        // Update meteors and moon
-        this.updateMeteorsAndMoon(currentTime);
-        
-        // Draw all visible stars (static properties, camera transforms only)
+        // Stars are now static - only twinkling animates
         this.stars.forEach(star => this.drawRealisticStar(star, currentTime));
         
-        // Draw meteors
+        this.updateMeteorsAndMoon(currentTime);
         this.meteors.forEach(meteor => this.drawMeteor(meteor, currentTime));
         
-        // Draw moon if present
         if (this.moon) {
             this.drawMoon(this.moon, currentTime);
         }
@@ -1302,10 +973,10 @@ if (profilePicInput) {
         const button = document.querySelector('.file-upload-btn');
         
         if (file) {
-            button.textContent = `📷 ${file.name}`;
+            button.textContent = `ðŸ“· ${file.name}`;
             button.style.color = 'var(--primary-color)';
         } else {
-            button.textContent = '📷 Upload Profile Picture';
+            button.textContent = 'ðŸ“· Upload Profile Picture';
             button.style.color = '';
         }
     });
@@ -2033,12 +1704,12 @@ function updateBalance() {
     }
 }
 
-// Quero (₮Ξ) - Universal currency for PredictKing
+// Quero (â‚®Îž) - Universal currency for PredictKing
 // Etymology: "Quero" derives from Latin "quaero" meaning "I seek/desire"
 // symbolizing the player's quest for victory and rewards in prediction gaming
 function formatCurrency(amount) {
     const flooredAmount = Math.floor(amount); // Floor the amount to remove decimals
-    return `<span class="currency-coin">₮Ξ</span>${flooredAmount}`;
+    return `<span class="currency-coin">â‚®Îž</span>${flooredAmount}`;
 }
 
 function getStatusColor(status) {
@@ -3186,7 +2857,7 @@ function createPoolBettingUI() {
                         <h4>${option}</h4>
                         <div class="odds" id="odds-${index}">Loading...</div>
                         <div class="bet-count" id="bets-${index}">0 bets</div>
-                        <div class="pool-amount" id="pool-${index}">â‚¹0</div>
+                        <div class="pool-amount" id="pool-${index}">Ã¢â€šÂ¹0</div>
                     </div>
                 `).join('')}
             </div>
@@ -3294,17 +2965,17 @@ function createPriceLadder() {
             <span>Back Team B</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(100, 'team_a')">
-            <span>â‚¹100</span>
+            <span>Ã¢â€šÂ¹100</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(200, 'team_a')">
-            <span>â‚¹200</span>
+            <span>Ã¢â€šÂ¹200</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(500, 'team_a')">
-            <span>â‚¹500</span>
+            <span>Ã¢â€šÂ¹500</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
@@ -3588,7 +3259,7 @@ function updateInstantOddsDisplay(eventId, newOdds, betOption, betAmount) {
                 }
                 if (poolEl) {
                     const currentPool = parseInt(poolEl.textContent.replace(/[^\d]/g, '')) || 0;
-                    poolEl.textContent = `₹${currentPool + betAmount}`;
+                    poolEl.textContent = `â‚¹${currentPool + betAmount}`;
                 }
             }
         });
@@ -3624,7 +3295,7 @@ async function loadPoolOdds(eventId) {
                 // Set odds directly without indicator (initial load)
                 if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                 if (betsEl) betsEl.textContent = '0 bets';
-                if (poolEl) poolEl.textContent = '₹0';
+                if (poolEl) poolEl.textContent = 'â‚¹0';
             });
         } else {
             poolData = poolDoc.data();
@@ -3671,7 +3342,7 @@ async function loadPoolOdds(eventId) {
                     // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = odds.toFixed(2);
                     if (betsEl) betsEl.textContent = `${betCount} bets`;
-                    if (poolEl) poolEl.textContent = `₹${poolAmount}`;
+                    if (poolEl) poolEl.textContent = `â‚¹${poolAmount}`;
                 });
             } else {
                 // Fallback to initial odds
@@ -3688,7 +3359,7 @@ async function loadPoolOdds(eventId) {
                     // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                     if (betsEl) betsEl.textContent = '0 bets';
-                    if (poolEl) poolEl.textContent = '₹0';
+                    if (poolEl) poolEl.textContent = 'â‚¹0';
                 });
             }
         }
@@ -3767,7 +3438,7 @@ function updateBettingModalOddsFromEventDirect(eventId, newOdds) {
         const oddsEl = document.getElementById(`odds-${index}`);
         if (oddsEl) {
             // Parse only the number, ignore any arrow symbols
-            const oddsText = oddsEl.textContent.replace(/[▲▼\s]/g, '');
+            const oddsText = oddsEl.textContent.replace(/[â–²â–¼\s]/g, '');
             currentDOMOdds[option] = parseFloat(oddsText) || 0;
         }
     });
@@ -3840,7 +3511,7 @@ function updateBettingModalOdds(eventId, poolData) {
                 }
             }
             if (betsEl) betsEl.textContent = `${betCount} bets`;
-            if (poolEl) poolEl.textContent = `₹${Math.max(0, optionPool)}`;
+            if (poolEl) poolEl.textContent = `â‚¹${Math.max(0, optionPool)}`;
         });
     }
     
@@ -3986,10 +3657,10 @@ function updateOddsWithIndicator(oddsElement, oldOdds, newOdds) {
         indicator.className = 'odds-change-indicator';
         
         if (newOdds > oldOdds) {
-            indicator.innerHTML = '▲';
+            indicator.innerHTML = 'â–²';
             indicator.classList.add('odds-increase');
         } else {
-            indicator.innerHTML = '▼';
+            indicator.innerHTML = 'â–¼';
             indicator.classList.add('odds-decrease');
         }
         
@@ -4040,10 +3711,10 @@ function updateBettingModalOddsWithIndicator(oddsElement, oldOdds, newOdds) {
         indicator.className = 'odds-change-indicator betting-modal-indicator';
         
         if (newOdds > oldOdds) {
-            indicator.innerHTML = '▲';
+            indicator.innerHTML = 'â–²';
             indicator.classList.add('odds-increase');
         } else {
-            indicator.innerHTML = '▼';
+            indicator.innerHTML = 'â–¼';
             indicator.classList.add('odds-decrease');
         }
         
