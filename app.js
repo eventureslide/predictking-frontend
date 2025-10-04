@@ -50,7 +50,7 @@ function checkViewportSize() {
                 padding: 2rem;
                 z-index: 10000;
             ">
-                <div style="font-size: 4rem; margin-bottom: 2rem;">Ã¢â„¢â€º</div>
+                <div style="font-size: 4rem; margin-bottom: 2rem;">â™›</div>
                 <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: 2px;">PREDICTKING</h1>
                 <h2 style="font-size: 1.5rem; margin-bottom: 2rem; color: #888;">Please Use Mobile Device</h2>
                 <p style="font-size: 1.1rem; max-width: 500px; line-height: 1.6;">
@@ -138,25 +138,15 @@ class StarField {
         this.isVisible = true;
         this.startTime = Date.now();
         
-        // Mobile optimization flags
-        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        this.targetFPS = this.isMobile ? 30 : 60; // Lower FPS on mobile
-        this.frameInterval = 1000 / this.targetFPS;
-        this.lastFrameTime = 0;
-        
         // Smooth global motion for entire star field - start immediately
-        // Smooth global motion for entire star field - start immediately
-        // Smooth global motion for entire star field - start immediately with random position
         this.globalMotion = {
-            x: (Math.random() - 0.5) * 5000, // Random starting X position (-2500 to +2500)
-            y: (Math.random() - 0.5) * 5000, // Random starting Y position (-2500 to +2500)
-            rotation: Math.random() * Math.PI * 2, // Random starting rotation (0 to 2π)
-            velocityX: (Math.random() - 0.5) * 0.6,
-            velocityY: (Math.random() - 0.5) * 0.6,
-            rotationSpeed: (Math.random() - 0.5) * 0.0015,
+            x: 0, y: 0, rotation: 0,
+            velocityX: (Math.random() - 0.5) * 0.2, // Start with initial motion
+            velocityY: (Math.random() - 0.5) * 0.2,
+            rotationSpeed: (Math.random() - 0.5) * 0.0005,
             targetVelocityX: 0, targetVelocityY: 0, targetRotationSpeed: 0,
             lastChange: this.startTime,
-            changeInterval: 20000 + Math.random() * 15000
+            changeInterval: 20000 + Math.random() * 15000 // 20-35 seconds
         };
         
         // Set initial targets same as current values to avoid sudden changes
@@ -173,7 +163,6 @@ class StarField {
         this.nextMoonTime = this.startTime + Math.random() * 120000 + 180000; // 3-8 minutes
         
         // Define realistic stellar colors based on spectral classification
-        // Define realistic stellar colors based on spectral classification
         this.stellarColors = {
             O: { r: 157, g: 180, b: 255, temp: 30000 }, // Blue
             B: { r: 162, g: 185, b: 255, temp: 20000 }, // Blue-white
@@ -181,11 +170,7 @@ class StarField {
             F: { r: 249, g: 245, b: 255, temp: 6500 },  // Yellow-white
             G: { r: 255, g: 237, b: 227, temp: 5500 },  // Yellow (like Sun)
             K: { r: 255, g: 218, b: 181, temp: 4000 },  // Orange
-            M: { r: 255, g: 181, b: 108, temp: 3000 },  // Red
-            // SPACE FLAME COLORS (rare)
-            FLAME_ORANGE: { r: 255, g: 140, b: 60, temp: 3500 },  // Deep orange flame
-            FLAME_RED: { r: 255, g: 80, b: 40, temp: 2800 },      // Red flame
-            FLAME_PINK: { r: 255, g: 120, b: 150, temp: 3200 }    // Pink-red flame
+            M: { r: 255, g: 181, b: 108, temp: 3000 }   // Red
         };
         
         this.init();
@@ -262,24 +247,19 @@ class StarField {
         // Each grid cell is 500x500 pixels (250,000 square pixels)
         
         // Star density per grid cell - ADJUST THESE VALUES TO CHANGE STAR POPULATION:
-        // Star density per grid cell - DECREASED POPULATION
-        // Reduce star count on mobile for better performance
-        const densityMultiplier = this.isMobile ? 0.5 : 1.0; // 50% fewer stars on mobile
         this.starDensity = {
-            faint: Math.floor((this.gridSize * this.gridSize) / 1500 * densityMultiplier),
-
-            // Dim stars (reduced)
-            dim: Math.floor((this.gridSize * this.gridSize) / 7000), // ~36 per cell (was 71)
+            // Faintest, barely visible stars (most numerous in real sky)
+            faint: Math.floor((this.gridSize * this.gridSize) / 2000), // ~167 per cell (was 417)
             
-            // Bright stars (significantly reduced)
-            bright: Math.floor((this.gridSize * this.gridSize) / 15000), // ~13 per cell (was 31)
+            // Dim but clearly visible stars  
+            dim: Math.floor((this.gridSize * this.gridSize) / 5000), // ~71 per cell (was 179)
             
-            // Brilliant stars (significantly reduced)
-            brilliant: Math.floor((this.gridSize * this.gridSize) / 100000) + 1 // ~2 per cell (was 10)
+            // Bright, prominent stars
+            bright: Math.floor((this.gridSize * this.gridSize) / 10000), // ~31 per cell (was 71)
+            
+            // Brilliant stars (brightest, most noticeable)
+            brilliant: Math.floor((this.gridSize * this.gridSize) / 70000) + 1 // ~10 per cell (was 21)
         };
-
-        // TOTAL STARS PER GRID CELL: ~151 (was ~279)
-        // Large stars reduced by ~75%
         
         // TOTAL STARS PER GRID CELL: ~279 (was ~688)
         // This represents about a 60% reduction in star population
@@ -376,7 +356,7 @@ class StarField {
             
             // Realistic twinkling - more prominent for brighter stars
             twinklePhase: getRandom() * Math.PI * 2,
-            twinkleSpeed: getRandom() * 0.015 + 0.005,  // Increased variation
+            twinkleSpeed: getRandom() * 0.012 + 0.003,
             twinkleIntensity: magnitude === 'brilliant' ? getRandom() * 0.6 + 0.3 : getRandom() * 0.4 + 0.2,
             twinklePattern: getRandom(),
             
@@ -402,26 +382,25 @@ class StarField {
         };
 
         // Set size and brightness properties based on magnitude
-        // Set size and brightness properties based on magnitude
         switch (magnitude) {
             case 'faint':
-                star.coreSize = 0.15 + getRandom() * 0.1; // Smaller
-                star.maxGlowRadius = 0; // NO GLOW for faint stars
-                star.brightness = 0.3 + getRandom() * 0.3;
+                star.coreSize = 0.2 + getRandom() * 0.15;
+                star.maxGlowRadius = 0.8 + getRandom() * 0.4;
+                star.brightness = 0.25 + getRandom() * 0.35;
                 break;
             case 'dim':
-                star.coreSize = 0.25 + getRandom() * 0.15;
-                star.maxGlowRadius = 0.6 + getRandom() * 0.3; // Reduced glow
-                star.brightness = 0.5 + getRandom() * 0.25;
+                star.coreSize = 0.3 + getRandom() * 0.2;
+                star.maxGlowRadius = 1.2 + getRandom() * 0.6;
+                star.brightness = 0.45 + getRandom() * 0.3;
                 break;
             case 'bright':
-                star.coreSize = 0.4 + getRandom() * 0.2;
-                star.maxGlowRadius = 1.5 + getRandom() * 0.8;
+                star.coreSize = 0.5 + getRandom() * 0.3;
+                star.maxGlowRadius = 2.0 + getRandom() * 1.0;
                 star.brightness = 0.7 + getRandom() * 0.2;
                 break;
             case 'brilliant':
-                star.coreSize = 0.6 + getRandom() * 0.3;
-                star.maxGlowRadius = 2.8 + getRandom() * 1.5;
+                star.coreSize = 0.8 + getRandom() * 0.4;
+                star.maxGlowRadius = 3.5 + getRandom() * 2.0;
                 star.brightness = 0.85 + getRandom() * 0.15;
                 if (star.hasDiffractionSpikes) {
                     star.spikeLength = 8 + getRandom() * 12;
@@ -440,11 +419,7 @@ class StarField {
         if (random < 0.12) return 'F';
         if (random < 0.22) return 'G';
         if (random < 0.42) return 'K';
-        if (random < 0.76) return 'M';
-        // SPACE FLAME COLORS - very rare sprinkle
-        if (random < 0.80) return 'FLAME_ORANGE';
-        if (random < 0.84) return 'FLAME_RED';
-        return 'FLAME_PINK';
+        return 'M';
     }
 
     // Update the star grid based on current viewport and motion
@@ -563,30 +538,27 @@ class StarField {
     updateGlobalMotion(currentTime) {
         const elapsed = currentTime - this.globalMotion.lastChange;
         
+        // Change direction/speed smoothly over time
         if (elapsed > this.globalMotion.changeInterval) {
-            this.globalMotion.targetVelocityX = (Math.random() - 0.5) * 1.2; // Increased from 0.4 to 1.2 (3x faster)
-            this.globalMotion.targetVelocityY = (Math.random() - 0.5) * 1.2; // Increased from 0.4 to 1.2 (3x faster)
-            this.globalMotion.targetRotationSpeed = (Math.random() - 0.5) * 0.003; // Increased from 0.001 to 0.003 (3x faster)
+            // Set new target motion with more varied patterns
+            this.globalMotion.targetVelocityX = (Math.random() - 0.5) * 0.4;
+            this.globalMotion.targetVelocityY = (Math.random() - 0.5) * 0.4;
+            this.globalMotion.targetRotationSpeed = (Math.random() - 0.5) * 0.001; // Gentle rotation
             
             this.globalMotion.lastChange = currentTime;
-            this.globalMotion.changeInterval = 20000 + Math.random() * 15000; // Kept same for randomness
+            this.globalMotion.changeInterval = 20000 + Math.random() * 15000; // Next change in 20-35s
         }
         
-        const smoothing = 0.0006; // Kept same for smooth transitions
+        // Smooth interpolation to target motion
+        const smoothing = 0.0006; // Very gradual transition
         this.globalMotion.velocityX += (this.globalMotion.targetVelocityX - this.globalMotion.velocityX) * smoothing;
         this.globalMotion.velocityY += (this.globalMotion.targetVelocityY - this.globalMotion.velocityY) * smoothing;
         this.globalMotion.rotationSpeed += (this.globalMotion.targetRotationSpeed - this.globalMotion.rotationSpeed) * smoothing;
         
-        // Apply camera motion
+        // Apply motion
         this.globalMotion.x += this.globalMotion.velocityX;
         this.globalMotion.y += this.globalMotion.velocityY;
         this.globalMotion.rotation += this.globalMotion.rotationSpeed;
-        
-        // INFINITE WRAP - Update grid when camera moves far
-        const moveThreshold = this.gridSize * 0.5;
-        if (Math.abs(this.globalMotion.x) > moveThreshold || Math.abs(this.globalMotion.y) > moveThreshold) {
-            this.updateStarGrid();
-        }
     }
 
     createMeteor(currentTime) {
@@ -873,17 +845,11 @@ class StarField {
         
         this.ctx.save();
         
-        // Random rotation angle for this star's spikes (stored on first call)
-        if (!star.spikeRotation) {
-            star.spikeRotation = Math.random() * Math.PI / 4; // 0-45 degrees random rotation
-        }
-        
-        // Create 4 spikes in cross pattern with random rotation
-        const baseAngles = [0, Math.PI/2, Math.PI, 3*Math.PI/2];
+        // Create diffraction spikes - 4 spikes at 90 degree angles
+        const spikeAngles = [0, Math.PI/2, Math.PI, 3*Math.PI/2];
         const spikeOpacity = brightness * star.spikeIntensity * 0.8;
         
-        baseAngles.forEach(baseAngle => {
-            const angle = baseAngle + star.spikeRotation;
+        spikeAngles.forEach(angle => {
             this.ctx.strokeStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${spikeOpacity})`;
             this.ctx.lineWidth = 0.8;
             this.ctx.lineCap = 'round';
@@ -921,24 +887,44 @@ class StarField {
             star.nextPatternChange = currentTime + Math.random() * 25000 + 15000;
         }
 
-        // CAMERA TRANSFORM (much faster than moving individual stars)
-        const x = star.baseX + this.globalMotion.x;
-        const y = star.baseY + this.globalMotion.y;
+        // Apply global motion transformations
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
         
-        // Skip if outside viewport (with buffer)
+        // Translate relative to center
+        let x = star.baseX - centerX;
+        let y = star.baseY - centerY;
+        
+        // Apply global rotation
+        const cos = Math.cos(this.globalMotion.rotation);
+        const sin = Math.sin(this.globalMotion.rotation);
+        const rotatedX = x * cos - y * sin;
+        const rotatedY = x * sin + y * cos;
+        
+        // Apply global drift and translate back
+        x = rotatedX + centerX + this.globalMotion.x;
+        y = rotatedY + centerY + this.globalMotion.y;
+        
+        // Add subtle individual drift
+        star.localDrift.x += star.localDrift.speedX;
+        star.localDrift.y += star.localDrift.speedY;
+        x += star.localDrift.x;
+        y += star.localDrift.y;
+        
+        // Skip if outside viewport
         const maxRadius = star.maxGlowRadius * 3;
         if (x < -maxRadius || x > window.innerWidth + maxRadius || 
             y < -maxRadius || y > window.innerHeight + maxRadius) {
             return;
         }
 
-        // Calculate atmospheric scintillation (twinkling) - INDEPENDENT
+        // Calculate atmospheric scintillation (twinkling)
         star.twinklePhase += star.twinkleSpeed;
         const primaryTwinkle = Math.sin(star.twinklePhase) * star.twinkleIntensity;
         const secondaryTwinkle = Math.sin(star.twinklePhase * 1.7 + star.twinklePattern * 8) * (star.twinkleIntensity * 0.4);
         const tertiaryTwinkle = Math.sin(star.twinklePhase * 2.3 + star.twinklePattern * 12) * (star.twinkleIntensity * 0.2);
         
-        // Calculate chromatic scintillation
+        // Calculate chromatic scintillation (color shifting)
         star.chromaticPhase += star.chromaticSpeed;
         const chromaticShift = Math.sin(star.chromaticPhase) * star.chromaticIntensity;
         
@@ -946,7 +932,7 @@ class StarField {
             star.baseBrightness * star.brightness + primaryTwinkle + secondaryTwinkle + tertiaryTwinkle
         ));
         
-        // Apply chromatic effects
+        // Apply chromatic effects to color
         const colorShift = chromaticShift * 0.3;
         const adjustedColor = {
             r: Math.max(0, Math.min(255, star.color.r + colorShift * 30)),
@@ -959,16 +945,17 @@ class StarField {
         
         this.ctx.save();
         
-        // Draw diffraction spikes first
+        // Draw diffraction spikes first (behind the star)
         if (star.hasDiffractionSpikes && currentBrightness > 0.7) {
             this.drawDiffractionSpikes(x, y, star, currentBrightness);
         }
         
-        // ONLY DRAW GLOW FOR LARGER STARS (performance optimization)
-        if (star.magnitude !== 'faint' && currentGlowRadius > 0.8) {
+        // Draw atmospheric glow (outer halo) - multiple layers for realism
+        if (currentGlowRadius > 0.8) {
             // Outer atmospheric glow
             const outerGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius * 1.8);
             outerGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.3})`);
+            outerGradient.addColorStop(0.2, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.15})`);
             outerGradient.addColorStop(0.5, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.08})`);
             outerGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
             
@@ -977,9 +964,10 @@ class StarField {
             this.ctx.arc(x, y, currentGlowRadius * 1.8, 0, Math.PI * 2);
             this.ctx.fill();
             
-            // Main glow
+            // Main atmospheric glow
             const mainGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius);
             mainGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.6})`);
+            mainGradient.addColorStop(0.3, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.35})`);
             mainGradient.addColorStop(0.6, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.18})`);
             mainGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
             
@@ -989,13 +977,9 @@ class StarField {
             this.ctx.fill();
         }
         
-        // Draw star core - SIMPLE DOT FOR FAINT STARS
-        if (star.magnitude === 'faint') {
-            // Just a simple dot - no glow
-            this.ctx.fillStyle = `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness)})`;
-            this.ctx.fillRect(x - 0.5, y - 0.5, 1, 1);
-        } else if (currentCoreSize > 0.3) {
-            // Bright stellar disk for larger stars
+        // Draw star core with realistic stellar disk
+        if (currentCoreSize > 0.3) {
+            // Bright stellar disk
             const coreGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentCoreSize * 1.5);
             coreGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 1.1)})`);
             coreGradient.addColorStop(0.7, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 0.9)})`);
@@ -1005,20 +989,20 @@ class StarField {
             this.ctx.beginPath();
             this.ctx.arc(x, y, currentCoreSize * 1.5, 0, Math.PI * 2);
             this.ctx.fill();
-            
-            // Bright center point
-            this.ctx.fillStyle = `rgba(${Math.min(255, adjustedColor.r + 20)}, ${Math.min(255, adjustedColor.g + 15)}, ${Math.min(255, adjustedColor.b + 10)}, ${Math.min(1, currentBrightness * 1.3)})`;
+        }
+        
+        // Draw bright center point
+        this.ctx.fillStyle = `rgba(${Math.min(255, adjustedColor.r + 20)}, ${Math.min(255, adjustedColor.g + 15)}, ${Math.min(255, adjustedColor.b + 10)}, ${Math.min(1, currentBrightness * 1.3)})`;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, currentCoreSize, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Add bright central point for brilliant stars
+        if (star.magnitude === 'brilliant' && currentBrightness > 0.8) {
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, currentBrightness * 0.8)})`;
             this.ctx.beginPath();
-            this.ctx.arc(x, y, currentCoreSize, 0, Math.PI * 2);
+            this.ctx.arc(x, y, currentCoreSize * 0.4, 0, Math.PI * 2);
             this.ctx.fill();
-            
-            // Brilliant stars get extra bright center
-            if (star.magnitude === 'brilliant' && currentBrightness > 0.8) {
-                this.ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, currentBrightness * 0.8)})`;
-                this.ctx.beginPath();
-                this.ctx.arc(x, y, currentCoreSize * 0.4, 0, Math.PI * 2);
-                this.ctx.fill();
-            }
         }
         
         this.ctx.restore();
@@ -1031,14 +1015,6 @@ class StarField {
         }
 
         const currentTime = Date.now();
-        
-        // Frame rate limiting for smooth mobile performance
-        const elapsed = currentTime - this.lastFrameTime;
-        if (elapsed < this.frameInterval) {
-            this.animationId = requestAnimationFrame(() => this.animate());
-            return;
-        }
-        this.lastFrameTime = currentTime - (elapsed % this.frameInterval);
         
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
@@ -1076,7 +1052,9 @@ class StarField {
 }
 
 // Initialize stars when page loads
-
+document.addEventListener('DOMContentLoaded', () => {
+    new StarField();
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     // Double-check mobile access
@@ -1087,129 +1065,58 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize collections
     initializeCollections();
     
-    // Detect mobile device for optimization
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
     // Check if we're on EVC page
     if (window.location.pathname.includes('fwd.html')) {
         showEVCLoadingScreen();
         
-        // Parallel loading - Firebase operations independent of animations
-        checkLoginStatus()
-            .then(() => {
-                updateThemeBasedOnUser();
-                hideEVCLoadingScreen();
-                startActivePlayerTracking();
-                startGlobalRealTimeListeners();
-                showPostRefreshWelcomeMessage();
-            })
-            .catch(error => {
-                console.error('EVC loading error:', error);
-                hideEVCLoadingScreen();
-                showNotification('Failed to load page. Please refresh.', 'error');
-            });
-        
-        // Start star animation separately (non-blocking)
-        setTimeout(() => {
-            new StarField();
-        }, 200);
-        
+        // Ensure everything loads before showing page
+        Promise.all([
+            checkLoginStatus(),
+            new Promise(resolve => setTimeout(resolve, 3000)) // Minimum 3 seconds
+        ]).then(() => {
+            updateThemeBasedOnUser();
+            hideEVCLoadingScreen();
+            startActivePlayerTracking();
+            startGlobalRealTimeListeners(); // Add this
+            showPostRefreshWelcomeMessage();
+        });
         return;
     }
     
-    // Main page loading with accurate progress tracking
+    // Check if elements exist before using them
     if (document.getElementById('loading-screen')) {
         showLoadingScreen();
     }
     
-    // Progress tracking variables
-    let loadingProgress = 0;
-    const updateLoadingBar = (progress) => {
-        const loadingFill = document.querySelector('.loading-fill');
-        if (loadingFill) {
-            loadingFill.style.width = progress + '%';
-        }
-    };
-    
-    // Start all Firebase operations in parallel (independent of animations)
-    const loginPromise = checkLoginStatus()
-        .then(() => {
-            loadingProgress += 33;
-            updateLoadingBar(loadingProgress);
-            console.log('Login check complete');
-        })
-        .catch(error => {
-            console.error('Login check failed:', error);
-            loadingProgress += 33;
-            updateLoadingBar(loadingProgress);
-        });
-    
-    const eventsPromise = loadEvents()
-        .then(() => {
-            loadingProgress += 33;
-            updateLoadingBar(loadingProgress);
-            console.log('Events loaded');
-        })
-        .catch(error => {
-            console.error('Events loading failed:', error);
-            loadingProgress += 33;
-            updateLoadingBar(loadingProgress);
-        });
-    
-    const statsPromise = loadStats()
-        .then(() => {
-            loadingProgress += 34;
-            updateLoadingBar(loadingProgress);
-            console.log('Stats loaded');
-        })
-        .catch(error => {
-            console.error('Stats loading failed:', error);
-            loadingProgress += 34;
-            updateLoadingBar(loadingProgress);
-        });
-    
-    // Wait for all Firebase operations to complete
-    Promise.all([loginPromise, eventsPromise, statsPromise])
-        .then(() => {
-            // Ensure loading bar shows 100%
-            updateLoadingBar(100);
-            console.log('All loading complete');
-            
-            // Show page immediately after loading completes (no artificial delay)
-            setTimeout(() => {
-                if (document.getElementById('loading-screen')) {
-                    hideLoadingScreen();
+    // Ensure everything loads before showing page
+    Promise.all([
+        checkLoginStatus(),
+        loadEvents(),
+        loadStats(),
+        new Promise(resolve => {
+            // Wait for actual loading completion
+            let completed = 0;
+            const checkProgress = () => {
+                completed += 25;
+                if (completed >= 100) {
+                    setTimeout(resolve, 500); // Small delay after completion
+                } else {
+                    setTimeout(checkProgress, 750); // Staggered progress
                 }
-                updateThemeBasedOnUser();
-                startRealTimeUpdates();
-                startActivePlayerTracking();
-                startGlobalRealTimeListeners();
-                startUpcomingEventsChecker();
-                showPostRefreshWelcomeMessage();
-            }, 300); // Minimal 300ms for smooth transition
+            };
+            checkProgress();
         })
-        .catch(error => {
-            console.error('Critical loading error:', error);
-            updateLoadingBar(100);
-            setTimeout(() => {
-                if (document.getElementById('loading-screen')) {
-                    hideLoadingScreen();
-                }
-                showNotification('Some features may not be available. Please refresh.', 'warning');
-            }, 300);
-        });
-    
-    // Initialize star animation AFTER and INDEPENDENTLY of Firebase loading
-    // This prevents animation from blocking database operations
-    setTimeout(() => {
-        try {
-            new StarField();
-            console.log('Star animation initialized');
-        } catch (error) {
-            console.error('Star animation failed (non-critical):', error);
-            // Don't block page if animation fails
+    ]).then(() => {
+        if (document.getElementById('loading-screen')) {
+            hideLoadingScreen();
         }
-    }, isMobile ? 500 : 200); // Longer delay on mobile for better performance
+        updateThemeBasedOnUser();
+        startRealTimeUpdates();
+        startActivePlayerTracking();
+        startGlobalRealTimeListeners(); // Add this for real-time odds
+        startUpcomingEventsChecker(); // Add this line
+        showPostRefreshWelcomeMessage();
+    });
 });
 
 
@@ -1430,10 +1337,10 @@ if (profilePicInput) {
         const button = document.querySelector('.file-upload-btn');
         
         if (file) {
-            button.textContent = `ðŸ“· ${file.name}`;
+            button.textContent = `📷 ${file.name}`;
             button.style.color = 'var(--primary-color)';
         } else {
-            button.textContent = 'ðŸ“· Upload Profile Picture';
+            button.textContent = '📷 Upload Profile Picture';
             button.style.color = '';
         }
     });
@@ -1992,24 +1899,12 @@ function checkLoginStatus() {
     return new Promise((resolve) => {
         const savedCode = localStorage.getItem('userCode');
         if (savedCode) {
-            // Add timeout to prevent infinite hanging
-            const timeoutId = setTimeout(() => {
-                console.log('Login check timed out, proceeding anyway');
-                updateLayoutBasedOnLoginStatus();
-                resolve();
-            }, 5000); // 5 second timeout
-            
             loginUser(savedCode, true)  // silent login - no refresh
-                .then(() => {
-                    clearTimeout(timeoutId);
+                .then(() => { 
                     updateLayoutBasedOnLoginStatus();
                     resolve();
                 })
-                .catch((error) => {
-                    clearTimeout(timeoutId);
-                    console.error('Silent login failed:', error);
-                    // Clear invalid code
-                    localStorage.removeItem('userCode');
+                .catch(() => {
                     updateLayoutBasedOnLoginStatus();
                     resolve();
                 });
@@ -2173,12 +2068,12 @@ function updateBalance() {
     }
 }
 
-// Quero (â‚®Îž) - Universal currency for PredictKing
+// Quero (₮Ξ) - Universal currency for PredictKing
 // Etymology: "Quero" derives from Latin "quaero" meaning "I seek/desire"
 // symbolizing the player's quest for victory and rewards in prediction gaming
 function formatCurrency(amount) {
     const flooredAmount = Math.floor(amount); // Floor the amount to remove decimals
-    return `<span class="currency-coin">â‚®Îž</span>${flooredAmount}`;
+    return `<span class="currency-coin">₮Ξ</span>${flooredAmount}`;
 }
 
 function getStatusColor(status) {
@@ -2323,7 +2218,6 @@ function displayEvents() {
 function createEventCard(event) {
     const card = document.createElement('div');
     card.className = 'event-bar';
-    card.setAttribute('data-event-id', event.id);
     card.onclick = () => handleEventBarClick(event);
     
     // Calculate time remaining for upcoming events and auto-update status
@@ -2393,8 +2287,8 @@ function createEventCard(event) {
     card.innerHTML = `
         <div class="event-bar-header">
             <div class="event-title-section">
-                <span class="event-title-text" onclick="event.stopPropagation(); toggleEventTitle('${event.id}')" style="cursor: pointer; transition: all 0.15s ease;">${event.title}</span>
-                <img src="${event.profilePic}" alt="Event" class="event-profile-mini" onclick="event.stopPropagation(); toggleEventProfilePic('${event.id}')" style="cursor: pointer; transition: all 0.15s ease;">
+                <span class="event-title-text">${event.title}</span>
+                <img src="${event.profilePic}" alt="Event" class="event-profile-mini">
             </div>
         </div>
         
@@ -2433,55 +2327,6 @@ function createEventCard(event) {
     setTimeout(() => startVsPoolAnimation(event.id, event.totalPot || 0), 1000);
     
     return card;
-}
-
-// Toggle functionality for event card elements
-function toggleEventTitle(eventId) {
-    const event = events.find(e => e.id === eventId);
-    if (!event) return;
-    
-    const titleElements = document.querySelectorAll(`[data-event-id="${eventId}"] .event-title-text`);
-    titleElements.forEach(el => {
-        const currentText = el.textContent;
-        const isShowingTitle = currentText === event.title;
-        
-        // Fade out
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(-5px)';
-        
-        setTimeout(() => {
-            // Switch text
-            el.textContent = isShowingTitle ? (event.leagueName || event.title) : event.title;
-            
-            // Fade in
-            el.style.opacity = '1';
-            el.style.transform = 'translateY(0)';
-        }, 150);
-    });
-}
-
-function toggleEventProfilePic(eventId) {
-    const event = events.find(e => e.id === eventId);
-    if (!event) return;
-    
-    const picElements = document.querySelectorAll(`[data-event-id="${eventId}"] .event-profile-mini`);
-    picElements.forEach(el => {
-        const currentSrc = el.src;
-        const isShowingProfile = currentSrc === event.profilePic;
-        
-        // Fade out with scale
-        el.style.opacity = '0';
-        el.style.transform = 'scale(0.8)';
-        
-        setTimeout(() => {
-            // Switch image
-            el.src = isShowingProfile ? (event.leaguePic || event.profilePic) : event.profilePic;
-            
-            // Fade in with scale
-            el.style.opacity = '1';
-            el.style.transform = 'scale(1)';
-        }, 150);
-    });
 }
 
 function handleEventBarClick(event) {
@@ -3376,7 +3221,7 @@ function createPoolBettingUI() {
                         <h4>${option}</h4>
                         <div class="odds" id="odds-${index}">Loading...</div>
                         <div class="bet-count" id="bets-${index}">0 bets</div>
-                        <div class="pool-amount" id="pool-${index}">Ã¢â€šÂ¹0</div>
+                        <div class="pool-amount" id="pool-${index}">â‚¹0</div>
                     </div>
                 `).join('')}
             </div>
@@ -3484,17 +3329,17 @@ function createPriceLadder() {
             <span>Back Team B</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(100, 'team_a')">
-            <span>Ã¢â€šÂ¹100</span>
+            <span>â‚¹100</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(200, 'team_a')">
-            <span>Ã¢â€šÂ¹200</span>
+            <span>â‚¹200</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
         <div class="ladder-row" onclick="placeLadderBet(500, 'team_a')">
-            <span>Ã¢â€šÂ¹500</span>
+            <span>â‚¹500</span>
             <span class="back-btn">2.0</span>
             <span class="lay-btn">2.0</span>
         </div>
@@ -3778,7 +3623,7 @@ function updateInstantOddsDisplay(eventId, newOdds, betOption, betAmount) {
                 }
                 if (poolEl) {
                     const currentPool = parseInt(poolEl.textContent.replace(/[^\d]/g, '')) || 0;
-                    poolEl.textContent = `â‚¹${currentPool + betAmount}`;
+                    poolEl.textContent = `₹${currentPool + betAmount}`;
                 }
             }
         });
@@ -3814,7 +3659,7 @@ async function loadPoolOdds(eventId) {
                 // Set odds directly without indicator (initial load)
                 if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                 if (betsEl) betsEl.textContent = '0 bets';
-                if (poolEl) poolEl.textContent = 'â‚¹0';
+                if (poolEl) poolEl.textContent = '₹0';
             });
         } else {
             poolData = poolDoc.data();
@@ -3861,7 +3706,7 @@ async function loadPoolOdds(eventId) {
                     // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = odds.toFixed(2);
                     if (betsEl) betsEl.textContent = `${betCount} bets`;
-                    if (poolEl) poolEl.textContent = `â‚¹${poolAmount}`;
+                    if (poolEl) poolEl.textContent = `₹${poolAmount}`;
                 });
             } else {
                 // Fallback to initial odds
@@ -3878,7 +3723,7 @@ async function loadPoolOdds(eventId) {
                     // Set odds directly without indicator (initial load)
                     if (oddsEl) oddsEl.textContent = initialOdds.toFixed(2);
                     if (betsEl) betsEl.textContent = '0 bets';
-                    if (poolEl) poolEl.textContent = 'â‚¹0';
+                    if (poolEl) poolEl.textContent = '₹0';
                 });
             }
         }
@@ -3957,7 +3802,7 @@ function updateBettingModalOddsFromEventDirect(eventId, newOdds) {
         const oddsEl = document.getElementById(`odds-${index}`);
         if (oddsEl) {
             // Parse only the number, ignore any arrow symbols
-            const oddsText = oddsEl.textContent.replace(/[â–²â–¼\s]/g, '');
+            const oddsText = oddsEl.textContent.replace(/[▲▼\s]/g, '');
             currentDOMOdds[option] = parseFloat(oddsText) || 0;
         }
     });
@@ -4030,7 +3875,7 @@ function updateBettingModalOdds(eventId, poolData) {
                 }
             }
             if (betsEl) betsEl.textContent = `${betCount} bets`;
-            if (poolEl) poolEl.textContent = `â‚¹${Math.max(0, optionPool)}`;
+            if (poolEl) poolEl.textContent = `₹${Math.max(0, optionPool)}`;
         });
     }
     
@@ -4176,10 +4021,10 @@ function updateOddsWithIndicator(oddsElement, oldOdds, newOdds) {
         indicator.className = 'odds-change-indicator';
         
         if (newOdds > oldOdds) {
-            indicator.innerHTML = 'â–²';
+            indicator.innerHTML = '▲';
             indicator.classList.add('odds-increase');
         } else {
-            indicator.innerHTML = 'â–¼';
+            indicator.innerHTML = '▼';
             indicator.classList.add('odds-decrease');
         }
         
@@ -4230,10 +4075,10 @@ function updateBettingModalOddsWithIndicator(oddsElement, oldOdds, newOdds) {
         indicator.className = 'odds-change-indicator betting-modal-indicator';
         
         if (newOdds > oldOdds) {
-            indicator.innerHTML = 'â–²';
+            indicator.innerHTML = '▲';
             indicator.classList.add('odds-increase');
         } else {
-            indicator.innerHTML = 'â–¼';
+            indicator.innerHTML = '▼';
             indicator.classList.add('odds-decrease');
         }
         
