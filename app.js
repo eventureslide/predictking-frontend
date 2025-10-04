@@ -127,30 +127,25 @@ function handleProfilePicUpload(file, gender) {
     });
 }
 
-// Canvas-based realistic star animation
 class StarField {
     constructor() {
-        this.canvas = null;
-        this.ctx = null;
+        this.staticCanvas = null; // Static stars
+        this.dynamicCanvas = null; // Meteors/moon only
+        this.staticCtx = null;
+        this.dynamicCtx = null;
         this.stars = [];
         this.animationId = null;
         this.isVisible = true;
         this.startTime = Date.now();
         
-        // REMOVED: globalMotion object completely
-        // Stars now have FIXED positions based on random seed
-        
-        // Meteor system
         this.meteors = [];
         this.nextMeteorTime = this.startTime + Math.random() * 30000 + 15000;
         
-        // Moon system
         this.moon = null;
         this.nextMoonTime = this.startTime + Math.random() * 120000 + 180000;
         
-        // Random offset for this page load - creates different sky regions
-        this.skyOffsetX = Math.random() * 10000 - 5000; // Random X offset
-        this.skyOffsetY = Math.random() * 10000 - 5000; // Random Y offset
+        this.skyOffsetX = Math.random() * 10000 - 5000;
+        this.skyOffsetY = Math.random() * 10000 - 5000;
         
         this.stellarColors = {
             O: { r: 157, g: 180, b: 255, temp: 30000 },
@@ -162,13 +157,16 @@ class StarField {
             M: { r: 255, g: 181, b: 108, temp: 3000 }
         };
         
+        this.staticRendered = false; // Track if static layer is done
+        
         this.init();
     }
 
     init() {
-        this.canvas = document.createElement('canvas');
-        this.canvas.id = 'star-canvas';
-        this.canvas.style.cssText = `
+        // Static canvas (stars - rendered ONCE)
+        this.staticCanvas = document.createElement('canvas');
+        this.staticCanvas.id = 'star-canvas-static';
+        this.staticCanvas.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -178,16 +176,35 @@ class StarField {
             pointer-events: none;
         `;
         
-        document.body.insertBefore(this.canvas, document.body.firstChild);
+        // Dynamic canvas (meteors/moon - redrawn each frame)
+        this.dynamicCanvas = document.createElement('canvas');
+        this.dynamicCanvas.id = 'star-canvas-dynamic';
+        this.dynamicCanvas.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -3;
+            pointer-events: none;
+        `;
         
-        this.ctx = this.canvas.getContext('2d', {
-            alpha: false, // No transparency = faster
-            desynchronized: true // Allow async rendering
+        document.body.insertBefore(this.staticCanvas, document.body.firstChild);
+        document.body.insertBefore(this.dynamicCanvas, document.body.firstChild);
+        
+        this.staticCtx = this.staticCanvas.getContext('2d', {
+            alpha: false,
+            desynchronized: true
         });
         
-
+        this.dynamicCtx = this.dynamicCanvas.getContext('2d', {
+            alpha: true, // Need transparency for dynamic elements
+            desynchronized: true
+        });
+        
         this.resize();
         this.createRealisticStars();
+        this.renderStaticStars(); // Render stars ONCE
         this.animate();
 
         window.addEventListener('resize', () => this.resize());
@@ -202,21 +219,26 @@ class StarField {
 
     resize() {
         const dpr = window.devicePixelRatio || 1;
-        const rect = this.canvas.getBoundingClientRect();
+        const rect = this.staticCanvas.getBoundingClientRect();
         
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
+        // Resize both canvases
+        [this.staticCanvas, this.dynamicCanvas].forEach(canvas => {
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+        });
         
-        this.ctx.scale(dpr, dpr);
-        this.canvas.style.width = rect.width + 'px';
-        this.canvas.style.height = rect.height + 'px';
+        this.staticCtx.scale(dpr, dpr);
+        this.dynamicCtx.scale(dpr, dpr);
         
-        // DON'T recreate stars on resize - preserve existing layout
-        // this.createRealisticStars(); // REMOVE THIS LINE
-        
-        // Only create stars if none exist (first load)
+        // Only create stars on first load
         if (this.stars.length === 0) {
             this.createRealisticStars();
+            this.renderStaticStars();
+        } else if (this.staticRendered) {
+            // Re-render static stars only on resize
+            this.renderStaticStars();
         }
     }
 
@@ -234,13 +256,8 @@ class StarField {
     createRealisticStars() {
         this.stars = [];
         
-        // Use viewport size with random offset for this load
         const viewWidth = window.innerWidth;
         const viewHeight = window.innerHeight;
-        
-        // Apply random offset to create different sky regions each load
-        const offsetX = this.skyOffsetX;
-        const offsetY = this.skyOffsetY;
         
         this.starDensity = {
             faint: Math.floor((viewWidth * viewHeight) / 2000),
@@ -249,31 +266,28 @@ class StarField {
             brilliant: Math.floor((viewWidth * viewHeight) / 70000) + 1
         };
         
-        // Generate stars for current viewport with offset
         Object.keys(this.starDensity).forEach(magnitude => {
             const count = this.starDensity[magnitude];
             for (let i = 0; i < count; i++) {
-                const star = this.createStar(magnitude, viewWidth, viewHeight, offsetX, offsetY);
+                const star = this.createStar(magnitude, viewWidth, viewHeight);
                 this.stars.push(star);
             }
         });
     }
 
-    createStar(magnitude, areaWidth, areaHeight, offsetX, offsetY) {
+    createStar(magnitude, areaWidth, areaHeight) {
         const spectralType = this.getRandomStellarType();
         const color = this.stellarColors[spectralType];
         
-        // FIXED position - no motion applied during animation
         const star = {
-            x: Math.random() * areaWidth, // Fixed X
-            y: Math.random() * areaHeight, // Fixed Y
+            x: Math.random() * areaWidth,
+            y: Math.random() * areaHeight,
             magnitude: magnitude,
             spectralType: spectralType,
             color: color,
             
             baseBrightness: Math.random() * 0.3 + 0.7,
             
-            // Twinkling properties
             twinklePhase: Math.random() * Math.PI * 2,
             twinkleSpeed: Math.random() * 0.012 + 0.003,
             twinkleIntensity: magnitude === 'brilliant' ? Math.random() * 0.6 + 0.3 : Math.random() * 0.4 + 0.2,
@@ -320,7 +334,86 @@ class StarField {
         return star;
     }
 
-    // REMOVED: updateGlobalMotion function completely
+    // NEW: Render static stars ONCE to static canvas
+    renderStaticStars() {
+        this.staticCtx.fillStyle = 'rgb(0, 0, 0)';
+        this.staticCtx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+        
+        const currentTime = Date.now();
+        this.stars.forEach(star => {
+            this.drawStaticStar(star, currentTime);
+        });
+        
+        this.staticRendered = true;
+    }
+
+    // Simplified star drawing for static layer (no twinkling in static render)
+    drawStaticStar(star, currentTime) {
+        const x = star.x;
+        const y = star.y;
+        
+        const brightness = star.baseBrightness * star.brightness;
+        const color = star.color;
+        
+        const glowRadius = star.maxGlowRadius * (0.6 + brightness * 0.4);
+        const coreSize = star.coreSize * (0.8 + brightness * 0.3);
+        
+        this.staticCtx.save();
+        
+        if (star.hasDiffractionSpikes) {
+            this.drawDiffractionSpikes(this.staticCtx, x, y, star, brightness);
+        }
+        
+        if (glowRadius > 0.8) {
+            const outerGradient = this.staticCtx.createRadialGradient(x, y, 0, x, y, glowRadius * 1.8);
+            outerGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${brightness * 0.3})`);
+            outerGradient.addColorStop(0.2, `rgba(${color.r}, ${color.g}, ${color.b}, ${brightness * 0.15})`);
+            outerGradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${brightness * 0.08})`);
+            outerGradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+            
+            this.staticCtx.fillStyle = outerGradient;
+            this.staticCtx.beginPath();
+            this.staticCtx.arc(x, y, glowRadius * 1.8, 0, Math.PI * 2);
+            this.staticCtx.fill();
+            
+            const mainGradient = this.staticCtx.createRadialGradient(x, y, 0, x, y, glowRadius);
+            mainGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${brightness * 0.6})`);
+            mainGradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, ${brightness * 0.35})`);
+            mainGradient.addColorStop(0.6, `rgba(${color.r}, ${color.g}, ${color.b}, ${brightness * 0.18})`);
+            mainGradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+            
+            this.staticCtx.fillStyle = mainGradient;
+            this.staticCtx.beginPath();
+            this.staticCtx.arc(x, y, glowRadius, 0, Math.PI * 2);
+            this.staticCtx.fill();
+        }
+        
+        if (coreSize > 0.3) {
+            const coreGradient = this.staticCtx.createRadialGradient(x, y, 0, x, y, coreSize * 1.5);
+            coreGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${Math.min(1, brightness * 1.1)})`);
+            coreGradient.addColorStop(0.7, `rgba(${color.r}, ${color.g}, ${color.b}, ${Math.min(1, brightness * 0.9)})`);
+            coreGradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, ${Math.min(1, brightness * 0.6)})`);
+            
+            this.staticCtx.fillStyle = coreGradient;
+            this.staticCtx.beginPath();
+            this.staticCtx.arc(x, y, coreSize * 1.5, 0, Math.PI * 2);
+            this.staticCtx.fill();
+        }
+        
+        this.staticCtx.fillStyle = `rgba(${Math.min(255, color.r + 20)}, ${Math.min(255, color.g + 15)}, ${Math.min(255, color.b + 10)}, ${Math.min(1, brightness * 1.3)})`;
+        this.staticCtx.beginPath();
+        this.staticCtx.arc(x, y, coreSize, 0, Math.PI * 2);
+        this.staticCtx.fill();
+        
+        if (star.magnitude === 'brilliant') {
+            this.staticCtx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, brightness * 0.8)})`;
+            this.staticCtx.beginPath();
+            this.staticCtx.arc(x, y, coreSize * 0.4, 0, Math.PI * 2);
+            this.staticCtx.fill();
+        }
+        
+        this.staticCtx.restore();
+    }
 
     createMeteor(currentTime) {
         const side = Math.floor(Math.random() * 4);
@@ -365,34 +458,41 @@ class StarField {
     }
 
     createMoon(currentTime) {
-        // Moon is ALWAYS static (never moves with sky)
+        // Moon moves slowly across viewport
         const side = Math.floor(Math.random() * 4);
-        let x, y;
+        let startX, startY, endX, endY;
         
         switch (side) {
-            case 0:
-                x = Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2;
-                y = Math.random() * window.innerHeight * 0.3;
+            case 0: // Enter from left
+                startX = -100;
+                startY = Math.random() * window.innerHeight * 0.6 + window.innerHeight * 0.2;
+                endX = window.innerWidth + 100;
+                endY = startY + (Math.random() - 0.5) * window.innerHeight * 0.3;
                 break;
-            case 1:
-                x = Math.random() * window.innerWidth * 0.3 + window.innerWidth * 0.65;
-                y = Math.random() * window.innerHeight * 0.6 + window.innerHeight * 0.2;
+            case 1: // Enter from right
+                startX = window.innerWidth + 100;
+                startY = Math.random() * window.innerHeight * 0.6 + window.innerHeight * 0.2;
+                endX = -100;
+                endY = startY + (Math.random() - 0.5) * window.innerHeight * 0.3;
                 break;
-            case 2:
-                x = Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2;
-                y = Math.random() * window.innerHeight * 0.3 + window.innerHeight * 0.65;
+            case 2: // Enter from top
+                startX = Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2;
+                startY = -100;
+                endX = startX + (Math.random() - 0.5) * window.innerWidth * 0.3;
+                endY = window.innerHeight + 100;
                 break;
-            case 3:
-                x = Math.random() * window.innerWidth * 0.3;
-                y = Math.random() * window.innerHeight * 0.6 + window.innerHeight * 0.2;
+            case 3: // Enter from bottom
+                startX = Math.random() * window.innerWidth * 0.6 + window.innerWidth * 0.2;
+                startY = window.innerHeight + 100;
+                endX = startX + (Math.random() - 0.5) * window.innerWidth * 0.3;
+                endY = -100;
                 break;
         }
         
         return {
-            x: x,
-            y: y,
+            startX, startY, endX, endY,
             startTime: currentTime,
-            duration: 60000 + Math.random() * 40000, // Visible for 1-1.6 minutes
+            duration: 120000 + Math.random() * 80000, // 2-3.3 minutes to cross
             size: 15 + Math.random() * 10,
             brightness: 0.7 + Math.random() * 0.2
         };
@@ -413,8 +513,11 @@ class StarField {
             this.nextMoonTime = currentTime + Math.random() * 300000 + 300000;
         }
         
-        if (this.moon && currentTime - this.moon.startTime > this.moon.duration) {
-            this.moon = null;
+        if (this.moon) {
+            const elapsed = currentTime - this.moon.startTime;
+            if (elapsed > this.moon.duration) {
+                this.moon = null;
+            }
         }
     }
 
@@ -442,47 +545,50 @@ class StarField {
             });
         }
         
-        this.ctx.save();
+        this.dynamicCtx.save();
         
         trailPoints.reverse().forEach((point, index) => {
             if (point.opacity > 0) {
-                this.ctx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${point.opacity})`;
-                this.ctx.beginPath();
-                this.ctx.arc(point.x, point.y, point.size, 0, Math.PI * 2);
-                this.ctx.fill();
+                this.dynamicCtx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${point.opacity})`;
+                this.dynamicCtx.beginPath();
+                this.dynamicCtx.arc(point.x, point.y, point.size, 0, Math.PI * 2);
+                this.dynamicCtx.fill();
                 
                 if (index < 4) {
-                    this.ctx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${point.opacity * 0.25})`;
-                    this.ctx.beginPath();
-                    this.ctx.arc(point.x, point.y, point.size * 2.5, 0, Math.PI * 2);
-                    this.ctx.fill();
+                    this.dynamicCtx.fillStyle = `rgba(${meteor.color.r}, ${meteor.color.g}, ${meteor.color.b}, ${point.opacity * 0.25})`;
+                    this.dynamicCtx.beginPath();
+                    this.dynamicCtx.arc(point.x, point.y, point.size * 2.5, 0, Math.PI * 2);
+                    this.dynamicCtx.fill();
                 }
             }
         });
         
-        this.ctx.restore();
+        this.dynamicCtx.restore();
     }
 
     drawMoon(moon, currentTime) {
-        const x = moon.x;
-        const y = moon.y;
+        const elapsed = currentTime - moon.startTime;
+        const progress = elapsed / moon.duration;
         
-        this.ctx.save();
+        const x = moon.startX + (moon.endX - moon.startX) * progress;
+        const y = moon.startY + (moon.endY - moon.startY) * progress;
         
-        const glowGradient = this.ctx.createRadialGradient(x, y, 0, x, y, moon.size * 2.8);
+        this.dynamicCtx.save();
+        
+        const glowGradient = this.dynamicCtx.createRadialGradient(x, y, 0, x, y, moon.size * 2.8);
         glowGradient.addColorStop(0, `rgba(250, 245, 230, ${moon.brightness * 0.18})`);
         glowGradient.addColorStop(0.4, `rgba(250, 245, 230, ${moon.brightness * 0.1})`);
         glowGradient.addColorStop(1, 'rgba(250, 245, 230, 0)');
         
-        this.ctx.fillStyle = glowGradient;
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, moon.size * 2.8, 0, Math.PI * 2);
-        this.ctx.fill();
+        this.dynamicCtx.fillStyle = glowGradient;
+        this.dynamicCtx.beginPath();
+        this.dynamicCtx.arc(x, y, moon.size * 2.8, 0, Math.PI * 2);
+        this.dynamicCtx.fill();
         
-        this.ctx.fillStyle = `rgba(240, 235, 220, ${moon.brightness})`;
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, moon.size, 0, Math.PI * 2);
-        this.ctx.fill();
+        this.dynamicCtx.fillStyle = `rgba(240, 235, 220, ${moon.brightness})`;
+        this.dynamicCtx.beginPath();
+        this.dynamicCtx.arc(x, y, moon.size, 0, Math.PI * 2);
+        this.dynamicCtx.fill();
         
         const craterData = [
             { x: 0.3, y: -0.2, size: 0.15, darkness: 0.6 },
@@ -490,13 +596,7 @@ class StarField {
             { x: 0.1, y: 0.4, size: 0.12, darkness: 0.7 },
             { x: -0.2, y: -0.3, size: 0.08, darkness: 0.8 },
             { x: 0.45, y: 0.2, size: 0.06, darkness: 0.9 },
-            { x: -0.1, y: 0.1, size: 0.18, darkness: 0.4 },
-            { x: 0.2, y: -0.4, size: 0.1, darkness: 0.75 },
-            { x: -0.35, y: -0.15, size: 0.07, darkness: 0.85 },
-            { x: 0.05, y: 0.25, size: 0.09, darkness: 0.65 },
-            { x: -0.25, y: 0.35, size: 0.05, darkness: 0.9 },
-            { x: 0.35, y: -0.1, size: 0.04, darkness: 0.95 },
-            { x: -0.15, y: 0.45, size: 0.06, darkness: 0.8 }
+            { x: -0.1, y: 0.1, size: 0.18, darkness: 0.4 }
         ];
         
         craterData.forEach(crater => {
@@ -506,187 +606,48 @@ class StarField {
             
             const distFromCenter = Math.sqrt((crater.x * crater.x) + (crater.y * crater.y));
             if (distFromCenter < 0.9) {
-                this.ctx.fillStyle = `rgba(220, 215, 200, ${moon.brightness * (1 - crater.darkness)})`;
-                this.ctx.beginPath();
-                this.ctx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
-                this.ctx.fill();
-                
-                if (crater.size > 0.1) {
-                    this.ctx.strokeStyle = `rgba(235, 230, 215, ${moon.brightness * 0.3})`;
-                    this.ctx.lineWidth = 0.5;
-                    this.ctx.beginPath();
-                    this.ctx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
-                    this.ctx.stroke();
-                }
+                this.dynamicCtx.fillStyle = `rgba(220, 215, 200, ${moon.brightness * (1 - crater.darkness)})`;
+                this.dynamicCtx.beginPath();
+                this.dynamicCtx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
+                this.dynamicCtx.fill();
             }
         });
         
-        const shadingGradient = this.ctx.createRadialGradient(
-            x - moon.size * 0.35, y - moon.size * 0.35, 0, 
-            x, y, moon.size
-        );
-        shadingGradient.addColorStop(0, 'rgba(240, 235, 220, 0)');
-        shadingGradient.addColorStop(0.7, 'rgba(240, 235, 220, 0)');
-        shadingGradient.addColorStop(1, `rgba(180, 175, 160, ${moon.brightness * 0.25})`);
-        
-        this.ctx.fillStyle = shadingGradient;
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, moon.size, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        this.ctx.restore();
+        this.dynamicCtx.restore();
     }
 
-    drawDiffractionSpikes(x, y, star, brightness) {
+    drawDiffractionSpikes(ctx, x, y, star, brightness) {
         if (!star.hasDiffractionSpikes || star.spikeLength < 5) return;
         
-        this.ctx.save();
+        ctx.save();
         
         const spikeAngles = [0, Math.PI/2, Math.PI, 3*Math.PI/2];
         const spikeOpacity = brightness * star.spikeIntensity * 0.8;
         
         spikeAngles.forEach(angle => {
-            this.ctx.strokeStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${spikeOpacity})`;
-            this.ctx.lineWidth = 0.8;
-            this.ctx.lineCap = 'round';
+            ctx.strokeStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${spikeOpacity})`;
+            ctx.lineWidth = 0.8;
+            ctx.lineCap = 'round';
             
             const startX = x + Math.cos(angle) * star.coreSize * 2;
             const startY = y + Math.sin(angle) * star.coreSize * 2;
             const endX = x + Math.cos(angle) * star.spikeLength;
             const endY = y + Math.sin(angle) * star.spikeLength;
             
-            this.ctx.beginPath();
-            this.ctx.moveTo(startX, startY);
-            this.ctx.lineTo(endX, endY);
-            this.ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
             
-            this.ctx.strokeStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${spikeOpacity * 0.4})`;
-            this.ctx.lineWidth = 0.4;
-            this.ctx.beginPath();
-            this.ctx.moveTo(x, y);
-            this.ctx.lineTo(x + Math.cos(angle) * star.spikeLength * 1.3, y + Math.sin(angle) * star.spikeLength * 1.3);
-            this.ctx.stroke();
+            ctx.strokeStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${spikeOpacity * 0.4})`;
+            ctx.lineWidth = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + Math.cos(angle) * star.spikeLength * 1.3, y + Math.sin(angle) * star.spikeLength * 1.3);
+            ctx.stroke();
         });
         
-        this.ctx.restore();
-    }
-
-    drawRealisticStar(star, currentTime) {
-        if (currentTime > star.nextPatternChange) {
-            star.twinkleSpeed = Math.random() * 0.015 + 0.004;
-            star.twinkleIntensity = star.magnitude === 'brilliant' ? Math.random() * 0.6 + 0.3 : Math.random() * 0.4 + 0.2;
-            star.twinklePattern = Math.random();
-            star.chromaticSpeed = Math.random() * 0.010 + 0.003;
-            star.nextPatternChange = currentTime + Math.random() * 25000 + 15000;
-        }
-
-        // STATIC POSITION - no motion transformations
-        const x = star.x;
-        const y = star.y;
-
-        star.twinklePhase += star.twinkleSpeed;
-        const sinTwinkle = Math.sin(star.twinklePhase);
-        const sinTwinkle2 = Math.sin(star.twinklePhase * 1.7 + star.twinklePattern * 8);
-        const sinTwinkle3 = Math.sin(star.twinklePhase * 2.3 + star.twinklePattern * 12);
-        
-        const primaryTwinkle = sinTwinkle * star.twinkleIntensity;
-        const secondaryTwinkle = sinTwinkle2 * (star.twinkleIntensity * 0.4);
-        const tertiaryTwinkle = sinTwinkle3 * (star.twinkleIntensity * 0.2);
-        
-        star.chromaticPhase += star.chromaticSpeed;
-        const chromaticShift = Math.sin(star.chromaticPhase) * star.chromaticIntensity;
-        
-
-        const currentBrightness = Math.max(0.15, Math.min(1.2, 
-            star.baseBrightness * star.brightness + primaryTwinkle + secondaryTwinkle + tertiaryTwinkle
-        ));
-        
-        const colorShift = chromaticShift * 0.3;
-        const adjustedColor = {
-            r: Math.max(0, Math.min(255, star.color.r + colorShift * 30)),
-            g: Math.max(0, Math.min(255, star.color.g + colorShift * 15)),
-            b: Math.max(0, Math.min(255, star.color.b - colorShift * 10))
-        };
-        
-        const currentGlowRadius = star.maxGlowRadius * (0.6 + currentBrightness * 0.4);
-        const currentCoreSize = star.coreSize * (0.8 + currentBrightness * 0.3);
-        
-        this.ctx.save();
-        
-        if (star.hasDiffractionSpikes && currentBrightness > 0.7) {
-            this.drawDiffractionSpikes(x, y, star, currentBrightness);
-        }
-        
-        if (currentGlowRadius > 0.8) {
-            const outerGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius * 1.8);
-            outerGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.3})`);
-            outerGradient.addColorStop(0.2, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.15})`);
-            outerGradient.addColorStop(0.5, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.08})`);
-            outerGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
-            
-            this.ctx.fillStyle = outerGradient;
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, currentGlowRadius * 1.8, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            const mainGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentGlowRadius);
-            mainGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.6})`);
-            mainGradient.addColorStop(0.3, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.35})`);
-            mainGradient.addColorStop(0.6, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${currentBrightness * 0.18})`);
-            mainGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, 0)`);
-            
-            this.ctx.fillStyle = mainGradient;
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, currentGlowRadius, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-        
-        if (currentCoreSize > 0.3) {
-            const coreGradient = this.ctx.createRadialGradient(x, y, 0, x, y, currentCoreSize * 1.5);
-            coreGradient.addColorStop(0, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 1.1)})`);
-            coreGradient.addColorStop(0.7, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 0.9)})`);
-            coreGradient.addColorStop(1, `rgba(${adjustedColor.r}, ${adjustedColor.g}, ${adjustedColor.b}, ${Math.min(1, currentBrightness * 0.6)})`);
-            
-            this.ctx.fillStyle = coreGradient;
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, currentCoreSize * 1.5, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-        
-        this.ctx.fillStyle = `rgba(${Math.min(255, adjustedColor.r + 20)}, ${Math.min(255, adjustedColor.g + 15)}, ${Math.min(255, adjustedColor.b + 10)}, ${Math.min(1, currentBrightness * 1.3)})`;
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, currentCoreSize, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        if (star.magnitude === 'brilliant' && currentBrightness > 0.8) {
-            this.ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, currentBrightness * 0.8)})`;
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, currentCoreSize * 0.4, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-        
-        this.ctx.restore();
-    }
-
-    // ADD this NEW method after drawRealisticStar()
-    drawStarsBatched(currentTime) {
-        // Group stars by brightness for batched rendering
-        const brightStars = [];
-        const dimStars = [];
-        
-        this.stars.forEach(star => {
-            if (star.magnitude === 'brilliant' || star.magnitude === 'bright') {
-                brightStars.push(star);
-            } else {
-                dimStars.push(star);
-            }
-        });
-        
-        // Draw dim stars first (background layer)
-        dimStars.forEach(star => this.drawRealisticStar(star, currentTime));
-        
-        // Draw bright stars on top (foreground layer)
-        brightStars.forEach(star => this.drawRealisticStar(star, currentTime));
+        ctx.restore();
     }
 
     animate() {
@@ -697,15 +658,8 @@ class StarField {
 
         const currentTime = Date.now();
         
-        this.ctx.globalCompositeOperation = 'source-over';
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-        this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-        
-        // REPLACE this line:
-        // this.stars.forEach(star => this.drawRealisticStar(star, currentTime));
-        
-        // WITH batched rendering:
-        this.drawStarsBatched(currentTime);
+        // Only clear and redraw dynamic canvas (meteors/moon)
+        this.dynamicCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         
         this.updateMeteorsAndMoon(currentTime);
         this.meteors.forEach(meteor => this.drawMeteor(meteor, currentTime));
@@ -721,8 +675,11 @@ class StarField {
         if (this.animationId) {
             cancelAnimationFrame(this.animationId);
         }
-        if (this.canvas && this.canvas.parentNode) {
-            this.canvas.parentNode.removeChild(this.canvas);
+        if (this.staticCanvas && this.staticCanvas.parentNode) {
+            this.staticCanvas.parentNode.removeChild(this.staticCanvas);
+        }
+        if (this.dynamicCanvas && this.dynamicCanvas.parentNode) {
+            this.dynamicCanvas.parentNode.removeChild(this.dynamicCanvas);
         }
     }
 }
